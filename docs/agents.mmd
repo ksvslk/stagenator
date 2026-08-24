@@ -1,0 +1,35 @@
+flowchart LR
+
+TRIG(["trigger<br/>pulse · event · nightly · replenish"]) --> D
+
+subgraph WF["Stagenator — one ADK Workflow graph"]
+  direction LR
+  D["dispatch<br/><i>code</i>"]
+
+  subgraph PULSE["pulse / instant event"]
+    DET["detect<br/><i>code · GA poll + dedupe</i>"]
+    S["🧠 STRATEGIST<br/><b>LlmAgent · Gemini</b><br/>signals+playbook → structured Actions"]
+    G["gate<br/><i>code · hard caps</i>"]
+    X["execute<br/><i>code · task queue → pipelines</i>"]
+    I["idle<br/><i>code · $0 exit</i>"]
+    DET -->|signals| S --> G --> X
+    DET -->|nothing new| I
+  end
+
+  subgraph NIGHT["nightly"]
+    GD["gather_day<br/><i>code · 24h ledger+outcomes</i>"]
+    R["🌙 REFLECTOR<br/><b>LlmAgent · Gemini</b><br/>outcomes → new playbook + brief"]
+    AP["apply<br/><i>code · persist + version</i>"]
+    GD --> R --> AP
+  end
+
+  RP["plan_replenish<br/><i>code · inventory check</i>"]
+
+  D --> DET
+  D --> GD
+  D --> RP --> X
+end
+
+PB[("playbook<br/>Firestore")]
+AP -->|writes v+1| PB
+PB -.->|read every decision| S

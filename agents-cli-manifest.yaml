@@ -1,0 +1,14 @@
+name: "stagenator"
+acli_version: "1.4.1"
+agent_directory: "agent"
+region: "us-central1"
+base_template: "local_stagenator"
+generated_at: "2026-08-24T20:28:10.404568+00:00"
+language: "python"
+create_params:
+  deployment_target: "cloud_run"
+  session_type: "in_memory"
+  cicd_runner: "skip"
+  is_a2a: true
+  agent_gateway: False
+  agent_guidance_filename: "CLAUDE.md"

@@ -15,7 +15,7 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, db, isOwner, signIn } from './firebase';
+import { auth, db, gisSignIn, isOwner } from './firebase';
 
 type Doc = Record<string, unknown> & { id: string };
 
@@ -68,24 +68,29 @@ export function App() {
   );
 
   if (!authReady) return <Center>loading…</Center>;
-  if (!isOwner(user))
-    return (
-      <Center>
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-3xl">🎛️</div>
-          <div className="text-zinc-400 text-sm uppercase tracking-widest">Stagenator Mission Control</div>
-          {user && <div className="text-red-400 text-xs">this account has no access</div>}
-          <button
-            onClick={signIn}
-            className="border border-zinc-600 text-zinc-200 px-5 py-2 rounded-lg text-sm hover:bg-zinc-800"
-          >
-            Sign in with Google
-          </button>
-        </div>
-      </Center>
-    );
+  if (!isOwner(user)) return <SignIn denied={!!user} />;
 
   return <Dashboard />;
+}
+
+function SignIn({ denied }: { denied: boolean }) {
+  const [error, setError] = useState('');
+  const buttonRef = (el: HTMLDivElement | null) => {
+    if (el && !el.hasChildNodes()) gisSignIn(el, setError).catch((e) => setError(String(e)));
+  };
+  return (
+    <Center>
+      <div className="flex flex-col items-center gap-4">
+        <div className="text-3xl">🎛️</div>
+        <div className="text-zinc-400 text-sm uppercase tracking-widest">
+          Stagenator Mission Control
+        </div>
+        {denied && <div className="text-red-400 text-xs">this account has no access</div>}
+        {error && <div className="text-red-400 text-xs max-w-xs text-center">{error}</div>}
+        <div ref={buttonRef} />
+      </div>
+    </Center>
+  );
 }
 
 function Center({ children }: { children: React.ReactNode }) {

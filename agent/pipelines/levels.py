@@ -48,6 +48,7 @@ def push_only(task: dict) -> dict:
 # ------------------------------------------------------------- palindrome ----
 
 # Full locale set observed on published levels (18 keys; "hint" = English)
+MIN_QUALITY = 6  # Gemini 1-10 judgment; below this a submission is skipped, not published
 HINT_LOCALES = ["hint", "hint_cn", "hint_de", "hint_es", "hint_et", "hint_fi", "hint_fr",
                 "hint_id", "hint_it", "hint_ja", "hint_ko", "hint_nl", "hint_pl", "hint_pt",
                 "hint_ro", "hint_sv", "hint_tr", "hint_uk"]
@@ -65,9 +66,12 @@ def _palindrome_curate(task: dict) -> dict:
     if not pending:
         raise RuntimeError("no pending palindrome submissions to curate")
 
-    # published levels for dedup + next levelId
+    # dedup set: published submissions + the levels bundled in the app binaries
     published = list(col.where(filter=firestore.FieldFilter("isFeatured_v3", "==", True)).stream())
     existing_texts = {_norm(s.to_dict().get("palindrome", "")) for s in published}
+    bundled = state.db().collection("stagenator_reference").document("palindrome_bundled").get()
+    if bundled.exists:
+        existing_texts |= set(bundled.to_dict().get("normalized", []))
     next_id = max((s.to_dict().get("levelId", 0) for s in published), default=10000) + 1
 
     for snap in pending:
@@ -79,9 +83,10 @@ def _palindrome_curate(task: dict) -> dict:
         hints = _fill_hints(text)
         if hints is None:
             continue
+        quality = hints.pop("_quality", None)
 
         if config.DRY_RUN:
-            return {"dry_run": True, "would_publish": text, "levelId": next_id}
+            return {"dry_run": True, "would_publish": text, "levelId": next_id, "quality": quality}
 
         snap.reference.update(
             {
@@ -92,7 +97,7 @@ def _palindrome_curate(task: dict) -> dict:
                 "curatedAt": state.now(),
             }
         )
-        return {"published": text, "levelId": next_id, "player": d.get("player")}
+        return {"published": text, "levelId": next_id, "player": d.get("player"), "quality": quality}
 
     raise RuntimeError("no valid, novel palindrome among pending submissions")
 
@@ -116,15 +121,21 @@ def _fill_hints(palindrome: str) -> dict | None:
         f"de=German, es=Spanish, et=Estonian, fi=Finnish, fr=French, id=Indonesian, it=Italian, "
         f"ja=Japanese, ko=Korean, nl=Dutch, pl=Polish, pt=Portuguese, ro=Romanian, sv=Swedish, "
         f"tr=Turkish, uk=Ukrainian.\n"
-        f'Reply as pure JSON: {{"ok": true, "hints": {{"hint": "...", "hint_cn": "...", ...}}}} — '
-        f'or {{"ok": false}} if the palindrome is offensive, nonsensical, or unhintable.'
+        f"Also JUDGE the level quality: is it a real word/phrase in some language (not random "
+        f"letters), is the meaning graspable, would it make a satisfying puzzle? Score 1-10.\n"
+        f'Reply as pure JSON: {{"ok": true, "quality": <1-10>, "language": "...", '
+        f'"hints": {{"hint": "...", "hint_cn": "...", ...}}}} — or {{"ok": false, "quality": 0, '
+        f'"reason": "..."}} if offensive, nonsensical, not a real palindromic phrase, or unhintable.'
     )
     reply = genai_client.generate_json(prompt)
     if not reply or not reply.get("ok"):
         return None
+    if (reply.get("quality") or 0) < MIN_QUALITY:
+        return None
     hints = reply.get("hints") or {}
     if any(not hints.get(loc) for loc in HINT_LOCALES):
         return None
+    hints["_quality"] = reply.get("quality")
     return hints
 
 

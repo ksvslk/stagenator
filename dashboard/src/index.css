@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+
+body {
+  font-family: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+}

@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+ 
+    function isAdmin() {
+    	return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Stagenator Mission Control: owner-only observability + CEO directives
+    function isStagenatorOwner() {
+      return request.auth != null && request.auth.token.email == 'indrekl@gmail.com';
+    }
+    
+    match /stagenator_ledger/{id} {
+      allow read: if isStagenatorOwner();
+      allow write: if false;
+    }
+    match /stagenator_tasks/{id} {
+      allow read: if isStagenatorOwner();
+      allow write: if false;
+    }
+    match /stagenator_playbook/{id} {
+      allow read: if isStagenatorOwner();
+      allow write: if false;
+    }
+    match /stagenator_playbook/current/history/{id} {
+      allow read: if isStagenatorOwner();
+      allow write: if false;
+    }
+    match /stagenator_briefs/{id} {
+      allow read: if isStagenatorOwner();
+      allow write: if false;
+    }
+    match /stagenator_directives/{id} {
+      allow read: if isStagenatorOwner();
+      allow create: if isStagenatorOwner()
+        && request.resource.data.keys().hasAll(['text', 'from', 'status', 'ts'])
+        && request.resource.data.status == 'new'
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000;
+      allow update, delete: if false;
+    }
+    
+    function isValidLevelData(levelData) {
+      let expectedKeys = ['levelNumber', 'name', 'path', 'sound', 'characteristic', 'hints'];
+      let hintKeys = ['actor', 'quote', 'year'];
+      
+      return levelData.keys().hasAll(expectedKeys) && levelData.size() == 6
+        && levelData.levelNumber is number
+        && levelData.name is string && levelData.name.size() > 0
+        && levelData.path is string && levelData.path.size() > 0
+        && levelData.sound is string && levelData.sound.size() > 0
+        && levelData.characteristic is string && levelData.characteristic.size() > 0
+        && levelData.hints is map
+        && levelData.hints.keys().hasAll(hintKeys) && levelData.hints.size() == 3
+        && levelData.hints.actor is string
+        && levelData.hints.quote is string
+        && levelData.hints.year is string;
+    }
+    
+    match /levels/{levelId} {
+      allow read: if request.auth != null;
+      allow create: if
+          isAdmin() &&
+          isValidLevelData(request.resource.data) &&
+          levelId == string(request.resource.data.levelNumber) &&
+          request.resource.data.levelNumber == get(/databases/$(database)/documents/counters/levelsCounter).data.count + 1;
+      allow update: if
+          isAdmin() &&
+          isValidLevelData(request.resource.data) &&
+          request.resource.data.levelNumber == resource.data.levelNumber;
+      allow delete: if isAdmin();
+    }
+		
+    match /counters/levelsCounter {
+      allow get: if isAdmin();
+      allow update: if 
+      		isAdmin() &&
+          request.resource.data.count == resource.data.count + 1;
+      allow create, delete: if false;
+    }
+    
+  }
+}

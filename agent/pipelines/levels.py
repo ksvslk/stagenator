@@ -126,9 +126,9 @@ def _fill_hints(palindrome: str) -> dict | None:
 # -------------------------------------------------- generation placeholders ----
 
 def _subliminal_generate_and_submit(task: dict) -> dict:
-    if config.DRY_RUN:
-        return {"dry_run": True, "pipeline": "subliminal-words"}
-    raise RuntimeError("Subliminal Words generation not wired yet (needs Runpod key + endpoint)")
+    from agent.pipelines import subliminal
+
+    return subliminal.run(task)
 
 
 def _moviequiz_generate_and_submit(task: dict) -> dict:

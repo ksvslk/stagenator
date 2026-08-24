@@ -22,6 +22,22 @@ def client() -> genai.Client:
     return _client
 
 
+def generate_json_with_image(prompt: str, image_bytes: bytes) -> dict | None:
+    try:
+        resp = client().models.generate_content(
+            model=config.MODEL,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                prompt,
+            ],
+            config=types.GenerateContentConfig(response_mime_type="application/json"),
+        )
+        return json.loads(resp.text)
+    except Exception as e:  # noqa: BLE001
+        log.warning("generate_json_with_image failed: %s", e)
+        return None
+
+
 def generate_json(prompt: str) -> dict | None:
     try:
         resp = client().models.generate_content(

@@ -43,7 +43,7 @@ def _reserve_codes(campaign_id: str, n: int) -> list[str]:
 def run_drop(task: dict) -> dict:
     """Segment drop: /drop/<id> link backed by N codes, announced by topic push."""
     game, payload = task["game"], task["payload"]
-    inv_campaign = payload.get("campaign_id") or _find_campaign(game)
+    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
     n = min(payload.get("n_codes") or 5, 10)
 
     if config.DRY_RUN:
@@ -86,7 +86,7 @@ def run_individual(task: dict) -> dict:
     game, payload = task["game"], task["payload"]
     if config.GAMES[game]["tier"] < 1:
         raise RuntimeError(f"{game} is Tier 0 — individual codes need the identity-linked app update")
-    inv_campaign = payload.get("campaign_id") or _find_campaign(game)
+    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
 
     if config.DRY_RUN:
         return {"dry_run": True, "campaign": inv_campaign}
@@ -139,10 +139,12 @@ def run_banner(task: dict) -> dict:
     return {"banner": "stagenator_drop", **drop}
 
 
-def _find_campaign(game: str) -> str:
+def _find_campaign(game: str, platform: str | None = None) -> str:
     from agent import rules
 
-    inv = rules.campaign_inventory(game)
+    # android/ios (game vocabulary) -> google/apple (store vocabulary)
+    store = {"android": "google", "ios": "apple"}.get(platform or "", platform)
+    inv = rules.campaign_inventory(game, platform=store)
     if not inv["campaign_id"]:
         raise RuntimeError(f"no stagenator-managed proffer.codes campaign for {game}")
     return inv["campaign_id"]

@@ -47,7 +47,10 @@ def push_only(task: dict) -> dict:
 
 # ------------------------------------------------------------- palindrome ----
 
-HINT_LOCALES = ["hint", "hint_uk", "hint_fi", "hint_fr", "hint_de", "hint_es", "hint_ja", "hint_ru"]
+# Full locale set observed on published levels (18 keys; "hint" = English)
+HINT_LOCALES = ["hint", "hint_cn", "hint_de", "hint_es", "hint_et", "hint_fi", "hint_fr",
+                "hint_id", "hint_it", "hint_ja", "hint_ko", "hint_nl", "hint_pl", "hint_pt",
+                "hint_ro", "hint_sv", "hint_tr", "hint_uk"]
 
 
 def _palindrome_curate(task: dict) -> dict:
@@ -84,7 +87,7 @@ def _palindrome_curate(task: dict) -> dict:
             {
                 "levelId": next_id,
                 "isFeatured_v3": True,
-                "solutionToCategory": json.dumps({text: hints}),
+                "solutionToCategory": {text: hints},  # Firestore map, matching published levels
                 "curatedBy": "stagenator",
                 "curatedAt": state.now(),
             }
@@ -107,12 +110,14 @@ def _fill_hints(palindrome: str) -> dict | None:
     """Gemini fills every hint locale; QA-checks itself; None if unusable."""
     prompt = (
         f"You localize hints for a palindrome puzzle game. The palindrome is: {palindrome!r}\n"
-        f"Produce a short category/hint describing what the palindrome is about, in these "
-        f"locales: {HINT_LOCALES} (hint = English, hint_uk = Ukrainian, hint_fi = Finnish, "
-        f"hint_fr = French, hint_de = German, hint_es = Spanish, hint_ja = Japanese, "
-        f"hint_ru = Russian).\n"
-        f'Reply as pure JSON: {{"ok": true, "hints": {{...}}}} — or {{"ok": false}} if the '
-        f"palindrome is offensive, nonsensical, or unhintable."
+        f"(The palindrome itself may be in any language — figure out its meaning first.)\n"
+        f"Produce a SHORT category/hint (1-3 words) describing what the palindrome is about, "
+        f"for every one of these locale keys: {HINT_LOCALES} — where hint=English, cn=Chinese, "
+        f"de=German, es=Spanish, et=Estonian, fi=Finnish, fr=French, id=Indonesian, it=Italian, "
+        f"ja=Japanese, ko=Korean, nl=Dutch, pl=Polish, pt=Portuguese, ro=Romanian, sv=Swedish, "
+        f"tr=Turkish, uk=Ukrainian.\n"
+        f'Reply as pure JSON: {{"ok": true, "hints": {{"hint": "...", "hint_cn": "...", ...}}}} — '
+        f'or {{"ok": false}} if the palindrome is offensive, nonsensical, or unhintable.'
     )
     reply = genai_client.generate_json(prompt)
     if not reply or not reply.get("ok"):

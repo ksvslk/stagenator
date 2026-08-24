@@ -50,16 +50,29 @@ def realtime_snapshot(game: str) -> dict:
     return rows
 
 
-def campaign_inventory(game: str) -> dict:
-    """availableCodes on the game's proffer.codes campaign (0 docs -> unknown)."""
+def campaign_inventory(game: str, platform: str | None = None) -> dict:
+    """Per-platform availableCodes on the game's adopted proffer.codes campaigns.
+
+    Returns {"campaigns": {platform: {campaign_id, available}}, "campaign_id", "available"}
+    where the top-level pair reflects the requested platform (or the lowest-stock
+    one, which is what replenish cares about).
+    """
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
     q = tc.collection("campaigns").where(
         filter=firestore.FieldFilter("managedBy", "==", "stagenator")
     ).where(filter=firestore.FieldFilter("game", "==", game))
+    campaigns: dict[str, dict] = {}
     for snap in q.stream():
         d = snap.to_dict()
-        return {"campaign_id": snap.id, "available": d.get("availableCodes", 0), "platform": d.get("platform")}
-    return {"campaign_id": None, "available": None}
+        p = d.get("stagenatorPlatform") or d.get("platform") or "unknown"
+        campaigns[p] = {"campaign_id": snap.id, "available": d.get("availableCodes", 0)}
+    if not campaigns:
+        return {"campaign_id": None, "available": None, "campaigns": {}}
+    if platform and platform in campaigns:
+        chosen = campaigns[platform]
+    else:
+        chosen = min(campaigns.values(), key=lambda c: c["available"] or 0)
+    return {**chosen, "campaigns": campaigns}
 
 
 def detect_signals() -> list[dict]:

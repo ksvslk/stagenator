@@ -35,6 +35,7 @@ GAMES: dict[str, dict] = {
         "tier": 0,  # 0 = analytics-only; 1 = identity-linked (set via playbook when app update ships)
         "level_backend": "packs",  # Storage + packs/{packId}/levels/{id} transaction
         "play_package": "com.indest.subliminalwords",
+        "app_store_id": "6468366578",
     },
     "ai-movie-quiz": {
         "display": "AI Movie Quiz",
@@ -46,6 +47,7 @@ GAMES: dict[str, dict] = {
         "tier": 0,
         "level_backend": "levels_counter",  # levels/{n} + counters/levelsCounter
         "play_package": "com.indest.aimoviequiz",
+        "app_store_id": "6752119990",
     },
     "palindrome": {
         "display": "Palindrome",
@@ -57,6 +59,7 @@ GAMES: dict[str, dict] = {
         "tier": 0,
         "level_backend": "user_submitted_levels",
         "play_package": "com.indest.hah",
+        "app_store_id": "1673006365",
     },
 }
 

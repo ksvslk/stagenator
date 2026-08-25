@@ -95,9 +95,9 @@ def run_personal_codes(task: dict) -> dict:
         })
         url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
         try:
-            _r = payload.get("reason")
-            _b = (f"{_r} Your code is reserved just for you — tap to claim."
-                  if _r else "You've earned a reward, reserved just for you — tap to claim.")
+            _msg = payload.get("message")
+            _b = (f"{_msg} Your code is reserved just for you — tap to claim."
+                  if _msg else "You've earned a reward, reserved just for you — tap to claim.")
             fcm.send_to_token(game, token, title="🎁 A gift for you",
                               body=_b, data={"claimUrl": url})
             sent.append(uid)
@@ -143,9 +143,9 @@ def _run_drop_shared(task: dict) -> dict:
     topic = config.GAMES[game]["level_push_topic"]
     push = None
     if topic:
-        _reason = payload.get("reason")
-        _body = (f"{_reason} Limited codes — first come, first served! ⏳"
-                 if _reason else
+        _msg = payload.get("message")
+        _body = (f"{_msg} Limited codes — first come, first served! ⏳"
+                 if _msg else
                  "A limited code drop just went live — grab yours before they're gone! ⏳")
         push = fcm.send_topic_push(
             game,

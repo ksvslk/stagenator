@@ -18,7 +18,13 @@ class Action(BaseModel):
         "send_level_push | none"
     )
     game: str = Field(description=f"One of: {', '.join(config.ACTIVE_GAMES)}")
-    reason: str = Field(description="One sentence: why this action, tied to a signal + playbook rule")
+    reason: str = Field(description="One sentence: why this action, tied to a signal + playbook rule (internal, for the ledger)")
+    message: str | None = Field(
+        default=None,
+        description="OPTIONAL user-facing push copy — short, warm, engaging (the notification "
+        "body players see). Be creative and on-brand. The system always adds the truthful "
+        "cue (scarcity for shared code drops, 'reserved for you' for personal ones), so focus "
+        "on the hook. Omit to use a sensible default.")
     segment: str | None = Field(default=None, description="Target segment description, if applicable")
     platform: str | None = Field(default=None, description="android | ios | both, if applicable")
     n_codes: int | None = Field(default=None, description="Codes to back a drop with (small: 3-10)")
@@ -51,6 +57,8 @@ strategist = LlmAgent(
         "- Few users: each one matters. But do not spam — one meaningful touch beats three pushes.\n"
         "- Fresh levels are cheap and always welcome; codes are scarce — reserve them for "
         "returning/lapsing players per the playbook.\n"
+        "- You MAY write the push `message` (user-facing copy) creatively; the system appends "
+        "the honest cue (limited/first-come for drops, reserved-for-you for personal codes).\n"
         "- Respect playbook send windows via delay_minutes.\n"
         "- ship_level has an OPTIONAL `culture` lever — softly localize a level toward a "
         "signal's `country` when active players clearly concentrate somewhere; omit for a "

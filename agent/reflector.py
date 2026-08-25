@@ -48,6 +48,9 @@ reflector = LlmAgent(
 )
 
 
+PLAYBOOK_MAX_CHARS = 4000  # keep the Strategist's per-decision memory small
+
+
 def apply_reflection(reflection: dict) -> dict:
     """Parse and persist the Reflector's output. Returns summary for the ledger."""
     from agent import state
@@ -58,6 +61,11 @@ def apply_reflection(reflection: dict) -> dict:
         state.critical(f"Reflector produced unparseable playbook: {e}")
         return {"applied": False, "error": str(e)}
 
+    import json as _json
+    if len(_json.dumps(playbook, default=str)) > PLAYBOOK_MAX_CHARS:
+        # bound growth: trim the longest-lived, least-critical section (evidence log)
+        playbook["evidence"] = {"note": "trimmed to bound memory size"}
+        playbook.setdefault("segment_rules", playbook.get("segment_rules", [])[:8])
     state.update_playbook(playbook, reason=reflection.get("changes_summary", "nightly reflection"))
     state.db().collection(config.COL_BRIEFS).document().set(
         {"ts": state.now(), "brief": reflection.get("brief", ""), "changes": reflection.get("changes_summary", "")}

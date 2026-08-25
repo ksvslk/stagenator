@@ -116,3 +116,31 @@ class TestCaps:
         for game, cfg in config.GAMES.items():
             assert cfg["project"] and cfg["ga_property"]
             assert "level_backend" in cfg
+
+
+# --------------------------------------------------- memory / context bounds ----
+
+class TestMemoryDiscipline:
+    def test_reflector_context_aggregates_not_raw(self):
+        """gather_day must aggregate, never raw-dump verbose ledger entries."""
+        import json
+        from unittest.mock import patch
+
+        from agent import agent as A
+
+        # a noisy ledger with verbose action results (media/prompts)
+        fake = [
+            {"kind": "action", "status": "done", "game": "ai-movie-quiz",
+             "action": "level_pipeline", "result": {"media": {"clip": "http://x/" + "a" * 500},
+                                                     "design": {"veo_prompt": "p" * 500}}}
+            for _ in range(50)
+        ] + [{"kind": "brief", "brief": "b" * 900} for _ in range(5)]
+        with patch.object(A.state, "recent_ledger", return_value=fake), \
+             patch.object(A.state, "get_playbook", return_value={"version": 1}), \
+             patch.object(A.state, "pending_directives", return_value=[]), \
+             patch.object(A.rules, "campaign_inventory", return_value={"campaigns": {}}):
+            ctx = json.loads(A.gather_day("nightly"))
+        # 50 verbose actions collapse to a single count; no media/prompt leakage
+        assert ctx["actions_taken"] == {"ai-movie-quiz:level_pipeline": 50}
+        assert "veo_prompt" not in A.gather_day.__doc__ and "http://x/" not in json.dumps(ctx)
+        assert len(json.dumps(ctx)) < 2000  # bounded regardless of 50 noisy entries

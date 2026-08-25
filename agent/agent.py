@@ -138,12 +138,37 @@ def idle(node_input) -> Event:
 
 
 def gather_day(node_input: str) -> str:
-    """Nightly path: assemble the Reflector's full context."""
+    """Nightly path: assemble a COMPACT, aggregated context for the Reflector.
+
+    Bounded regardless of volume: actions aggregated to counts, outcomes kept in
+    full (they're what learning needs), verbose fields (media URLs, prompts) and
+    the Reflector's own past briefs dropped."""
+    led = state.recent_ledger(hours=24)
+    action_counts: dict[str, int] = {}
+    rejections: list[str] = []
+    outcomes: list[dict] = []
+    signal_counts: dict[str, int] = {}
+    for e in led:
+        kind = e.get("kind")
+        if kind == "action" and e.get("status") == "done":
+            key = f"{e.get('game')}:{e.get('action')}"
+            action_counts[key] = action_counts.get(key, 0) + 1
+        elif kind == "rejected":
+            rejections.append(f"{e.get('game')}:{e.get('action')} — {e.get('reason')}")
+        elif kind == "outcome":  # claims, redemptions, retention movement — keep in full
+            outcomes.append({k: v for k, v in e.items() if k not in ("id",)})
+        elif kind == "signal":
+            s = e.get("signal", "?")
+            signal_counts[s] = signal_counts.get(s, 0) + 1
     context = {
-        "ledger_24h": state.recent_ledger(hours=24),
+        "period": "last 24h",
+        "signals": signal_counts,
+        "actions_taken": action_counts,      # aggregated counts, not raw entries
+        "rejections": rejections[:20],
+        "outcomes": outcomes,                # the actual results to learn from
+        "codes": {g: rules.campaign_inventory(g).get("campaigns", {}) for g in config.ACTIVE_GAMES},
         "playbook": state.get_playbook(),
         "directives": state.pending_directives(),
-        "inventory": {g: rules.campaign_inventory(g) for g in config.ACTIVE_GAMES},
     }
     return json.dumps(context, default=str)
 

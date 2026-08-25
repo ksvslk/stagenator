@@ -181,17 +181,21 @@ def run(task: dict) -> dict:
     if platform == "apple":
         from agent.tools import asc
 
-        if not d.get("giftIapId"):
+        if not d.get("giftIapId") and not d.get("giftSubscriptionId"):
             gift = _select_gift(game, d)
             if not gift:
                 state.critical(f"Could not select a gift product for {game}/apple. {RUNBOOK}", game=game)
                 return {"escalated": True, "campaign": campaign_id, "reason": "gift selection failed"}
-            camp.update({"giftIapId": gift["id"], "giftProduct": gift.get("productId")})
-            d["giftIapId"] = gift["id"]
+            key = "giftSubscriptionId" if gift["kind"] == "subscription" else "giftIapId"
+            camp.update({key: gift["id"], "giftProduct": gift.get("productId")})
+            d[key] = gift["id"]
             state.ledger("decision", game, action="gift_selection",
                          reason=gift.get("reason", ""), product=gift.get("productId"))
 
-        rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
+        if d.get("giftSubscriptionId"):
+            rows, expiration = asc.mint_subscription_offer_codes(d["giftSubscriptionId"])
+        else:
+            rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
         batch = tc.batch()
         for code, url in rows[:50]:
             cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
@@ -243,12 +247,8 @@ def _select_gift(game: str, campaign: dict) -> dict | None:
     valid = {p["id"]: p for p in catalog}
     if reply["id"] not in valid:
         return None
-    chosen = valid[reply["id"]]
-    if chosen["kind"] != "iap":
-        # subscription offer codes need the prices ceremony — restrict to IAPs for now
-        iaps = [p for p in catalog if p["kind"] == "iap"]
-        return ({**iaps[0], "reason": "fallback: chosen product was a subscription"} if iaps else None)
-    return {**chosen, "reason": reply.get("reason", "")}
+    # both kinds are mintable now (IAP offers and subscription free-trial offers)
+    return {**valid[reply["id"]], "reason": reply.get("reason", "")}
 
 
 def check_balances(task: dict) -> dict:

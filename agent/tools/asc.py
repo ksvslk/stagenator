@@ -63,6 +63,51 @@ def list_products(app_store_id: str) -> list[dict]:
     return products
 
 
+def find_or_create_subscription_offer(subscription_id: str) -> str:
+    """Free-trial (1 month) offer on a subscription. The prices ceremony that
+    Apple actually accepts for FREE_TRIAL: inline entries with territory only,
+    subscriptionPricePoint null."""
+    offers = _req("GET", f"/subscriptions/{subscription_id}/offerCodes").get("data", [])
+    for o in offers:
+        if o["attributes"].get("name") == OFFER_NAME and o["attributes"].get("active", True):
+            return o["id"]
+    created = _req("POST", "/subscriptionOfferCodes", json={
+        "data": {"type": "subscriptionOfferCodes",
+                 "attributes": {"name": OFFER_NAME,
+                                "customerEligibilities": ["NEW", "EXISTING", "EXPIRED"],
+                                "offerEligibility": "STACK_WITH_INTRO_OFFERS",
+                                "duration": "ONE_MONTH", "offerMode": "FREE_TRIAL",
+                                "numberOfPeriods": 1},
+                 "relationships": {
+                     "subscription": {"data": {"type": "subscriptions", "id": subscription_id}},
+                     "prices": {"data": [{"type": "subscriptionOfferCodePrices", "id": "${p1}"}]}}},
+        "included": [{"type": "subscriptionOfferCodePrices", "id": "${p1}",
+                      "relationships": {"territory": {"data": {"type": "territories", "id": "USA"}}}}]})
+    return created["data"]["id"]
+
+
+def mint_subscription_offer_codes(subscription_id: str, expiry_days: int = 180) -> tuple[list[tuple[str, str]], str]:
+    """One-time-use batch (500) on the subscription gift offer; returns rows+expiry."""
+    offer_id = find_or_create_subscription_offer(subscription_id)
+    expiration = (dt.date.today() + dt.timedelta(days=expiry_days)).isoformat()
+    batch = _req("POST", "/subscriptionOfferCodeOneTimeUseCodes", json={
+        "data": {"type": "subscriptionOfferCodeOneTimeUseCodes",
+                 "attributes": {"numberOfCodes": 500, "expirationDate": expiration},
+                 "relationships": {"offerCode": {"data": {"type": "subscriptionOfferCodes", "id": offer_id}}}}})
+    batch_id = batch["data"]["id"]
+    for _ in range(12):
+        time.sleep(6)
+        r = requests.get(f"{API}/subscriptionOfferCodeOneTimeUseCodes/{batch_id}/values",
+                         headers={"Authorization": f"Bearer {_token()}", "Accept": "text/csv"}, timeout=120)
+        if r.status_code == 200 and r.text.strip():
+            rows = [tuple(x.strip() for x in line.split(",", 1))
+                    for line in r.text.strip().splitlines()
+                    if "," in line and "code" not in line.lower()[:20]]
+            if rows:
+                return rows, expiration
+    raise RuntimeError(f"subscription offer batch {batch_id} values not ready")
+
+
 def find_or_create_iap_offer(iap_id: str) -> str:
     """Reuse or create the 'Stagenator Gift' free offer on a one-time IAP."""
     offers = requests.get(f"{API.replace('/v1','')}/v2/inAppPurchases/{iap_id}/offerCodes",

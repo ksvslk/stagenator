@@ -86,17 +86,20 @@ class TestSubliminalContract:
             for letter in build_layout("STORM"):
                 assert 0.0 <= letter["x"] <= 1.0
                 assert 0.0 <= letter["y"] <= 1.0
-                assert 0.2 <= letter["scale"] <= 12.0
-                assert abs(letter["rotation"]) <= 360
-                assert abs(letter["skewX"]) <= 80
+                assert 24 <= letter["fontSize"] <= 512
+                assert 0.2 <= letter["scaleX"] <= 12.0
+                assert 0.2 <= letter["scaleY"] <= 12.0
+                assert abs(letter["rotationDegrees"]) <= 360
+                assert abs(letter["skewXDegrees"]) <= 80
                 assert 0.0 <= letter["opacity"] <= 1.0
-                assert letter["weight"] in (200, 400, 700)
-                assert 24 <= BASE_FONT_SIZE * letter["scale"] <= 512
+                assert letter["fontWeightValue"] in (200, 400, 700)
 
     def test_svg_carries_answer_and_all_letters(self):
         layout = build_layout("FROST")
         svg = build_solution_svg(layout, "FROST")
-        assert 'data-answer="FROST"' in svg
+        assert 'font-family="Roboto' in svg and "data-x=" in svg
+        for i in range(len(layout)):
+            assert f'id="letter_{i+1}"' in svg
         for ch in "FROST":
             assert f">{ch}</text>" in svg
 

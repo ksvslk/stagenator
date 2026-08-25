@@ -97,6 +97,8 @@ Cloud Run · Cloud Scheduler · Eventarc · Firestore · BigQuery (GA export +
 billing export) · Vertex AI (Gemini + Veo) · Firebase Hosting/Auth/FCM · Secret
 Manager · Cloud Monitoring. Framework: **ADK**. Model: **Gemini 3.7 Flash**.
 
+See [SETUP.md](SETUP.md) for full spin-up.
+
 ## Run it
 
 ```bash

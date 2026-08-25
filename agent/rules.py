@@ -145,7 +145,7 @@ def refresh_impact_summary() -> None:
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
     minted = claimed = expired_found = 0
     for game in config.ACTIVE_GAMES:
-        for plat, camp in campaign_inventory(game).get("campaigns", {}).items():
+        for camp in campaign_inventory(game).get("campaigns", {}).values():
             col = tc.collection("campaigns").document(camp["campaign_id"]).collection("codes")
             for s in col.stream():
                 d = s.to_dict()

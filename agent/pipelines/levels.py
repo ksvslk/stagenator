@@ -148,6 +148,6 @@ def _subliminal_generate_and_submit(task: dict) -> dict:
 
 
 def _moviequiz_generate_and_submit(task: dict) -> dict:
-    if config.DRY_RUN:
-        return {"dry_run": True, "pipeline": "ai-movie-quiz"}
-    raise RuntimeError("AI Movie Quiz generation not wired yet (Veo model id pending)")
+    from agent.pipelines import moviequiz
+
+    return moviequiz.run(task)

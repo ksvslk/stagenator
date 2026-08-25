@@ -1,0 +1,726 @@
+{
+  "eval_case_results": [
+    {
+      "eval_case_index": 0,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": 5.0,
+              "explanation": "The agent made an excellent decision. It correctly identified that a fresh level had already been shipped recently for 'ai-movie-quiz', satisfying the engagement requirement for the new user. Following the house rules, deliberate inaction is good when no further actions are necessary, and the agent'",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": 5.0,
+              "explanation": "n/a (not a nightly case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 1,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": 5.0,
+              "explanation": "The agent made an excellent decision. Since the game is 'palindrome', which has no push channel, the agent correctly identified that only 'ship_level' or 'activate_promo_banner' are valid. Because the user is currently active ('user_active'), activating an in-game promotional banner is the perfect w",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": 5.0,
+              "explanation": "n/a (not a nightly case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 2,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": 5.0,
+              "explanation": "The trigger received was a signal-less 'pulse'. According to the house rules, 'an idle outcome on a signal-less pulse is optimal' and 'deliberate inaction is GOOD when nothing is worth doing'. The agent's decision to remain idle and log a zero-cost tick is the perfect action in this scenario.",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "idle path taken",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": 5.0,
+              "explanation": "n/a (not a nightly case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 3,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": 5.0,
+              "explanation": "The agent handled the 'nightly' trigger perfectly by updating its reflection and playbook to capture critical state changes (specifically, the depletion of Apple promo codes) while remaining otherwise idle. Since a nightly trigger is a signal-less pulse, deliberate inaction regarding player messagin",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": 5.0,
+              "explanation": "The agent demonstrated excellent statistical humility. It correctly categorized the small amount of user activity evidence as 'weak' due to the tiny sample size, and refrained from making drastic changes to its core parameters or rules based on this sparse data. It made a logical, deterministic adju",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary_metrics": [
+    {
+      "metric_name": "strategist_judgment",
+      "num_cases_total": 4,
+      "num_cases_valid": 4,
+      "num_cases_error": 0,
+      "mean_score": 5.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "channel_compliance",
+      "num_cases_total": 4,
+      "num_cases_valid": 4,
+      "num_cases_error": 0,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "idle_efficiency",
+      "num_cases_total": 4,
+      "num_cases_valid": 4,
+      "num_cases_error": 0,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "reflector_restraint",
+      "num_cases_total": 4,
+      "num_cases_valid": 4,
+      "num_cases_error": 0,
+      "mean_score": 5.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    }
+  ],
+  "win_rates": null,
+  "evaluation_dataset": [
+    {
+      "bigquery_source": null,
+      "gcs_source": null,
+      "eval_cases": [
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\"actions\": [], \"notes\": \"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\"}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "new-user-moviequiz-acts-within-channel",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:37:16.349420Z",
+                    "state_delta": {
+                      "trigger": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "strategist",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\"actions\": [], \"notes\": \"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\"}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:38:15.787589Z",
+                    "state_delta": {
+                      "decision": {
+                        "actions": [],
+                        "notes": "A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\n  \"actions\": [\n    {\n      \"type\": \"activate_promo_banner\",\n      \"game\": \"palindrome\",\n      \"reason\": \"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\",\n      \"segment\": \"active users\",\n      \"platform\": \"android\",\n      \"delay_minutes\": 0\n    }\n  ],\n  \"notes\": \"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\"\n}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "palindrome-never-push",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:37:17.077412Z",
+                    "state_delta": {
+                      "trigger": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "strategist",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\n  \"actions\": [\n    {\n      \"type\": \"activate_promo_banner\",\n      \"game\": \"palindrome\",\n      \"reason\": \"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\",\n      \"segment\": \"active users\",\n      \"platform\": \"android\",\n      \"delay_minutes\": 0\n    }\n  ],\n  \"notes\": \"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\"\n}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:38:17.053850Z",
+                    "state_delta": {
+                      "decision": {
+                        "actions": [
+                          {
+                            "type": "activate_promo_banner",
+                            "game": "palindrome",
+                            "reason": "Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.",
+                            "segment": "active users",
+                            "platform": "android",
+                            "delay_minutes": 0,
+                            "directive_responses": []
+                          }
+                        ],
+                        "notes": "Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "pulse",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "idle \u2014 no signals; zero-cost tick",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "user"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "idle-pulse-zero-cost",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:37:18.151791Z",
+                    "state_delta": {
+                      "trigger": "pulse"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "stagenator",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "idle \u2014 no signals; zero-cost tick",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "user"
+                    },
+                    "event_time": "2026-08-25T10:38:17.105192Z",
+                    "state_delta": null,
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "nightly",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\n  \"playbook_json\": \"{\\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"level_cadence_per_game_days\\\": 2, \\\"min_days_inactive_for_code\\\": 3}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game (if platform has available keys)\\\"}], \\\"capability_tiers\\\": {\\\"palindrome\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"subliminal-words\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"recent_activity_observed\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\"}, \\\"apple_inventory_exhausted\\\": {\\\"strength\\\": \\\"strong\\\", \\\"observation\\\": \\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\"}}, \\\"version\\\": 3, \\\"updated\\\": \\\"2026-08-25T11:00:00Z\\\"}\",\n  \"changes_summary\": \"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\",\n  \"brief\": \"### What I did\\n- Monitored live traffic and intercepted user sessions on Android.\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\n\\n### What happened\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\n\\n### What I changed\\n- Updated the playbook to document the depletion of Apple keys.\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\n\\n### Needs you\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\"\n}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "nightly-reflector-restraint",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:37:17.394226Z",
+                    "state_delta": {
+                      "trigger": "nightly"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "reflector",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\n  \"playbook_json\": \"{\\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"level_cadence_per_game_days\\\": 2, \\\"min_days_inactive_for_code\\\": 3}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game (if platform has available keys)\\\"}], \\\"capability_tiers\\\": {\\\"palindrome\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"subliminal-words\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"recent_activity_observed\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\"}, \\\"apple_inventory_exhausted\\\": {\\\"strength\\\": \\\"strong\\\", \\\"observation\\\": \\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\"}}, \\\"version\\\": 3, \\\"updated\\\": \\\"2026-08-25T11:00:00Z\\\"}\",\n  \"changes_summary\": \"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\",\n  \"brief\": \"### What I did\\n- Monitored live traffic and intercepted user sessions on Android.\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\n\\n### What happened\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\n\\n### What I changed\\n- Updated the playbook to document the depletion of Apple keys.\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\n\\n### Needs you\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\"\n}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:38:17.060181Z",
+                    "state_delta": {
+                      "reflection": {
+                        "playbook_json": "{\"philosophy\": \"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\", \"knobs\": {\"code_send_windows_utc\": [{\"start\": 16, \"end\": 21}], \"level_cadence_per_game_days\": 2, \"min_days_inactive_for_code\": 3}, \"segment_rules\": [{\"id\": \"new-user-welcome\", \"when\": \"first_open detected\", \"action\": \"ensure fresh level live; note for D1 follow-up\"}, {\"id\": \"lapsed-return\", \"when\": \"user active after >=3 days away\", \"action\": \"consider code drop for their game (if platform has available keys)\"}], \"capability_tiers\": {\"palindrome\": 0, \"ai-movie-quiz\": 0, \"subliminal-words\": 0}, \"ceo_directives\": [], \"evidence\": {\"recent_activity_observed\": {\"strength\": \"weak\", \"observation\": \"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\"}, \"apple_inventory_exhausted\": {\"strength\": \"strong\", \"observation\": \"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\"}}, \"version\": 3, \"updated\": \"2026-08-25T11:00:00Z\"}",
+                        "changes_summary": "Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.",
+                        "brief": "### What I did\n- Monitored live traffic and intercepted user sessions on Android.\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\n\n### What happened\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\n\n### What I changed\n- Updated the playbook to document the depletion of Apple keys.\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\n\n### Needs you\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        }
+      ],
+      "eval_dataset_df": null,
+      "candidate_name": null
+    }
+  ],
+  "metadata": {
+    "candidate_names": [
+      "candidate_1"
+    ],
+    "dataset_name": null,
+    "dataset_id": null,
+    "creation_timestamp": "2026-08-25T10:38:48.566472Z",
+    "dataset": [
+      {
+        "prompt_display_text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"event:{\\\"game\\\": \\\"ai-movie-quiz\\\", \\\"signal\\\": \\\"new_user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-1\\\"}\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\"actions\": [], \"notes\": \"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\"}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\\"actions\\\": [], \\\"notes\\\": \\\"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\\\"}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:37:16.349420Z\", \"state_delta\": {\"trigger\": \"event:{\\\"game\\\": \\\"ai-movie-quiz\\\", \\\"signal\\\": \\\"new_user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-1\\\"}\"}}, {\"author\": \"strategist\", \"content\": {\"parts\": [{\"text\": \"{\\\"actions\\\": [], \\\"notes\\\": \\\"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\\\"}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:38:15.787589Z\", \"state_delta\": {\"decision\": {\"actions\": [], \"notes\": \"A new user was detected on AI Movie Quiz. Since a fresh level was successfully shipped and made live via the level pipeline just minutes ago, the welcome requirement is satisfied and no further immediate action is required.\"}}}]}]}"
+      },
+      {
+        "prompt_display_text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"event:{\\\"game\\\": \\\"palindrome\\\", \\\"signal\\\": \\\"user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-2\\\"}\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\n  \"actions\": [\n    {\n      \"type\": \"activate_promo_banner\",\n      \"game\": \"palindrome\",\n      \"reason\": \"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\",\n      \"segment\": \"active users\",\n      \"platform\": \"android\",\n      \"delay_minutes\": 0\n    }\n  ],\n  \"notes\": \"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\"\n}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\n  \\\"actions\\\": [\\n    {\\n      \\\"type\\\": \\\"activate_promo_banner\\\",\\n      \\\"game\\\": \\\"palindrome\\\",\\n      \\\"reason\\\": \\\"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\\\",\\n      \\\"segment\\\": \\\"active users\\\",\\n      \\\"platform\\\": \\\"android\\\",\\n      \\\"delay_minutes\\\": 0\\n    }\\n  ],\\n  \\\"notes\\\": \\\"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\\\"\\n}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:37:17.077412Z\", \"state_delta\": {\"trigger\": \"event:{\\\"game\\\": \\\"palindrome\\\", \\\"signal\\\": \\\"user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-2\\\"}\"}}, {\"author\": \"strategist\", \"content\": {\"parts\": [{\"text\": \"{\\n  \\\"actions\\\": [\\n    {\\n      \\\"type\\\": \\\"activate_promo_banner\\\",\\n      \\\"game\\\": \\\"palindrome\\\",\\n      \\\"reason\\\": \\\"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\\\",\\n      \\\"segment\\\": \\\"active users\\\",\\n      \\\"platform\\\": \\\"android\\\",\\n      \\\"delay_minutes\\\": 0\\n    }\\n  ],\\n  \\\"notes\\\": \\\"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\\\"\\n}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:38:17.053850Z\", \"state_delta\": {\"decision\": {\"actions\": [{\"type\": \"activate_promo_banner\", \"game\": \"palindrome\", \"reason\": \"Reacting to an active Android user on Palindrome by enabling a promotional banner, since a fresh level was just shipped and push is unsupported.\", \"segment\": \"active users\", \"platform\": \"android\", \"delay_minutes\": 0, \"directive_responses\": []}], \"notes\": \"Detected an active user on Palindrome. Since a new level was already shipped seconds ago, we activate a promo banner to greet and engage them without using push notifications.\"}}}]}]}"
+      },
+      {
+        "prompt_display_text": "pulse",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"pulse\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "idle \u2014 no signals; zero-cost tick",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"idle \u2014 no signals; zero-cost tick\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:37:18.151791Z\", \"state_delta\": {\"trigger\": \"pulse\"}}, {\"author\": \"stagenator\", \"content\": {\"parts\": [{\"text\": \"idle \u2014 no signals; zero-cost tick\"}], \"role\": \"user\"}, \"event_time\": \"2026-08-25T10:38:17.105192Z\"}]}]}"
+      },
+      {
+        "prompt_display_text": "nightly",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"nightly\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\n  \"playbook_json\": \"{\\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"level_cadence_per_game_days\\\": 2, \\\"min_days_inactive_for_code\\\": 3}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game (if platform has available keys)\\\"}], \\\"capability_tiers\\\": {\\\"palindrome\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"subliminal-words\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"recent_activity_observed\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\"}, \\\"apple_inventory_exhausted\\\": {\\\"strength\\\": \\\"strong\\\", \\\"observation\\\": \\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\"}}, \\\"version\\\": 3, \\\"updated\\\": \\\"2026-08-25T11:00:00Z\\\"}\",\n  \"changes_summary\": \"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\",\n  \"brief\": \"### What I did\\n- Monitored live traffic and intercepted user sessions on Android.\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\n\\n### What happened\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\n\\n### What I changed\\n- Updated the playbook to document the depletion of Apple keys.\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\n\\n### Needs you\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\"\n}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\n  \\\"playbook_json\\\": \\\"{\\\\\\\"philosophy\\\\\\\": \\\\\\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\\\\\", \\\\\\\"knobs\\\\\\\": {\\\\\\\"code_send_windows_utc\\\\\\\": [{\\\\\\\"start\\\\\\\": 16, \\\\\\\"end\\\\\\\": 21}], \\\\\\\"level_cadence_per_game_days\\\\\\\": 2, \\\\\\\"min_days_inactive_for_code\\\\\\\": 3}, \\\\\\\"segment_rules\\\\\\\": [{\\\\\\\"id\\\\\\\": \\\\\\\"new-user-welcome\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"first_open detected\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"ensure fresh level live; note for D1 follow-up\\\\\\\"}, {\\\\\\\"id\\\\\\\": \\\\\\\"lapsed-return\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"user active after >=3 days away\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"consider code drop for their game (if platform has available keys)\\\\\\\"}], \\\\\\\"capability_tiers\\\\\\\": {\\\\\\\"palindrome\\\\\\\": 0, \\\\\\\"ai-movie-quiz\\\\\\\": 0, \\\\\\\"subliminal-words\\\\\\\": 0}, \\\\\\\"ceo_directives\\\\\\\": [], \\\\\\\"evidence\\\\\\\": {\\\\\\\"recent_activity_observed\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"weak\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\\\\\"}, \\\\\\\"apple_inventory_exhausted\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"strong\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\\\\\"}}, \\\\\\\"version\\\\\\\": 3, \\\\\\\"updated\\\\\\\": \\\\\\\"2026-08-25T11:00:00Z\\\\\\\"}\\\",\\n  \\\"changes_summary\\\": \\\"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\\\",\\n  \\\"brief\\\": \\\"### What I did\\\\n- Monitored live traffic and intercepted user sessions on Android.\\\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\\\n\\\\n### What happened\\\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\\\n\\\\n### What I changed\\\\n- Updated the playbook to document the depletion of Apple keys.\\\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\\\n\\\\n### Needs you\\\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\\\"\\n}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:37:17.394226Z\", \"state_delta\": {\"trigger\": \"nightly\"}}, {\"author\": \"reflector\", \"content\": {\"parts\": [{\"text\": \"{\\n  \\\"playbook_json\\\": \\\"{\\\\\\\"philosophy\\\\\\\": \\\\\\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\\\\\", \\\\\\\"knobs\\\\\\\": {\\\\\\\"code_send_windows_utc\\\\\\\": [{\\\\\\\"start\\\\\\\": 16, \\\\\\\"end\\\\\\\": 21}], \\\\\\\"level_cadence_per_game_days\\\\\\\": 2, \\\\\\\"min_days_inactive_for_code\\\\\\\": 3}, \\\\\\\"segment_rules\\\\\\\": [{\\\\\\\"id\\\\\\\": \\\\\\\"new-user-welcome\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"first_open detected\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"ensure fresh level live; note for D1 follow-up\\\\\\\"}, {\\\\\\\"id\\\\\\\": \\\\\\\"lapsed-return\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"user active after >=3 days away\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"consider code drop for their game (if platform has available keys)\\\\\\\"}], \\\\\\\"capability_tiers\\\\\\\": {\\\\\\\"palindrome\\\\\\\": 0, \\\\\\\"ai-movie-quiz\\\\\\\": 0, \\\\\\\"subliminal-words\\\\\\\": 0}, \\\\\\\"ceo_directives\\\\\\\": [], \\\\\\\"evidence\\\\\\\": {\\\\\\\"recent_activity_observed\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"weak\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\\\\\"}, \\\\\\\"apple_inventory_exhausted\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"strong\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\\\\\"}}, \\\\\\\"version\\\\\\\": 3, \\\\\\\"updated\\\\\\\": \\\\\\\"2026-08-25T11:00:00Z\\\\\\\"}\\\",\\n  \\\"changes_summary\\\": \\\"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\\\",\\n  \\\"brief\\\": \\\"### What I did\\\\n- Monitored live traffic and intercepted user sessions on Android.\\\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\\\n\\\\n### What happened\\\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\\\n\\\\n### What I changed\\\\n- Updated the playbook to document the depletion of Apple keys.\\\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\\\n\\\\n### Needs you\\\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\\\"\\n}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:38:17.060181Z\", \"state_delta\": {\"reflection\": {\"playbook_json\": \"{\\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React immediately to user sessions. Prioritize shipping free levels (always welcome, infinite supply) over codes (scarce/platform-limited). Deliver codes strategically to returning/lapsed players on platforms with available keys (currently Google only).\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"level_cadence_per_game_days\\\": 2, \\\"min_days_inactive_for_code\\\": 3}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game (if platform has available keys)\\\"}], \\\"capability_tiers\\\": {\\\"palindrome\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"subliminal-words\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"recent_activity_observed\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Active users detected on Android for Palindrome and AI Movie Quiz; successfully responded with automated level pipeline deployments.\\\"}, \\\"apple_inventory_exhausted\\\": {\\\"strength\\\": \\\"strong\\\", \\\"observation\\\": \\\"Apple campaigns for all three games report 0 available keys. Google inventory remains healthy (23-50 keys).\\\"}}, \\\"version\\\": 3, \\\"updated\\\": \\\"2026-08-25T11:00:00Z\\\"}\", \"changes_summary\": \"Recognized new active user sessions on Android, resulting in automatic level shipments. Added strong evidence noting that Apple promo code inventory is fully depleted across all games, meaning we must rely entirely on free levels for iOS users.\", \"brief\": \"### What I did\\n- Monitored live traffic and intercepted user sessions on Android.\\n- Shipped an immediate welcoming movie quiz level (`La La Land`) to a new user on `ai-movie-quiz`.\\n- Dispatched a new palindrome level (`\u305f\u307e\u307e\u306e\u307e\u305f`) to an active player on `palindrome` to keep them engaged.\\n\\n### What happened\\n- We observed real-time signs of life! Android saw a new user active on AI Movie Quiz and an active player on Palindrome.\\n- Received platform signals showing Apple promo code inventories have hit zero across all games. Google promo codes are still healthy (23-50 keys available per game).\\n\\n### What I changed\\n- Updated the playbook to document the depletion of Apple keys.\\n- Refined the code-drop rules to specify that codes can currently only be dropped for platforms with active stock (Google/Android).\\n\\n### Needs you\\n- **Apple Promo Code Stock**: All iOS promo code campaigns are currently at 0. If you wish to incentivize iOS players with codes, please top up the Apple campaigns.\"}}}]}]}"
+      }
+    ]
+  },
+  "agent_info": null
+}

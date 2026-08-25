@@ -75,11 +75,14 @@ CAPS = {
 }
 
 # --- Firestore collections (all in HOME_PROJECT) ---
-COL_LEDGER = "stagenator_ledger"
-COL_TASKS = "stagenator_tasks"
-COL_PLAYBOOK = "stagenator_playbook"  # doc id: "current"; history in subcollection
-COL_DIRECTIVES = "stagenator_directives"
-COL_BRIEFS = "stagenator_briefs"
+# STAGENATOR_COLLECTION_PREFIX isolates local/eval runs from the production
+# ledger the dashboard shows (set to "stagenator_eval" in local .env).
+_PREFIX = os.getenv("STAGENATOR_COLLECTION_PREFIX", "stagenator")
+COL_LEDGER = f"{_PREFIX}_ledger"
+COL_TASKS = f"{_PREFIX}_tasks"
+COL_PLAYBOOK = f"{_PREFIX}_playbook"  # doc id: "current"; history in subcollection
+COL_DIRECTIVES = f"{_PREFIX}_directives"
+COL_BRIEFS = f"{_PREFIX}_briefs"
 
 # --- Alerting ---
 # severity=CRITICAL structured logs drive the Cloud Monitoring email alert policy.

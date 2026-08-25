@@ -109,8 +109,10 @@ def execute(node_input) -> dict:
     return {"ran": ran, "failed": failed, "gate": node_input if isinstance(node_input, dict) else None}
 
 
-def idle(node_input) -> dict:
-    return {"status": "idle", "note": "no signals — zero-cost tick"}
+def idle(node_input) -> Event:
+    result = {"status": "idle", "note": "no signals — zero-cost tick"}
+    # message gives the run a text-bearing event (eval harness + web UI need one)
+    return Event(output=result, message="idle — no signals; zero-cost tick")
 
 
 def gather_day(node_input: str) -> str:

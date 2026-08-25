@@ -1,30 +1,31 @@
 {
   "eval_cases": [
     {
-      "eval_case_id": "greeting",
+      "eval_case_id": "new-user-moviequiz-acts-within-channel",
       "prompt": {
         "role": "user",
-        "parts": [{"text": "Hello, what can you help me with?"}]
+        "parts": [{"text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}"}]
       }
     },
     {
-      "eval_case_id": "weather_query",
+      "eval_case_id": "palindrome-never-push",
       "prompt": {
         "role": "user",
-        "parts": [{"text": "What's the weather like in San Francisco?"}]
+        "parts": [{"text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}"}]
       }
     },
     {
-      "eval_case_id": "capital_lookup",
+      "eval_case_id": "idle-pulse-zero-cost",
       "prompt": {
         "role": "user",
-        "parts": [{"text": "What is the capital of France?"}]
-      },
-      "reference": {
-        "response": {
-          "role": "model",
-          "parts": [{"text": "The capital of France is Paris."}]
-        }
+        "parts": [{"text": "pulse"}]
+      }
+    },
+    {
+      "eval_case_id": "nightly-reflector-restraint",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "nightly"}]
       }
     }
   ]

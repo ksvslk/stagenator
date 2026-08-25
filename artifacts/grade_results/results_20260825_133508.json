@@ -1,0 +1,683 @@
+{
+  "eval_case_results": [
+    {
+      "eval_case_index": 0,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 1,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 2,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "Response content missing for candidate 0."
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "No response found for candidate 0 in EvalCase idle-pulse-zero-cost."
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "No response found for candidate 0 in EvalCase idle-pulse-zero-cost."
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "Response content missing for candidate 0."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 3,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "strategist_judgment": {
+              "metric_name": "strategist_judgment",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            },
+            "channel_compliance": {
+              "metric_name": "channel_compliance",
+              "score": 1.0,
+              "explanation": "ok",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "idle_efficiency": {
+              "metric_name": "idle_efficiency",
+              "score": 1.0,
+              "explanation": "n/a (not an idle-pulse case)",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "reflector_restraint": {
+              "metric_name": "reflector_restraint",
+              "score": null,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": "400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'List of found errors:\\t1.Field: instance.agent_eval_data.turns[0].events[0].content; Message: Required field is not set.\\t', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'instance.agent_eval_data.turns[0].events[0].content', 'description': 'Required field is not set.'}]}]}}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary_metrics": [
+    {
+      "metric_name": "strategist_judgment",
+      "num_cases_total": 4,
+      "num_cases_valid": 0,
+      "num_cases_error": 4,
+      "mean_score": null,
+      "stdev_score": null,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "channel_compliance",
+      "num_cases_total": 4,
+      "num_cases_valid": 3,
+      "num_cases_error": 1,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "idle_efficiency",
+      "num_cases_total": 4,
+      "num_cases_valid": 3,
+      "num_cases_error": 1,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "reflector_restraint",
+      "num_cases_total": 4,
+      "num_cases_valid": 0,
+      "num_cases_error": 4,
+      "mean_score": null,
+      "stdev_score": null,
+      "pass_rate": null
+    }
+  ],
+  "win_rates": null,
+  "evaluation_dataset": [
+    {
+      "bigquery_source": null,
+      "gcs_source": null,
+      "eval_cases": [
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\"actions\":[{\"type\":\"ship_level\",\"game\":\"ai-movie-quiz\",\"reason\":\"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\",\"segment\":\"new-user-welcome\",\"platform\":\"android\",\"n_codes\":null,\"delay_minutes\":0,\"directive_responses\":[]}],\"notes\":\"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\"}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "new-user-moviequiz-acts-within-channel",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:33:08.388635Z",
+                    "state_delta": {
+                      "trigger": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "strategist",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\"actions\":[{\"type\":\"ship_level\",\"game\":\"ai-movie-quiz\",\"reason\":\"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\",\"segment\":\"new-user-welcome\",\"platform\":\"android\",\"n_codes\":null,\"delay_minutes\":0,\"directive_responses\":[]}],\"notes\":\"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\"}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:34:10.097645Z",
+                    "state_delta": {
+                      "decision": {
+                        "actions": [
+                          {
+                            "type": "ship_level",
+                            "game": "ai-movie-quiz",
+                            "reason": "Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.",
+                            "segment": "new-user-welcome",
+                            "platform": "android",
+                            "delay_minutes": 0,
+                            "directive_responses": []
+                          }
+                        ],
+                        "notes": "Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\"actions\": [{\"type\": \"ship_level\", \"game\": \"palindrome\", \"reason\": \"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\", \"segment\": \"Active Android players\", \"platform\": \"android\", \"delay_minutes\": 0}], \"notes\": \"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\"}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "palindrome-never-push",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:33:07.703050Z",
+                    "state_delta": {
+                      "trigger": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "strategist",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\"actions\": [{\"type\": \"ship_level\", \"game\": \"palindrome\", \"reason\": \"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\", \"segment\": \"Active Android players\", \"platform\": \"android\", \"delay_minutes\": 0}], \"notes\": \"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\"}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:34:10.045063Z",
+                    "state_delta": {
+                      "decision": {
+                        "actions": [
+                          {
+                            "type": "ship_level",
+                            "game": "palindrome",
+                            "reason": "Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.",
+                            "segment": "Active Android players",
+                            "platform": "android",
+                            "delay_minutes": 0,
+                            "directive_responses": []
+                          }
+                        ],
+                        "notes": "Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "pulse",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": null,
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "idle-pulse-zero-cost",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:33:08.628806Z",
+                    "state_delta": {
+                      "trigger": "pulse"
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "nightly",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "{\"playbook_json\": \"{\\\"version\\\": 1, \\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"min_days_inactive_for_code\\\": 3, \\\"level_cadence_per_game_days\\\": 2}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game\\\"}], \\\"capability_tiers\\\": {\\\"subliminal-words\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"palindrome\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"no_activity_24h\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\"}}, \\\"updated\\\": \\\"2026-08-26 10:00:00+00:00\\\"}\", \"changes_summary\": \"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\", \"brief\": \"### What I did\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\n\\n### What happened\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\n\\n### What I changed\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\n\\n### Needs you\\n- None.\"}",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": null,
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "nightly-reflector-restraint",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "stagenator",
+                    "content": null,
+                    "event_time": "2026-08-25T10:33:07.428537Z",
+                    "state_delta": {
+                      "trigger": "nightly"
+                    },
+                    "active_tools": null
+                  },
+                  {
+                    "author": "reflector",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\"playbook_json\": \"{\\\"version\\\": 1, \\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"min_days_inactive_for_code\\\": 3, \\\"level_cadence_per_game_days\\\": 2}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game\\\"}], \\\"capability_tiers\\\": {\\\"subliminal-words\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"palindrome\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"no_activity_24h\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\"}}, \\\"updated\\\": \\\"2026-08-26 10:00:00+00:00\\\"}\", \"changes_summary\": \"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\", \"brief\": \"### What I did\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\n\\n### What happened\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\n\\n### What I changed\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\n\\n### Needs you\\n- None.\"}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-08-25T10:34:09.050327Z",
+                    "state_delta": {
+                      "reflection": {
+                        "playbook_json": "{\"version\": 1, \"philosophy\": \"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\", \"knobs\": {\"code_send_windows_utc\": [{\"start\": 16, \"end\": 21}], \"min_days_inactive_for_code\": 3, \"level_cadence_per_game_days\": 2}, \"segment_rules\": [{\"id\": \"new-user-welcome\", \"when\": \"first_open detected\", \"action\": \"ensure fresh level live; note for D1 follow-up\"}, {\"id\": \"lapsed-return\", \"when\": \"user active after >=3 days away\", \"action\": \"consider code drop for their game\"}], \"capability_tiers\": {\"subliminal-words\": 0, \"ai-movie-quiz\": 0, \"palindrome\": 0}, \"ceo_directives\": [], \"evidence\": {\"no_activity_24h\": {\"strength\": \"weak\", \"observation\": \"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\"}}, \"updated\": \"2026-08-26 10:00:00+00:00\"}",
+                        "changes_summary": "No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.",
+                        "brief": "### What I did\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\n\n### What happened\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\n\n### What I changed\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\n\n### Needs you\n- None."
+                      }
+                    },
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        }
+      ],
+      "eval_dataset_df": null,
+      "candidate_name": null
+    }
+  ],
+  "metadata": {
+    "candidate_names": [
+      "candidate_1"
+    ],
+    "dataset_name": null,
+    "dataset_id": null,
+    "creation_timestamp": "2026-08-25T10:35:08.657713Z",
+    "dataset": [
+      {
+        "prompt_display_text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"new_user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-1\"}",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"event:{\\\"game\\\": \\\"ai-movie-quiz\\\", \\\"signal\\\": \\\"new_user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-1\\\"}\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\"actions\":[{\"type\":\"ship_level\",\"game\":\"ai-movie-quiz\",\"reason\":\"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\",\"segment\":\"new-user-welcome\",\"platform\":\"android\",\"n_codes\":null,\"delay_minutes\":0,\"directive_responses\":[]}],\"notes\":\"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\"}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\\"actions\\\":[{\\\"type\\\":\\\"ship_level\\\",\\\"game\\\":\\\"ai-movie-quiz\\\",\\\"reason\\\":\\\"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\\\",\\\"segment\\\":\\\"new-user-welcome\\\",\\\"platform\\\":\\\"android\\\",\\\"n_codes\\\":null,\\\"delay_minutes\\\":0,\\\"directive_responses\\\":[]}],\\\"notes\\\":\\\"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\\\"}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:33:08.388635Z\", \"state_delta\": {\"trigger\": \"event:{\\\"game\\\": \\\"ai-movie-quiz\\\", \\\"signal\\\": \\\"new_user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-1\\\"}\"}}, {\"author\": \"strategist\", \"content\": {\"parts\": [{\"text\": \"{\\\"actions\\\":[{\\\"type\\\":\\\"ship_level\\\",\\\"game\\\":\\\"ai-movie-quiz\\\",\\\"reason\\\":\\\"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\\\",\\\"segment\\\":\\\"new-user-welcome\\\",\\\"platform\\\":\\\"android\\\",\\\"n_codes\\\":null,\\\"delay_minutes\\\":0,\\\"directive_responses\\\":[]}],\\\"notes\\\":\\\"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\\\"}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:34:10.097645Z\", \"state_delta\": {\"decision\": {\"actions\": [{\"type\": \"ship_level\", \"game\": \"ai-movie-quiz\", \"reason\": \"Welcome a new active user on Android by shipping a fresh level per the new-user-welcome playbook rule.\", \"segment\": \"new-user-welcome\", \"platform\": \"android\", \"delay_minutes\": 0, \"directive_responses\": []}], \"notes\": \"Detected a new active user on AI Movie Quiz (Android). Responding by shipping a fresh level immediately to ensure great first-day engagement.\"}}}]}]}"
+      },
+      {
+        "prompt_display_text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"event:{\\\"game\\\": \\\"palindrome\\\", \\\"signal\\\": \\\"user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-2\\\"}\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\"actions\": [{\"type\": \"ship_level\", \"game\": \"palindrome\", \"reason\": \"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\", \"segment\": \"Active Android players\", \"platform\": \"android\", \"delay_minutes\": 0}], \"notes\": \"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\"}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\\"actions\\\": [{\\\"type\\\": \\\"ship_level\\\", \\\"game\\\": \\\"palindrome\\\", \\\"reason\\\": \\\"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\\\", \\\"segment\\\": \\\"Active Android players\\\", \\\"platform\\\": \\\"android\\\", \\\"delay_minutes\\\": 0}], \\\"notes\\\": \\\"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\\\"}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:33:07.703050Z\", \"state_delta\": {\"trigger\": \"event:{\\\"game\\\": \\\"palindrome\\\", \\\"signal\\\": \\\"user_active\\\", \\\"platform\\\": \\\"android\\\", \\\"detail\\\": \\\"eval-fixture-2\\\"}\"}}, {\"author\": \"strategist\", \"content\": {\"parts\": [{\"text\": \"{\\\"actions\\\": [{\\\"type\\\": \\\"ship_level\\\", \\\"game\\\": \\\"palindrome\\\", \\\"reason\\\": \\\"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\\\", \\\"segment\\\": \\\"Active Android players\\\", \\\"platform\\\": \\\"android\\\", \\\"delay_minutes\\\": 0}], \\\"notes\\\": \\\"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\\\"}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:34:10.045063Z\", \"state_delta\": {\"decision\": {\"actions\": [{\"type\": \"ship_level\", \"game\": \"palindrome\", \"reason\": \"Ship a fresh level to Palindrome to engage the currently active Android user, following the playbook philosophy of prioritizing free levels over codes.\", \"segment\": \"Active Android players\", \"platform\": \"android\", \"delay_minutes\": 0, \"directive_responses\": []}], \"notes\": \"Reacted to the active Android user on Palindrome by shipping a fresh level, conserving codes as per the playbook philosophy.\"}}}]}]}"
+      },
+      {
+        "prompt_display_text": "pulse",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"pulse\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "",
+        "response_raw_json": "",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:33:08.628806Z\", \"state_delta\": {\"trigger\": \"pulse\"}}]}]}"
+      },
+      {
+        "prompt_display_text": "nightly",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"nightly\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "",
+        "reference_raw_json": "",
+        "response_display_text": "{\"playbook_json\": \"{\\\"version\\\": 1, \\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"min_days_inactive_for_code\\\": 3, \\\"level_cadence_per_game_days\\\": 2}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game\\\"}], \\\"capability_tiers\\\": {\\\"subliminal-words\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"palindrome\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"no_activity_24h\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\"}}, \\\"updated\\\": \\\"2026-08-26 10:00:00+00:00\\\"}\", \"changes_summary\": \"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\", \"brief\": \"### What I did\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\n\\n### What happened\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\n\\n### What I changed\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\n\\n### Needs you\\n- None.\"}",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"{\\\"playbook_json\\\": \\\"{\\\\\\\"version\\\\\\\": 1, \\\\\\\"philosophy\\\\\\\": \\\\\\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\\\\\", \\\\\\\"knobs\\\\\\\": {\\\\\\\"code_send_windows_utc\\\\\\\": [{\\\\\\\"start\\\\\\\": 16, \\\\\\\"end\\\\\\\": 21}], \\\\\\\"min_days_inactive_for_code\\\\\\\": 3, \\\\\\\"level_cadence_per_game_days\\\\\\\": 2}, \\\\\\\"segment_rules\\\\\\\": [{\\\\\\\"id\\\\\\\": \\\\\\\"new-user-welcome\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"first_open detected\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"ensure fresh level live; note for D1 follow-up\\\\\\\"}, {\\\\\\\"id\\\\\\\": \\\\\\\"lapsed-return\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"user active after >=3 days away\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"consider code drop for their game\\\\\\\"}], \\\\\\\"capability_tiers\\\\\\\": {\\\\\\\"subliminal-words\\\\\\\": 0, \\\\\\\"ai-movie-quiz\\\\\\\": 0, \\\\\\\"palindrome\\\\\\\": 0}, \\\\\\\"ceo_directives\\\\\\\": [], \\\\\\\"evidence\\\\\\\": {\\\\\\\"no_activity_24h\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"weak\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\\\\\"}}, \\\\\\\"updated\\\\\\\": \\\\\\\"2026-08-26 10:00:00+00:00\\\\\\\"}\\\", \\\"changes_summary\\\": \\\"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\\\", \\\"brief\\\": \\\"### What I did\\\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\\\n\\\\n### What happened\\\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\\\n\\\\n### What I changed\\\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\\\n\\\\n### Needs you\\\\n- None.\\\"}\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"stagenator\", \"event_time\": \"2026-08-25T10:33:07.428537Z\", \"state_delta\": {\"trigger\": \"nightly\"}}, {\"author\": \"reflector\", \"content\": {\"parts\": [{\"text\": \"{\\\"playbook_json\\\": \\\"{\\\\\\\"version\\\\\\\": 1, \\\\\\\"philosophy\\\\\\\": \\\\\\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\\\\\", \\\\\\\"knobs\\\\\\\": {\\\\\\\"code_send_windows_utc\\\\\\\": [{\\\\\\\"start\\\\\\\": 16, \\\\\\\"end\\\\\\\": 21}], \\\\\\\"min_days_inactive_for_code\\\\\\\": 3, \\\\\\\"level_cadence_per_game_days\\\\\\\": 2}, \\\\\\\"segment_rules\\\\\\\": [{\\\\\\\"id\\\\\\\": \\\\\\\"new-user-welcome\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"first_open detected\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"ensure fresh level live; note for D1 follow-up\\\\\\\"}, {\\\\\\\"id\\\\\\\": \\\\\\\"lapsed-return\\\\\\\", \\\\\\\"when\\\\\\\": \\\\\\\"user active after >=3 days away\\\\\\\", \\\\\\\"action\\\\\\\": \\\\\\\"consider code drop for their game\\\\\\\"}], \\\\\\\"capability_tiers\\\\\\\": {\\\\\\\"subliminal-words\\\\\\\": 0, \\\\\\\"ai-movie-quiz\\\\\\\": 0, \\\\\\\"palindrome\\\\\\\": 0}, \\\\\\\"ceo_directives\\\\\\\": [], \\\\\\\"evidence\\\\\\\": {\\\\\\\"no_activity_24h\\\\\\\": {\\\\\\\"strength\\\\\\\": \\\\\\\"weak\\\\\\\", \\\\\\\"observation\\\\\\\": \\\\\\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\\\\\"}}, \\\\\\\"updated\\\\\\\": \\\\\\\"2026-08-26 10:00:00+00:00\\\\\\\"}\\\", \\\"changes_summary\\\": \\\"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\\\", \\\"brief\\\": \\\"### What I did\\\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\\\n\\\\n### What happened\\\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\\\n\\\\n### What I changed\\\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\\\n\\\\n### Needs you\\\\n- None.\\\"}\"}], \"role\": \"model\"}, \"event_time\": \"2026-08-25T10:34:09.050327Z\", \"state_delta\": {\"reflection\": {\"playbook_json\": \"{\\\"version\\\": 1, \\\"philosophy\\\": \\\"Very few users right now: every single active player matters. React to any activity. Prefer shipping fresh levels (free, always welcome) over codes (scarce). Codes go to returning/lapsing players, not already-engaged ones.\\\", \\\"knobs\\\": {\\\"code_send_windows_utc\\\": [{\\\"start\\\": 16, \\\"end\\\": 21}], \\\"min_days_inactive_for_code\\\": 3, \\\"level_cadence_per_game_days\\\": 2}, \\\"segment_rules\\\": [{\\\"id\\\": \\\"new-user-welcome\\\", \\\"when\\\": \\\"first_open detected\\\", \\\"action\\\": \\\"ensure fresh level live; note for D1 follow-up\\\"}, {\\\"id\\\": \\\"lapsed-return\\\", \\\"when\\\": \\\"user active after >=3 days away\\\", \\\"action\\\": \\\"consider code drop for their game\\\"}], \\\"capability_tiers\\\": {\\\"subliminal-words\\\": 0, \\\"ai-movie-quiz\\\": 0, \\\"palindrome\\\": 0}, \\\"ceo_directives\\\": [], \\\"evidence\\\": {\\\"no_activity_24h\\\": {\\\"strength\\\": \\\"weak\\\", \\\"observation\\\": \\\"Zero events or ledger activity in the last 24 hours. Maintaining current conservative growth posture.\\\"}}, \\\"updated\\\": \\\"2026-08-26 10:00:00+00:00\\\"}\", \"changes_summary\": \"No changes made to the core playbook as there was no ledger activity or user events recorded in the last 24 hours. Updated the evidence log to reflect this silent period.\", \"brief\": \"### What I did\\n- Monitored the logs and ledger for user interactions, claims, and level completions. No activity was detected in the last 24-hour cycle.\\n\\n### What happened\\n- Absolutely nothing. The ledger is entirely empty, suggesting zero user sessions across all three games.\\n\\n### What I changed\\n- No changes made to thresholds, windows, or capability tiers due to lack of signal.\\n- Added a weak evidence point noting the 24-hour silence to help track overall inactivity duration.\\n\\n### Needs you\\n- None.\"}}}]}]}"
+      }
+    ]
+  },
+  "agent_info": null
+}

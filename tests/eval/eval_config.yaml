@@ -1,13 +1,77 @@
 metrics_to_run:
-  - custom_response_quality
+  - strategist_judgment
+  - channel_compliance
+  - idle_efficiency
+  - reflector_restraint
 
 custom_metrics:
-  # Default: local LLM-as-judge (see response_quality.py). Runs in-process via
-  # google-genai on Agent Platform (ADC) or Google AI Studio (GEMINI_API_KEY).
-  - name: custom_response_quality
-    custom_function_file: response_quality.py
-  - name: agent_turn_count
+  # Deterministic: no push-type actions may ever target palindrome
+  - name: channel_compliance
     custom_function: |
+      import json as _json
       def evaluate(instance):
-          turns = (instance.get("agent_data") or {}).get("turns", [])
-          return {'score': len(turns)}
+          raw = _json.dumps(instance.get("agent_data") or {})
+          bad = ('"game": "palindrome"' in raw or '"game":"palindrome"' in raw) and (
+              '"send_level_push"' in raw or '"send_individual_code"' in raw)
+          return {"score": 0 if bad else 1,
+                  "explanation": "push-type action for palindrome" if bad else "ok"}
+
+  # Deterministic: an idle pulse must exit via the zero-cost path
+  - name: idle_efficiency
+    custom_function: |
+      import json as _json
+      def evaluate(instance):
+          prompt_text = _json.dumps(instance.get("prompt") or {})
+          if '"pulse"' not in prompt_text:
+              return {"score": 1, "explanation": "n/a (not an idle-pulse case)"}
+          raw = _json.dumps(instance.get("agent_data") or {})
+          idle = "zero-cost tick" in raw or '"idle"' in raw
+          decided = '"strategist"' in raw and '"enqueued"' in raw
+          return {"score": 1 if idle or not decided else 0,
+                  "explanation": "idle path taken" if idle else "strategist invoked without signals"}
+
+  # LLM judge (local, direct Gemini call): decision quality within house rules
+  - name: strategist_judgment
+    custom_function: |
+      import json as _json
+      def evaluate(instance):
+          from google import genai
+          from google.genai import types
+          client = genai.Client(vertexai=True, project="operation-sunrise", location="global")
+          trace = _json.dumps(instance.get("agent_data") or {}, default=str)[:20000]
+          prompt = _json.dumps(instance.get("prompt") or {}, default=str)
+          judge = (
+              "You are judging an autonomous game-engagement agent's decision quality.\n"
+              "Trigger: " + prompt + "\nRun trace: " + trace + "\n\n"
+              "House rules: palindrome has NO push channel (only ship_level or "
+              "activate_promo_banner); never repeat an equivalent recent action; fresh "
+              "levels preferred over scarce codes; deliberate inaction is GOOD when "
+              "nothing is worth doing; an idle outcome on a signal-less pulse is optimal.\n"
+              "Score 1-5 for decision quality. Reply as pure JSON with keys score and explanation.")
+          r = client.models.generate_content(model="gemini-3.5-flash", contents=judge,
+              config=types.GenerateContentConfig(response_mime_type="application/json"))
+          d = _json.loads(r.text)
+          return {"score": float(d.get("score", 0)), "explanation": str(d.get("explanation", ""))[:300]}
+
+  # LLM judge (local): Reflector must not overfit tiny samples
+  - name: reflector_restraint
+    custom_function: |
+      import json as _json
+      def evaluate(instance):
+          prompt = _json.dumps(instance.get("prompt") or {}, default=str)
+          if "nightly" not in prompt:
+              return {"score": 5, "explanation": "n/a (not a nightly case)"}
+          from google import genai
+          from google.genai import types
+          client = genai.Client(vertexai=True, project="operation-sunrise", location="global")
+          trace = _json.dumps(instance.get("agent_data") or {}, default=str)[:20000]
+          judge = (
+              "Judge an autonomous agent's nightly self-reflection for statistical humility.\n"
+              "Trace: " + trace + "\n\n"
+              "With tiny samples a GOOD reflection avoids large knob/rule changes, tags "
+              "evidence as weak, and writes an honest brief. Score 1-5. "
+              "Reply as pure JSON with keys score and explanation.")
+          r = client.models.generate_content(model="gemini-3.5-flash", contents=judge,
+              config=types.GenerateContentConfig(response_mime_type="application/json"))
+          d = _json.loads(r.text)
+          return {"score": float(d.get("score", 0)), "explanation": str(d.get("explanation", ""))[:300]}

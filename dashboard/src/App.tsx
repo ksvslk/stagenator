@@ -65,7 +65,9 @@ function ledgerLine(e: Doc): string {
       if (r.levelId != null) push(`#${r.levelId}`);
       if (r.qa) push(`qa:${r.qa}`);
       if (r.codes != null) push(`${r.codes} codes`);
-      if (r.imported != null) push(`imported ${r.imported}`);
+      if (typeof r.imported === 'number') push(`imported ${r.imported}`);
+      else if (r.imported && typeof r.imported === 'object' && Object.keys(r.imported).length)
+        push(`imported ${Object.values(r.imported as Record<string, number>).reduce((a, b) => a + Number(b || 0), 0)}`);
       if (r.minted != null) push(`minted ${r.minted}`);
       if (r.escalated) push('escalated');
       if (e.reason) push(`— ${e.reason}`);
@@ -154,16 +156,18 @@ function ImpactStrip() {
     ['briefs', f.nightly_briefs ?? 0],
   ];
   return (
-    <div className="bg-zinc-900/60 rounded-xl p-3 flex flex-wrap gap-x-6 gap-y-2 items-center">
-      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Impact · validated</span>
-      {cells.map(([label, v]) => (
-        <div key={label} className="flex items-baseline gap-1.5">
-          <span className="text-emerald-400 font-bold text-sm">{v}</span>
-          <span className="text-[10px] text-zinc-500 uppercase">{label}</span>
-        </div>
-      ))}
+    <div className="bg-zinc-900/60 rounded-xl p-4 sm:p-5">
+      <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Impact · validated</div>
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-4 gap-y-4">
+        {cells.map(([label, v]) => (
+          <div key={label} className="flex flex-col gap-1">
+            <span className="text-emerald-400 font-bold text-xl leading-none tabular-nums">{v}</span>
+            <span className="text-[10px] text-zinc-500 uppercase leading-tight">{label}</span>
+          </div>
+        ))}
+      </div>
       {imp?.outcome_note ? (
-        <span className="text-[10px] text-zinc-600 ml-auto">{String(imp.outcome_note)}</span>
+        <div className="text-[10px] text-zinc-600 mt-4 pt-3 border-t border-zinc-800/70">{String(imp.outcome_note)}</div>
       ) : null}
     </div>
   );
@@ -185,13 +189,13 @@ function Dashboard() {
   const lastHeartbeat = ledger[0] ? ts(ledger[0].ts) : '—';
 
   return (
-    <div className="min-h-screen text-zinc-200 p-4 md:p-6 max-w-7xl mx-auto flex flex-col gap-5">
-      <header className="flex items-center justify-between flex-wrap gap-2">
+    <div className="min-h-screen text-zinc-200 max-w-7xl mx-auto flex flex-col gap-5 sm:gap-6 px-4 sm:px-6 pb-12">
+      <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3.5 bg-zinc-950/85 backdrop-blur-md border-b border-zinc-800/70 flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🎛️</span>
           <h1 className="font-bold tracking-widest uppercase text-sm">Stagenator · Mission Control</h1>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-zinc-500">
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
           <span>
             last pulse {heartbeat ? `${ts(heartbeat.at)} · ${String(heartbeat.kind)}` : '—'}
           </span>
@@ -209,15 +213,15 @@ function Dashboard() {
 
       <ImpactStrip />
 
-      <div className="grid md:grid-cols-3 gap-5">
+      <div className="grid md:grid-cols-3 gap-5 md:gap-6">
         {/* Ledger feed */}
         <section className="md:col-span-2 flex flex-col gap-2">
           <SectionTitle>Decision ledger — live</SectionTitle>
-          <div className="flex flex-col gap-1.5 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2 max-h-[72vh] overflow-y-auto pr-1">
             {ledger.map((e) => (
               <div
                 key={e.id}
-                className={`border-l-2 pl-3 py-1.5 text-xs bg-zinc-900/60 rounded-r-lg ${
+                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-zinc-900/60 rounded-r-lg transition-colors hover:bg-zinc-900 ${
                   KIND_COLORS[String(e.kind)] ?? 'text-zinc-400 border-zinc-700'
                 }`}
               >
@@ -234,7 +238,7 @@ function Dashboard() {
         </section>
 
         {/* Right column */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           <section>
             <SectionTitle>Tasks</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
@@ -253,7 +257,7 @@ function Dashboard() {
             </div>
             <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
               {tasks.slice(0, 8).map((t) => (
-                <div key={t.id} className="text-[11px] bg-zinc-900/60 rounded px-2 py-1 flex gap-2">
+                <div key={t.id} className="text-[11px] bg-zinc-900/60 rounded px-2.5 py-1.5 flex gap-2">
                   <span
                     className={
                       t.status === 'dead'
@@ -410,7 +414,7 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
           const events = levelEvents.filter((e) => e.game === g);
           const pending = pendingByGame(g);
           return (
-            <div key={g} className="bg-zinc-900/60 rounded-lg p-2.5">
+            <div key={g} className="bg-zinc-900/60 rounded-lg p-3">
               <div className="flex items-baseline gap-2 text-[11px] mb-1">
                 <span className="text-zinc-200 font-bold">{g}</span>
                 <span className="text-zinc-600 ml-auto">
@@ -457,7 +461,7 @@ function CodesOverview() {
           const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
           const claims = (d.claims ?? { links: 0, codes_backing: 0, teared: 0 }) as Record<string, number>;
           return (
-            <div key={g} className="text-[11px] bg-zinc-900/60 rounded px-2 py-1.5 flex gap-3 items-baseline flex-wrap">
+            <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2 flex gap-3 items-baseline flex-wrap">
               <span className="text-zinc-200 font-bold">{g}</span>
               <span className="text-zinc-500">
                 stock {Object.entries(stock).map(([p, s]) => `${p}:${s.available ?? '?'}`).join(' · ')}
@@ -583,7 +587,7 @@ function Directives() {
         />
         <button
           onClick={send}
-          className="border border-zinc-600 rounded-lg px-3 text-xs hover:bg-zinc-800"
+          className="border border-zinc-600 rounded-lg px-4 py-2 text-xs hover:bg-zinc-800 shrink-0"
         >
           {sent ? '✓' : 'send'}
         </button>

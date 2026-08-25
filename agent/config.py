@@ -66,7 +66,8 @@ STAGENATOR_PROJECTS = {HOME_PROJECT, TAKECODES_PROJECT} | {
 CAPS = {
     "codes_per_user_per_week": 1,
     "codes_per_game_per_day": 20,
-    "levels_per_game_per_day": 3,
+    "code_actions_per_game_per_day": 1,  # at most ONE promo-code notification/game/day
+    "levels_per_game_per_day": 1,
     "push_actions_per_game_per_4h": 1,
     "drops_per_game_per_day": 2,
     "veo_videos_per_day": 5,

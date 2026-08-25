@@ -37,11 +37,17 @@ def existing_movies() -> set[str]:
     }
 
 
-def design_level(used: set[str]) -> dict | None:
+def design_level(used: set[str], culture: str | None = None) -> dict | None:
+    culture_line = (
+        f"OPTIONAL: many active players are in {culture} right now — you MAY pick a film "
+        f"especially beloved there, but ONLY if it is still globally recognizable; never "
+        f"force it.\n" if culture else ""
+    )
     reply = genai_client.generate_json(
         "You design levels for 'AI Movie Quiz' — players watch an 8-second AI-generated "
         "clip that *evokes* a famous movie (mood, setting, iconic imagery) and guess the film.\n"
         f"Movies already used (do NOT repeat): {sorted(used)[:300]}\n"
+        + culture_line +
         "Pick ONE widely-known movie (any era, internationally recognizable) — give its title "
         "in proper official capitalization — and write a "
         "Veo video prompt for an 8-second cinematic clip that clearly evokes it WITHOUT "
@@ -191,9 +197,10 @@ def _self_validate(level_number: int, video_path: str) -> None:
 
 def run(task: dict) -> dict:
     used = existing_movies()
+    culture = task.get("payload", {}).get("culture")
     design = None
     for _ in range(3):
-        design = design_level(used)
+        design = design_level(used, culture)
         if design:
             break
     if not design:

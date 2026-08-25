@@ -22,6 +22,11 @@ class Action(BaseModel):
     segment: str | None = Field(default=None, description="Target segment description, if applicable")
     platform: str | None = Field(default=None, description="android | ios | both, if applicable")
     n_codes: int | None = Field(default=None, description="Codes to back a drop with (small: 3-10)")
+    culture: str | None = Field(
+        default=None,
+        description="ship_level OPTIONAL: a country/culture to SOFTLY nod to (e.g. a signal's "
+        "`country` where active players concentrate). A hint, never a mandate — omit for a "
+        "universal level; only set it on a clear geographic signal.")
     delay_minutes: int = Field(default=0, description="Delay before executing (0 = now); respect playbook send windows")
     directive_responses: list[str] = Field(default_factory=list, description="Answers to any CEO directives addressed")
 
@@ -47,6 +52,10 @@ strategist = LlmAgent(
         "- Fresh levels are cheap and always welcome; codes are scarce — reserve them for "
         "returning/lapsing players per the playbook.\n"
         "- Respect playbook send windows via delay_minutes.\n"
+        "- ship_level has an OPTIONAL `culture` lever — softly localize a level toward a "
+        "signal's `country` when active players clearly concentrate somewhere; omit for a "
+        "universal level (a great universal level beats a forced one). Puzzle difficulty "
+        "auto-varies slightly on its own — you do not control it.\n"
         "- If nothing is worth doing, return an empty actions list. That is a good decision.\n"
         "- Never exceed: "
         f"{config.CAPS['codes_per_game_per_day']} codes/game/day, "

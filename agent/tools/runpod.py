@@ -33,7 +33,8 @@ def _endpoint() -> str:
     return ep
 
 
-def build_workflow(prompt: str, difficulty: float, solution_file_name: str = "1.png") -> dict:
+def build_workflow(prompt: str, difficulty: float, solution_file_name: str = "1.png",
+                   end_percent: float = 1.0) -> dict:
     """Exact port of buildRunpodWorkflow (operation_hermes functions)."""
     return {
         "10": {"class_type": "CheckpointLoaderSimple",
@@ -44,7 +45,7 @@ def build_workflow(prompt: str, difficulty: float, solution_file_name: str = "1.
         "15": {"class_type": "CLIPTextEncode",
                "inputs": {"text": "worst quality poor details unrealistic", "clip": ["10", 1]}},
         "16": {"class_type": "ControlNetApplyAdvanced",
-               "inputs": {"strength": difficulty, "start_percent": 0.0, "end_percent": 1.0,
+               "inputs": {"strength": difficulty, "start_percent": 0.0, "end_percent": end_percent,
                           "positive": ["11", 0], "negative": ["15", 0],
                           "control_net": ["14", 0], "image": ["17", 0]}},
         "17": {"class_type": "LoadImage", "inputs": {"image": solution_file_name, "upload": "image"}},
@@ -78,7 +79,7 @@ def _extract_image(status_data: dict) -> str:
 
 
 def generate_puzzle(prompt: str, difficulty: float, mask_png_b64: str,
-                    timeout_s: int = 420, poll_s: int = 10) -> bytes:
+                    end_percent: float = 1.0, timeout_s: int = 420, poll_s: int = 10) -> bytes:
     """Submit a generation, poll to completion, return the puzzle image bytes."""
     import base64
 
@@ -86,7 +87,7 @@ def generate_puzzle(prompt: str, difficulty: float, mask_png_b64: str,
     base = f"https://api.runpod.ai/v2/{_endpoint()}"
     payload = {
         "input": {
-            "workflow": build_workflow(prompt, difficulty, "1.png"),
+            "workflow": build_workflow(prompt, difficulty, "1.png", end_percent),
             "images": [{"name": "1.png", "image": mask_png_b64}],
         }
     }

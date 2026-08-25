@@ -37,10 +37,10 @@ def validate(action: dict) -> dict | None:
         return {"error": f"{game} is not active"}
 
     if t in ("send_code_drop", "send_individual_code"):
-        sent = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
+        acts = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
+        if acts >= config.CAPS["code_actions_per_game_per_day"]:
+            return {"error": f"code-notification/day cap reached for {game} (1/day)"}
         n = action.get("n_codes") or 1
-        if sent + n > config.CAPS["codes_per_game_per_day"]:
-            return {"error": f"codes/day cap: {sent} sent + {n} requested > {config.CAPS['codes_per_game_per_day']}"}
         if n > 10:
             return {"error": f"drop size {n} > 10"}
 

@@ -50,6 +50,28 @@ def realtime_snapshot(game: str) -> dict:
     return rows
 
 
+def top_country(game: str) -> str | None:
+    """Best-effort: the country with the most active users right now. Used ONLY as an
+    optional soft hint for localizing a level — returns None on any GA hiccup."""
+    prop = config.GAMES[game]["ga_property"]
+    req = RunRealtimeReportRequest(
+        property=f"properties/{prop}",
+        dimensions=[Dimension(name="country")],
+        metrics=[Metric(name="activeUsers")],
+        minute_ranges=[MinuteRange(start_minutes_ago=config.GA_POLL_MINUTES, end_minutes_ago=0)],
+    )
+    try:
+        best, best_n = None, 0
+        for r in ga().run_realtime_report(req).rows:
+            n = int(r.metric_values[0].value)
+            if n > best_n and r.dimension_values[0].value:
+                best, best_n = r.dimension_values[0].value, n
+        return best
+    except Exception as e:
+        log.warning("GA country query failed for %s: %s", game, e)
+        return None
+
+
 def campaign_inventory(game: str, platform: str | None = None) -> dict:
     """Per-platform availableCodes on the game's adopted proffer.codes campaigns.
 
@@ -254,15 +276,17 @@ def detect_signals() -> list[dict]:
         snapshot = realtime_snapshot(game)
         active = sum(snapshot.values())
         if active > 0:
+            country = top_country(game)
             for key, count in snapshot.items():
                 platform, cohort = key.split(":", 1)
                 sig = "new_user_active" if cohort.lower() == "new" else "user_active"
                 detail = f"{platform}:{count}"
                 if (game, sig, detail) not in seen:
-                    signals.append(
-                        {"game": game, "signal": sig, "detail": detail,
-                         "platform": platform, "count": count}
-                    )
+                    sigd = {"game": game, "signal": sig, "detail": detail,
+                            "platform": platform, "count": count}
+                    if country:
+                        sigd["country"] = country
+                    signals.append(sigd)
 
         inv = campaign_inventory(game)
         if inv["campaign_id"] and inv["available"] is not None and inv["available"] <= 5:

@@ -39,12 +39,19 @@ PACK_ID = "fresh-drops"  # the agent's own pack (auto-created on first level)
 
 # ------------------------------------------------------------------ design ----
 
-def design_level(existing_words: set[str]) -> dict | None:
-    """Gemini proposes word + scene prompt; code builds the letter layout."""
+def design_level(existing_words: set[str], culture: str | None = None) -> dict | None:
+    """Gemini proposes word + scene prompt; code builds the letter layout.
+    `culture` is an OPTIONAL soft nod (e.g. where active players are) — never a mandate."""
+    culture_line = (
+        f"OPTIONAL: many active players are in {culture} right now — you MAY choose a word/"
+        f"scene that quietly resonates there, but ONLY if it stays a strong universal level; "
+        f"never force it.\n" if culture else ""
+    )
     reply = genai_client.generate_json(
         "You design levels for 'Subliminal Words' — a puzzle game where a word is hidden "
         "inside a photorealistic image; players stare until the word pops out.\n"
         f"Words already used (do NOT repeat): {sorted(existing_words)[:200]}\n"
+        + culture_line +
         "Propose ONE new level: a short, punchy English word (3-7 letters, uppercase, "
         "concrete noun or vivid concept) and a photorealistic scene prompt that thematically "
         "hints at the word without depicting it literally as text.\n"
@@ -304,10 +311,11 @@ def _self_validate(level_id: str, word: str, svg: str) -> None:
 def run(task: dict) -> dict:
     payload = task.get("payload", {})
     used = existing_words()
+    culture = payload.get("culture")
 
     design = None
     for _ in range(3):
-        design = design_level(used)
+        design = design_level(used, culture)
         if design:
             break
     if not design:
@@ -316,14 +324,22 @@ def run(task: dict) -> dict:
     layout = build_layout(design["word"])
     svg = build_solution_svg(layout, design["word"])
     mask_png = render_mask(layout, svg)
-    difficulty = float(payload.get("difficulty") or 1.0)
+    # Difficulty = ControlNet strength (higher = word more visible = easier). Keep it
+    # STABLE: only a small ±0.1 variance around the 1.0 baseline for variety — no big swings.
+    difficulty = round(1.0 + random.uniform(-0.10, 0.10), 3)
+    # "Paint mode" on some levels: lower ControlNet end_percent so the letters only guide
+    # early diffusion, then the scene is painted more freely (word subtler, less letter-y).
+    paint = payload.get("paint")
+    paint = (random.random() < 0.35) if paint is None else bool(paint)
+    end_percent = 0.55 if paint else 1.0
 
     if config.DRY_RUN:
         return {"dry_run": True, "word": design["word"], "prompt": design["prompt"],
-                "difficulty": difficulty, "mask_bytes": len(mask_png)}
+                "difficulty": difficulty, "mode": "paint" if paint else "standard",
+                "culture": culture, "mask_bytes": len(mask_png)}
 
     puzzle_png = runpod.generate_puzzle(
-        design["prompt"], difficulty, base64.b64encode(mask_png).decode()
+        design["prompt"], difficulty, base64.b64encode(mask_png).decode(), end_percent=end_percent
     )
     qa = qa_puzzle(puzzle_png, design["word"])
     if not qa.get("pass"):

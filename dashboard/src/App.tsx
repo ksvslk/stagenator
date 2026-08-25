@@ -318,9 +318,15 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
 function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
   const GAMES = ['subliminal-words', 'ai-movie-quiz', 'palindrome'];
-  const levelEvents = ledger.filter(
-    (e) => e.kind === 'action' && e.action === 'level_pipeline' && (e.status === 'done' || e.status === 'preview'),
-  );
+  const levelEvents = ledger.filter((e) => {
+    const r = (e.result ?? {}) as Record<string, unknown>;
+    return (
+      e.kind === 'action' &&
+      e.action === 'level_pipeline' &&
+      (e.status === 'done' || e.status === 'preview') &&
+      !r.dry_run // dry-run completions are rehearsals, not content
+    );
+  });
   const pendingByGame = (g: string) =>
     tasks.filter((t) => t.type === 'level_pipeline' && t.game === g && (t.status === 'pending' || t.status === 'running')).length;
 

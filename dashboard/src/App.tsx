@@ -162,9 +162,9 @@ function ImpactStrip() {
           <span className="text-[10px] text-zinc-500 uppercase">{label}</span>
         </div>
       ))}
-      <span className="text-[10px] text-zinc-600 ml-auto">
-        24 tests · eval pass · 4 drills · outcome KPIs instrumented (awaiting scale)
-      </span>
+      {imp?.outcome_note ? (
+        <span className="text-[10px] text-zinc-600 ml-auto">{String(imp.outcome_note)}</span>
+      ) : null}
     </div>
   );
 }
@@ -237,7 +237,7 @@ function Dashboard() {
         <div className="flex flex-col gap-5">
           <section>
             <SectionTitle>Tasks</SectionTitle>
-            <div className="grid grid-cols-4 gap-2 text-center mb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
               {(['pending', 'running', 'done', 'dead'] as const).map((s) => (
                 <div key={s} className="bg-zinc-900 rounded-lg py-2">
                   <div
@@ -288,8 +288,8 @@ function Dashboard() {
             </SectionTitle>
             {playbook ? (
               <div className="text-[11px] bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 max-h-64 overflow-y-auto">
-                <p className="text-zinc-300 italic">“{String(playbook.philosophy)}”</p>
-                <pre className="text-zinc-500 whitespace-pre-wrap">
+                {playbook.philosophy ? <p className="text-zinc-300 italic">“{String(playbook.philosophy)}”</p> : null}
+                <pre className="text-zinc-500 whitespace-pre-wrap break-words overflow-x-auto">
                   {JSON.stringify(playbook.knobs, null, 1)}
                 </pre>
                 {(playbook.ceo_directives as string[] | undefined)?.map((d, i) => (
@@ -348,7 +348,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
         {media.clip && (
           <video src={media.clip} controls autoPlay muted loop className="w-full rounded-xl" />
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {media.puzzle && (
             <figure>
               <img src={media.puzzle} className="rounded-xl w-full" alt="puzzle" />
@@ -525,7 +525,7 @@ function CostOverview() {
                 {byProject.map((p) => (
                   <div key={p.project} className="flex justify-between text-zinc-400">
                     <span className="truncate">{p.project}</span>
-                    <span>${p.month_usd.toFixed(2)}</span>
+                    <span>${Number(p.month_usd ?? 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -534,7 +534,7 @@ function CostOverview() {
             {services.map((s) => (
               <div key={s.service} className="flex justify-between text-zinc-500">
                 <span className="truncate">{s.service}</span>
-                <span>${s.usd.toFixed(2)}</span>
+                <span>${Number(s.usd ?? 0).toFixed(2)}</span>
               </div>
             ))}
           </>

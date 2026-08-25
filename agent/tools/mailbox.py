@@ -77,9 +77,13 @@ def send_restock_request(game: str, campaign_id: str, play_app_id: str | None) -
     log.info("restock request emailed for %s / %s", game, campaign_id)
 
 
+# Google Play developer-account id — used only to build a Console deep-link in
+# the restock email (Play has no minting API; the owner creates codes there).
+PLAY_DEV_ACCOUNT = "7030085917427251773"
+
+
 def mint_play_dev() -> str:
-    from agent.tools.mint_play import DEV_ACCOUNT
-    return DEV_ACCOUNT
+    return PLAY_DEV_ACCOUNT
 
 
 def poll_and_import() -> dict:

@@ -108,7 +108,9 @@ def run_personal_codes(task: dict) -> dict:
 
 
 def _run_drop_shared(task: dict) -> dict:
-    """(Retained for reference / games that opt into shared drops.)"""
+    """Live path for topic-only games (no per-user FCM tokens, e.g. ai-movie-quiz):
+    reserve N codes, post one shared /drop/ link, topic-push it. Each anonymous
+    visitor tears their own distinct reserved code — never a shared code."""
     game, payload = task["game"], task["payload"]
     inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
     n = min(payload.get("n_codes") or 5, 10)

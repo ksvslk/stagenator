@@ -55,6 +55,9 @@ def design_level(existing_words: set[str], culture: str | None = None) -> dict |
         "Propose ONE new level: a short, punchy English word (3-7 letters, uppercase, "
         "concrete noun or vivid concept) and a photorealistic scene prompt that thematically "
         "hints at the word without depicting it literally as text.\n"
+        "The scene must contain NO people, faces, or human figures — use landscapes, objects, "
+        "textures, animals, machines, or abstract environments. (People and faces both raise "
+        "likeness concerns and disrupt the hidden-word illusion.)\n"
         'Reply JSON: {"word": "...", "prompt": "...", "theme": "..."}'
     )
     if not reply or not reply.get("word") or not reply.get("prompt"):

@@ -43,14 +43,14 @@ def audit_inventory(task: dict) -> dict:
     today = state.now().date().isoformat()
     report: dict = {}
 
-    q = tc.collection("campaigns").where(
-        filter=firestore.FieldFilter("managedBy", "==", "stagenator")
-    )
-    for camp_snap in q.stream():
+    # ALL campaigns are audited (proffer.codes-wide inventory health);
+    # only stagenator-managed ones escalate to CRITICAL alerts.
+    for camp_snap in tc.collection("campaigns").stream():
         camp = camp_snap.reference
         d = camp_snap.to_dict()
+        managed = d.get("managedBy") == "stagenator"
         platform = d.get("stagenatorPlatform") or d.get("platform") or "unknown"
-        game = d.get("game", "?")
+        game = d.get("game") or d.get("title") or "?"
         valid = expired = suspect = torn = 0
 
         for code_snap in camp.collection("codes").stream():
@@ -77,7 +77,7 @@ def audit_inventory(task: dict) -> dict:
         report[f"{game}/{platform}"] = {"valid": valid, "expired": expired,
                                         "suspect": suspect, "torn": torn}
 
-        if valid < LOW_STOCK_THRESHOLD:
+        if managed and valid < LOW_STOCK_THRESHOLD:
             state.critical(
                 f"Code stock low for {game}/{platform}: {valid} valid "
                 f"({expired} expired, {suspect} suspect). {RUNBOOK}",

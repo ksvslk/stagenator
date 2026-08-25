@@ -410,41 +410,56 @@ function CodesOverview() {
 function CostOverview() {
   const cost = useDoc('stagenator_playbook/cost_summary');
   if (!cost) return null;
-  const today = (cost.today ?? {}) as Record<string, number>;
-  const month = (cost.month ?? {}) as Record<string, number>;
   const pct = Number(cost.budget_pct ?? 0);
+  const services = (cost.services ?? []) as { service: string; usd: number }[];
   return (
     <section>
       <SectionTitle>
-        Spend <span className="text-zinc-600 normal-case">· est · {ts(cost.updated)}</span>
+        Spend <span className="text-zinc-600 normal-case">· real (GCP billing) · {ts(cost.updated)}</span>
       </SectionTitle>
       <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
-        <div className="flex justify-between items-baseline">
-          <span className="text-zinc-400">today</span>
-          <span className="text-emerald-400 font-bold text-sm">${Number(today.usd ?? 0).toFixed(2)}</span>
-        </div>
-        <div className="text-zinc-600">
-          {today.veo_clips ?? 0} Veo · {today.runpod_puzzles ?? 0} puzzles · {today.gemini_calls ?? 0} Gemini
-        </div>
-        <div className="flex justify-between items-baseline pt-1">
-          <span className="text-zinc-400">month · ${Number(month.usd ?? 0).toFixed(2)} / ${Number(cost.budget_usd ?? 0).toFixed(0)}</span>
-          <span className="text-zinc-500">{pct.toFixed(1)}%</span>
-        </div>
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${pct > 90 ? 'bg-red-500' : pct > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-            style={{ width: `${Math.min(100, pct)}%` }}
-          />
-        </div>
-        <div className="text-zinc-600 pt-1">
-          Runpod balance: {cost.runpod_balance == null ? 'n/a (endpoint-scoped key)' : `$${cost.runpod_balance}`}
+        {cost.status !== 'live' ? (
+          <div className="text-zinc-500">
+            {String(cost.status)}
+            <div className="text-zinc-600 mt-1">
+              Enable Billing → BigQuery export; real spend appears once it populates.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-baseline">
+              <span className="text-zinc-400">today</span>
+              <span className="text-emerald-400 font-bold text-sm">${Number(cost.today_usd ?? 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-zinc-400">
+                month · ${Number(cost.month_usd ?? 0).toFixed(2)} / ${Number(cost.budget_usd ?? 0).toFixed(0)}
+              </span>
+              <span className="text-zinc-500">{pct.toFixed(1)}%</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${pct > 90 ? 'bg-red-500' : pct > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                style={{ width: `${Math.min(100, pct)}%` }}
+              />
+            </div>
+            {services.map((s) => (
+              <div key={s.service} className="flex justify-between text-zinc-500">
+                <span className="truncate">{s.service}</span>
+                <span>${s.usd.toFixed(2)}</span>
+              </div>
+            ))}
+          </>
+        )}
+        <div className="text-zinc-600 pt-1 border-t border-zinc-800">
+          Runpod: {String(cost.runpod_note ?? 'external')}
         </div>
       </div>
     </section>
   );
 }
 
-function Directives() {
+function Directives() {function Directives() {
   const [text, setText] = useState('');
   const [sent, setSent] = useState(false);
   const directives = useCollection('stagenator_directives', 'ts', 5);

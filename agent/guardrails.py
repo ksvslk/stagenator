@@ -38,6 +38,8 @@ def validate(action: dict) -> dict | None:
         return {"error": f"{game} is not active"}
 
     if t in ("send_code_drop", "send_individual_code"):
+        if not config.GAMES[game].get("fcm_token_collections"):
+            return {"error": f"{game} can't guarantee per-user codes (no per-user FCM tokens)"}
         sent = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
         n = action.get("n_codes") or 1
         if sent + n > config.CAPS["codes_per_game_per_day"]:

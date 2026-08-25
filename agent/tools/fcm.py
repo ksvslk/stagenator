@@ -38,6 +38,16 @@ def send_topic_push(game: str, title: str, body: str, data: dict) -> dict:
     return {"message_id": message_id, "topic": topic}
 
 
+def send_to_token(game: str, token: str, title: str, body: str, data: dict) -> dict:
+    """Send to a single raw device token (the caller already resolved it)."""
+    msg = messaging.Message(
+        token=token,
+        notification=messaging.Notification(title=title, body=body),
+        data={k: str(v) for k, v in data.items()},
+    )
+    return {"message_id": messaging.send(msg, app=_app(game))}
+
+
 def send_user_push(game: str, uid: str, title: str, body: str, data: dict) -> dict:
     """Push to one user's registered device tokens (fcmTokensAndroid/Ios docs keyed by uid)."""
     from agent import state

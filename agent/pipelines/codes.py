@@ -41,7 +41,74 @@ def _reserve_codes(campaign_id: str, n: int) -> list[str]:
 
 
 def run_drop(task: dict) -> dict:
-    """Segment drop: /drop/<id> link backed by N codes, announced by topic push."""
+    """Code delivery. GUARANTEE: a code sent to a user is reserved for them and
+    single-use (his and his only). Where the game stores per-user FCM tokens we
+    send each device its OWN reserved code (run_personal_codes); games without
+    per-user tokens can't guarantee this and escalate for an app update."""
+    game = task["game"]
+    if config.GAMES[game].get("fcm_token_collections"):
+        return run_personal_codes(task)
+    state.critical(
+        f"{game}: can't send guaranteed per-user codes — app has no per-user FCM "
+        f"token storage (topic-only). Needs an app update to register device tokens "
+        f"per user before code delivery.",
+        game=game,
+    )
+    return {"escalated": True, "reason": "no per-user device addressing", "game": game}
+
+
+def run_personal_codes(task: dict) -> dict:
+    """Each registered device gets its OWN reserved, single-use code, pushed only
+    to that device. Guarantees the code is ready for that user and only them."""
+    game, payload = task["game"], task["payload"]
+    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
+    cap = min(payload.get("n_codes") or 10, config.CAPS["codes_per_game_per_day"])
+
+    # collect registered devices (uid -> token) across android/ios
+    gdb = state.game_db(game)
+    devices: list[tuple[str, str]] = []  # (uid, token)
+    for col in config.GAMES[game]["fcm_token_collections"]:
+        for snap in gdb.collection(col).limit(cap * 2).stream():
+            tok = (snap.to_dict() or {}).get("token")
+            if tok:
+                devices.append((snap.id, tok))
+            if len(devices) >= cap:
+                break
+    if not devices:
+        return {"sent": 0, "note": "no registered devices"}
+
+    if config.DRY_RUN:
+        return {"dry_run": True, "would_send_personal": len(devices), "campaign": inv_campaign}
+
+    sent = []
+    for uid, token in devices[:cap]:
+        code_ids = _reserve_codes(inv_campaign, 1)
+        if not code_ids:
+            state.critical(f"{game}: out of codes mid personal-send", campaign=inv_campaign)
+            break
+        tok = secrets.token_urlsafe(16)
+        _tc().collection("claimTokens").document(tok).set({
+            "kind": "single", "campaignId": inv_campaign, "codeIds": code_ids,
+            "claimed": [], "game": game, "targetUser": uid, "createdBy": "stagenator",
+            "createdAt": state.now(),
+            "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
+        })
+        url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
+        try:
+            fcm.send_to_token(game, token, title="A gift for you 🎁",
+                              body=payload.get("reason") or "You've earned a reward — tap to claim it.",
+                              data={"claimUrl": url})
+            sent.append(uid)
+        except Exception as e:  # noqa: BLE001 — one bad token never blocks the rest
+            _tc().collection("campaigns").document(inv_campaign).collection("codes") \
+                .document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
+            _tc().collection("claimTokens").document(tok).delete()
+            log.warning("push to %s failed, code released: %s", uid, e)
+    return {"sent": len(sent), "personal": True, "each_reserved_single_use": True}
+
+
+def _run_drop_shared(task: dict) -> dict:
+    """(Retained for reference / games that opt into shared drops.)"""
     game, payload = task["game"], task["payload"]
     inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
     n = min(payload.get("n_codes") or 5, 10)

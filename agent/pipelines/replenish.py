@@ -279,11 +279,13 @@ def cleanup_storage(task: dict) -> dict:
     cutoff_prev = state.now() - dt.timedelta(days=14)
     for blob in home.list_blobs(prefix="stagenator_previews/"):
         if blob.time_created and blob.time_created < cutoff_prev:
-            blob.delete(); removed += 1
+            blob.delete()
+            removed += 1
     cutoff_tmp = state.now() - dt.timedelta(days=1)
     for blob in home.list_blobs(prefix="temp_uploads/"):
         if blob.time_created and blob.time_created < cutoff_tmp:
-            blob.delete(); removed += 1
+            blob.delete()
+            removed += 1
     return {"removed_blobs": removed}
 
 

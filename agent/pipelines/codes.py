@@ -113,24 +113,35 @@ def _run_drop_shared(task: dict) -> dict:
     """Live path for topic-only games (no per-user FCM tokens, e.g. ai-movie-quiz):
     reserve N codes, post one shared /drop/ link, topic-push it. Each anonymous
     visitor tears their own distinct reserved code — never a shared code."""
+    from agent import rules
+
     game, payload = task["game"], task["payload"]
-    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
     n = min(payload.get("n_codes") or 5, 10)
 
-    if config.DRY_RUN:
-        return {"dry_run": True, "would_reserve": n, "campaign": inv_campaign}
-
-    code_ids = _reserve_codes(inv_campaign, n)
-    if not code_ids:
+    # Reserve a pool PER platform so one /drop/ link serves iOS and Android correctly:
+    # the claim page detects the visitor's OS and dispenses from the matching pool
+    # (an Android visitor never tears an un-redeemable Apple code, and vice-versa).
+    pools: dict[str, dict] = {}
+    for plat, camp in rules.campaign_inventory(game).get("campaigns", {}).items():
+        cid = camp.get("campaign_id")
+        if not cid:
+            continue
+        ids = _reserve_codes(cid, n)
+        if ids:
+            pools[plat] = {"campaignId": cid, "codeIds": ids}
+    if not pools:
         raise RuntimeError(f"no codes reservable for {game}")
+
+    if config.DRY_RUN:
+        return {"dry_run": True, "would_reserve_per_platform": n,
+                "pools": {p: len(v["codeIds"]) for p, v in pools.items()}}
 
     drop_id = secrets.token_urlsafe(12)
     _tc().collection("claimTokens").document(drop_id).set(
         {
             "kind": "drop",
-            "campaignId": inv_campaign,
-            "codeIds": code_ids,
-            "claimed": [],
+            "pools": pools,  # {apple|google: {campaignId, codeIds}}
+            "claimed": [],   # flat list; each entry tagged with its platform
             "game": game,
             "segment": payload.get("segment"),
             "createdBy": "stagenator",
@@ -153,7 +164,9 @@ def _run_drop_shared(task: dict) -> dict:
             body=_body,
             data={"claimUrl": url},
         )
-    return {"drop_id": drop_id, "url": url, "codes": len(code_ids), "push": push}
+    return {"drop_id": drop_id, "url": url,
+            "codes": sum(len(v["codeIds"]) for v in pools.values()),
+            "platforms": list(pools), "push": push}
 
 
 def run_individual(task: dict) -> dict:

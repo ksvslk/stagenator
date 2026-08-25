@@ -107,6 +107,11 @@ def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []
     try:
+        from agent.pipelines.codes import restore_banner_if_expired
+        restore_banner_if_expired()
+    except Exception as e:  # noqa: BLE001
+        log.warning("banner restore check failed: %s", e)
+    try:
         refresh_codes_summary()
     except Exception as e:  # noqa: BLE001 — summary is cosmetic, never blocks a pulse
         log.warning("codes summary refresh failed: %s", e)

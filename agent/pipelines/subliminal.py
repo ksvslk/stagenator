@@ -201,8 +201,10 @@ def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) ->
 
     @firestore.transactional
     def _tx(tx):
+        # Firestore requires ALL reads before ANY write.
         if level_ref.get(transaction=tx).exists:
             raise RuntimeError(f"level {level_id} already exists in {PACK_ID}")
+        category_exists = category_ref.get(transaction=tx).exists
         tx.set(
             level_ref,
             {
@@ -223,7 +225,7 @@ def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) ->
             },
         )
         tx.update(pack_ref, {"totalLevels": firestore.Increment(1)})
-        if category_ref.get(transaction=tx).exists:
+        if category_exists:
             tx.update(category_ref, {"totalLevels": firestore.Increment(1)})
 
     _tx(transaction)

@@ -116,7 +116,10 @@ def run_individual(task: dict) -> dict:
 
 
 def run_banner(task: dict) -> dict:
-    """Palindrome's push-free channel: activate a promos banner with a link."""
+    """Palindrome's live channel: the app reads promos/menu_button ({activated,
+    link, title}). We write THAT doc (the only one it renders), saving the prior
+    content to promos/stagenator_menu_button_backup so the cross-promo is
+    restored when the drop ends."""
     payload = task["payload"]
     drop = run_drop({**task, "game": "palindrome",
                      "payload": {**payload, "n_codes": payload.get("n_codes") or 5}}) \
@@ -126,17 +129,40 @@ def run_banner(task: dict) -> dict:
         return {"dry_run": True, **drop}
 
     pal = state.game_db("palindrome")
-    pal.collection("promos").document("stagenator_drop").set(
-        {
-            "activated": True,
-            "title": payload.get("title") or "Code drop is live! 🎁",
-            "text": payload.get("text") or "Free codes for Palindrome players — limited supply.",
-            "link": drop["url"],
-            "managedBy": "stagenator",
-            "updatedAt": state.now(),
-        }
-    )
-    return {"banner": "stagenator_drop", **drop}
+    menu = pal.collection("promos").document("menu_button")
+    prior = menu.get()
+    if prior.exists and prior.to_dict().get("managedBy") != "stagenator":
+        pal.collection("promos").document("stagenator_menu_button_backup").set(
+            prior.to_dict() | {"backedUpAt": state.now()})
+    menu.set({
+        "activated": True,
+        "title": payload.get("title") or "🎁 Free gift — tap to claim",
+        "link": drop["url"],
+        "managedBy": "stagenator",
+        "expiresAt": state.now() + __import__("datetime").timedelta(days=3),
+        "updatedAt": state.now(),
+    })
+    return {"banner": "menu_button", **drop}
+
+
+def restore_banner_if_expired() -> None:
+    """Called each pulse: when the drop banner is past expiry, restore the
+    prior cross-promo (or deactivate) so the slot isn't hijacked forever."""
+    pal = state.game_db("palindrome")
+    menu = pal.collection("promos").document("menu_button")
+    snap = menu.get()
+    d = snap.to_dict() or {}
+    if d.get("managedBy") != "stagenator":
+        return
+    exp = d.get("expiresAt")
+    if exp and exp > state.now():
+        return
+    backup = pal.collection("promos").document("stagenator_menu_button_backup").get()
+    if backup.exists:
+        b = {k: v for k, v in backup.to_dict().items() if k not in ("backedUpAt",)}
+        menu.set(b)
+    else:
+        menu.set({"activated": False}, merge=True)
 
 
 def _find_campaign(game: str, platform: str | None = None) -> str:

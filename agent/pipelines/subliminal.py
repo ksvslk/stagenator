@@ -270,4 +270,13 @@ def run(task: dict) -> dict:
 
     svg = build_solution_svg(layout, design["word"])
     result = submit_level(design["word"], puzzle_png, svg, meta=design | {"qa": qa})
-    return {**result, "qa": qa.get("visibility")}
+
+    from agent.tools import preview
+
+    media = {
+        "puzzle": preview.upload(puzzle_png, f"{design['word']}_puzzle.png", "image/png"),
+        "mask": preview.upload(mask_png, f"{design['word']}_mask.png", "image/png"),
+        "solution_svg": preview.upload(svg.encode(), f"{design['word']}_solution.svg", "image/svg+xml"),
+    }
+    return {**result, "qa": qa.get("visibility"), "media": media,
+            "design": {"prompt": design["prompt"], "theme": design.get("theme"), "difficulty": difficulty}}

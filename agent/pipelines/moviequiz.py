@@ -177,4 +177,9 @@ def run(task: dict) -> dict:
     next_n = (gdb.collection("counters").document("levelsCounter").get().to_dict() or {}).get("count", 0) + 1
     final_path = process_video(clip, next_n)
     result = submit_level(design, final_path, next_n)
-    return {**result, "qa": qa.get("recognizable")}
+
+    from agent.tools import preview
+
+    media = {"clip": preview.upload(clip, f"{design['movie'].replace(' ', '_')}.mp4", "video/mp4")}
+    return {**result, "qa": qa.get("recognizable"), "media": media,
+            "design": {k: design.get(k) for k in ("veo_prompt", "sound", "characteristic", "actor", "quote", "year")}}

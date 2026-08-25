@@ -208,6 +208,8 @@ function Dashboard() {
 
           <LevelsOverview ledger={ledger} tasks={tasks} />
 
+          <CodesOverview />
+
           <section>
             <SectionTitle>
               Playbook{' '}
@@ -252,7 +254,69 @@ function Dashboard() {
   );
 }
 
+function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
+  const r = (event.result ?? {}) as Record<string, unknown>;
+  const media = (r.media ?? {}) as Record<string, string>;
+  const design = (r.design ?? {}) as Record<string, unknown>;
+  const skip = new Set(['media', 'design']);
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-baseline gap-3">
+          <h3 className="text-lg font-bold text-zinc-100">
+            {String(r.movie ?? r.word ?? r.published ?? 'level')}
+          </h3>
+          <span className="text-[11px] text-zinc-500">{String(event.game)} · {ts(event.ts)}</span>
+          <button onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200">✕</button>
+        </div>
+
+        {media.clip && (
+          <video src={media.clip} controls autoPlay muted loop className="w-full rounded-xl" />
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          {media.puzzle && (
+            <figure>
+              <img src={media.puzzle} className="rounded-xl w-full" alt="puzzle" />
+              <figcaption className="text-[10px] text-zinc-500 mt-1">puzzle (what players see)</figcaption>
+            </figure>
+          )}
+          {(media.mask || media.solution_svg) && (
+            <figure>
+              <img src={media.solution_svg || media.mask} className="rounded-xl w-full bg-white" alt="solution" />
+              <figcaption className="text-[10px] text-zinc-500 mt-1">solution</figcaption>
+            </figure>
+          )}
+        </div>
+
+        <div className="text-[12px] text-zinc-300 flex flex-col gap-1">
+          {Object.entries(r)
+            .filter(([k]) => !skip.has(k))
+            .map(([k, v]) => (
+              <div key={k} className="flex gap-2">
+                <span className="text-zinc-500 w-28 shrink-0">{k}</span>
+                <span className="break-words">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+              </div>
+            ))}
+          {Object.entries(design).map(([k, v]) => (
+            <div key={k} className="flex gap-2">
+              <span className="text-violet-400/70 w-28 shrink-0">{k}</span>
+              <span className="break-words text-zinc-400">{String(v)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
+  const [selected, setSelected] = useState<Doc | null>(null);
   const GAMES = ['subliminal-words', 'ai-movie-quiz', 'palindrome'];
   const levelEvents = ledger.filter(
     (e) => e.kind === 'action' && e.action === 'level_pipeline' && (e.status === 'done' || e.status === 'preview'),
@@ -282,7 +346,11 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
               {events.slice(0, 4).map((e) => {
                 const r = (e.result ?? {}) as Record<string, unknown>;
                 return (
-                  <div key={e.id} className="text-[11px] flex gap-2 items-baseline py-0.5">
+                  <div
+                    key={e.id}
+                    onClick={() => setSelected(e)}
+                    className="text-[11px] flex gap-2 items-baseline py-0.5 cursor-pointer hover:bg-zinc-800/60 rounded px-1 -mx-1"
+                  >
                     <span className={e.status === 'preview' ? 'text-amber-400' : 'text-emerald-400'}>
                       {e.status === 'preview' ? '◔ preview' : '✓ live'}
                     </span>
@@ -297,6 +365,35 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
             </div>
           );
         })}
+      </div>
+      {selected && <LevelDetail event={selected} onClose={() => setSelected(null)} />}
+    </section>
+  );
+}
+
+function CodesOverview() {
+  const summary = useDoc('stagenator_playbook/codes_summary');
+  const games = (summary?.games ?? {}) as Record<string, Record<string, unknown>>;
+  return (
+    <section>
+      <SectionTitle>Codes & claims <span className="text-zinc-600 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
+      <div className="flex flex-col gap-1.5">
+        {Object.entries(games).map(([g, d]) => {
+          const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
+          const claims = (d.claims ?? { links: 0, codes_backing: 0, teared: 0 }) as Record<string, number>;
+          return (
+            <div key={g} className="text-[11px] bg-zinc-900/60 rounded px-2 py-1.5 flex gap-3 items-baseline flex-wrap">
+              <span className="text-zinc-200 font-bold">{g}</span>
+              <span className="text-zinc-500">
+                stock {Object.entries(stock).map(([p, s]) => `${p}:${s.available ?? '?'}`).join(' · ')}
+              </span>
+              <span className="text-emerald-400 ml-auto">
+                {claims.teared ?? 0} teared / {claims.codes_backing ?? 0} sent
+              </span>
+            </div>
+          );
+        })}
+        {!summary && <Empty>updates on next pulse</Empty>}
       </div>
     </section>
   );

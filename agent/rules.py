@@ -75,9 +75,41 @@ def campaign_inventory(game: str, platform: str | None = None) -> dict:
     return {**chosen, "campaigns": campaigns}
 
 
+def refresh_codes_summary() -> None:
+    """Dashboard-readable summary of code stock + claims via agent links.
+
+    Lives under the playbook path so existing rules cover it. Counts come from
+    the agent's own claimTokens (tears via stagenator links) + campaign stock."""
+    from agent import state
+
+    tc = firestore.Client(project=config.TAKECODES_PROJECT)
+    summary: dict = {}
+    for game in config.GAMES:
+        inv = campaign_inventory(game)
+        summary[game] = {"stock": inv["campaigns"]}
+    tokens = tc.collection("claimTokens").where(
+        filter=firestore.FieldFilter("createdBy", "==", "stagenator")
+    ).stream()
+    for snap in tokens:
+        d = snap.to_dict()
+        g = d.get("game")
+        if g in summary:
+            s = summary[g].setdefault("claims", {"links": 0, "codes_backing": 0, "teared": 0})
+            s["links"] += 1
+            s["codes_backing"] += len(d.get("codeIds", []))
+            s["teared"] += len(d.get("claimed", []))
+    state.db().collection(config.COL_PLAYBOOK).document("codes_summary").set(
+        {"games": summary, "updated": state.now()}
+    )
+
+
 def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []
+    try:
+        refresh_codes_summary()
+    except Exception as e:  # noqa: BLE001 — summary is cosmetic, never blocks a pulse
+        log.warning("codes summary refresh failed: %s", e)
     recent = state.recent_ledger(hours=4, kind="signal")
     seen = {(e.get("game"), e.get("signal"), e.get("detail")) for e in recent}
 

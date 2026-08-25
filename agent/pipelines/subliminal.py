@@ -27,11 +27,12 @@ from agent.tools import genai_client, runpod
 
 log = logging.getLogger("stagenator.subliminal")
 
-CANVAS = 1024
-FONTS = {
-    200: Path(__file__).parent.parent / "assets/fonts/DejaVuSans-ExtraLight.ttf",
-    400: Path(__file__).parent.parent / "assets/fonts/DejaVuSans.ttf",
-    700: Path(__file__).parent.parent / "assets/fonts/DejaVuSans-Bold.ttf",
+CANVAS = 1024  # SVG_SIZE in word_level_svg.js
+# Roboto to match the game's render font (font-family: Roboto, Arial, sans-serif)
+ROBOTO = {
+    200: Path(__file__).parent.parent / "assets/fonts/Roboto-Thin.ttf",
+    400: Path(__file__).parent.parent / "assets/fonts/Roboto-Regular.ttf",
+    700: Path(__file__).parent.parent / "assets/fonts/Roboto-Bold.ttf",
 }
 PACK_ID = "fresh-drops"  # the agent's own pack (auto-created on first level)
 
@@ -58,77 +59,110 @@ def design_level(existing_words: set[str]) -> dict | None:
 
 
 def build_layout(word: str) -> list[dict]:
-    """Spread the word's letters across the canvas with mild, readable chaos.
+    """Letter model matching word_level_svg.js sanitizeWordLettersForSolution:
+    x,y normalized (0-1, center), fontSize (24-512), rotationDegrees, scaleX/scaleY
+    (0.2-12), skewX/YDegrees (<=80), opacity, fontWeightValue in {200,400,700}.
 
-    Every field matches the word_level_svg.js contract ranges.
-    """
+    Letters spread across the canvas center so the word reads left-to-right when
+    highlighted (mild variation keeps it 'hidden', not printed)."""
     n = len(word)
+    margin = 0.13
+    font_size = 150.0
     letters = []
-    margin = 0.12
     for i, ch in enumerate(word):
-        x = margin + (i + 0.5) * (1 - 2 * margin) / n + random.uniform(-0.02, 0.02)
-        y = 0.5 + random.uniform(-0.18, 0.18)
-        letters.append(
-            {
-                "letter": ch,
-                "x": round(min(max(x, 0.0), 1.0), 4),
-                "y": round(min(max(y, 0.0), 1.0), 4),
-                "scale": round(random.uniform(2.2, 3.4), 3),  # of base font size
-                "rotation": round(random.uniform(-24, 24), 2),
-                "skewX": round(random.uniform(-8, 8), 2),
-                "opacity": 1.0,
-                "weight": random.choice([400, 700, 700]),
-            }
-        )
+        x = margin + (i + 0.5) * (1 - 2 * margin) / n
+        y = 0.5 + random.uniform(-0.14, 0.14)
+        letters.append({
+            "letter": ch,
+            "x": round(min(max(x, 0.02), 0.98), 4),
+            "y": round(min(max(y, 0.02), 0.98), 4),
+            "fontSize": font_size,
+            "rotationDegrees": round(random.uniform(-18, 18), 2),
+            "scaleX": round(random.uniform(0.85, 1.25), 3),
+            "scaleY": round(random.uniform(1.05, 1.5), 3),
+            "skewXDegrees": round(random.uniform(-10, 10), 2),
+            "skewYDegrees": 0.0,
+            "opacity": 1.0,
+            "fontWeightValue": random.choice([400, 700, 700]),
+        })
     return letters
 
 
 # --------------------------------------------------------------- rendering ----
 
-BASE_FONT_SIZE = 96  # scaled per letter; stays inside the 24..512 contract range
+def build_solution_svg(layout: list[dict], word: str) -> str:
+    """EXACT port of buildCanonicalWordSolutionSvg (operation_hermes word_level_svg.js)."""
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+        f'<svg width="{CANVAS}" height="{CANVAS}" viewBox="0 0 {CANVAS} {CANVAS}" '
+        f'xmlns="http://www.w3.org/2000/svg">',
+    ]
+    for i, L in enumerate(layout):
+        x = L["x"] * CANVAS
+        y = L["y"] * CANVAS
+        ch = (L["letter"].replace("&", "&amp;").replace("<", "&lt;")
+              .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;"))
+        lines.append(
+            f'<text id="letter_{i + 1}" aria-label="{ch}" x="0" y="0" '
+            f'font-size="{L["fontSize"]:.2f}" font-weight="{L["fontWeightValue"]}" '
+            f'font-family="Roboto, Arial, sans-serif" '
+            f'text-anchor="middle" dominant-baseline="middle" fill="#000000" '
+            f'fill-opacity="{L["opacity"]:.3f}" '
+            f'transform="translate({x:.2f} {y:.2f}) rotate({L["rotationDegrees"]:.2f}) '
+            f'skewX({L["skewXDegrees"]:.2f}) skewY({L["skewYDegrees"]:.2f}) '
+            f'scale({L["scaleX"]:.3f} {L["scaleY"]:.3f})" '
+            f'data-x="{x:.2f}" data-y="{y:.2f}" data-font-size="{L["fontSize"]:.2f}" '
+            f'data-font-weight="{L["fontWeightValue"]}" '
+            f'data-rotation="{L["rotationDegrees"]:.2f}" '
+            f'data-scale-x="{L["scaleX"]:.3f}" data-scale-y="{L["scaleY"]:.3f}" '
+            f'data-skew-x="{L["skewXDegrees"]:.2f}" data-skew-y="{L["skewYDegrees"]:.2f}" '
+            f'data-opacity="{L["opacity"]:.3f}">{ch}</text>'
+        )
+    lines.append("</svg>")
+    return "\n".join(lines)
 
 
-def render_mask(layout: list[dict]) -> bytes:
-    """Rasterize the layout: black letters on white, 1024x1024 (ControlNet input)."""
+BASE_FONT_SIZE = 150  # kept for eval import compatibility
+
+
+def render_mask(layout: list[dict], solution_svg: str | None = None) -> bytes:
+    """ControlNet mask = the canonical solution SVG rasterized to 1024x1024
+    (black letters on white). Rasterizing the SAME svg guarantees the hidden
+    word lands exactly where the solution highlights it. Uses PIL with the same
+    transform math (translate->rotate->skew->scale, anchor middle/middle)."""
     from PIL import Image, ImageDraw, ImageFont
+    import math
 
     img = Image.new("L", (CANVAS, CANVAS), 255)
-    for letter in layout:
-        size = int(BASE_FONT_SIZE * letter["scale"])
-        font = ImageFont.truetype(str(FONTS[letter["weight"]]), size)
-        # draw each letter on its own layer so rotation is per-letter
-        tile = Image.new("L", (size * 2, size * 2), 0)
+    for L in layout:
+        size = int(L["fontSize"])
+        font = ImageFont.truetype(str(ROBOTO[L["fontWeightValue"]]), size)
+        # render glyph centered on its own tile
+        pad = size * 3
+        tile = Image.new("L", (pad, pad), 0)
         d = ImageDraw.Draw(tile)
-        d.text((size * 0.5, size * 0.35), letter["letter"], font=font, fill=255)
-        tile = tile.rotate(-letter["rotation"], resample=Image.BICUBIC, expand=False)
-        cx, cy = int(letter["x"] * CANVAS), int(letter["y"] * CANVAS)
-        img.paste(0, (cx - size, cy - size), mask=tile)
+        bbox = d.textbbox((0, 0), L["letter"], font=font)
+        gw, gh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        d.text(((pad - gw) / 2 - bbox[0], (pad - gh) / 2 - bbox[1]), L["letter"], font=font, fill=255)
+        # apply skewX + non-uniform scale via affine, then rotate
+        sx, sy = L["scaleX"], L["scaleY"]
+        skew = math.tan(math.radians(L["skewXDegrees"]))
+        cx = cy = pad / 2
+        # affine around center: [scaleX, skew*scaleY ; 0, scaleY]
+        a, b = sx, skew * sy
+        c, e = 0.0, sy
+        inv_det = 1.0 / (a * e - b * c)
+        ia, ib = e * inv_det, -b * inv_det
+        ic, ie = -c * inv_det, a * inv_det
+        tx = cx - (ia * cx + ib * cy)
+        ty = cy - (ic * cx + ie * cy)
+        tile = tile.transform((pad, pad), Image.AFFINE, (ia, ib, tx, ic, ie, ty), resample=Image.BICUBIC)
+        tile = tile.rotate(-L["rotationDegrees"], resample=Image.BICUBIC, center=(cx, cy))
+        px, py = int(L["x"] * CANVAS), int(L["y"] * CANVAS)
+        img.paste(0, (px - pad // 2, py - pad // 2), mask=tile)
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="PNG")
     return buf.getvalue()
-
-
-def build_solution_svg(layout: list[dict], word: str) -> str:
-    """Serialize the same layout as the game's solution SVG (word-levels contract)."""
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {CANVAS} {CANVAS}" '
-        f'width="{CANVAS}" height="{CANVAS}" data-answer="{word}" data-generator="stagenator">'
-    ]
-    for letter in layout:
-        x, y = letter["x"] * CANVAS, letter["y"] * CANVAS
-        size = BASE_FONT_SIZE * letter["scale"]
-        transform = (
-            f"translate({x:.1f} {y:.1f}) rotate({letter['rotation']:.1f}) "
-            f"skewX({letter['skewX']:.1f})"
-        )
-        parts.append(
-            f'<text x="0" y="0" text-anchor="middle" dominant-baseline="middle" '
-            f'font-family="DejaVu Sans, sans-serif" font-size="{size:.0f}" '
-            f'font-weight="{letter["weight"]}" opacity="{letter["opacity"]}" '
-            f'transform="{transform}">{letter["letter"]}</text>'
-        )
-    parts.append("</svg>")
-    return "".join(parts)
 
 
 # ---------------------------------------------------------------- QA + dedup ----
@@ -258,7 +292,8 @@ def run(task: dict) -> dict:
         raise RuntimeError("could not design a novel level (word dedup exhausted)")
 
     layout = build_layout(design["word"])
-    mask_png = render_mask(layout)
+    svg = build_solution_svg(layout, design["word"])
+    mask_png = render_mask(layout, svg)
     difficulty = float(payload.get("difficulty") or 1.0)
 
     if config.DRY_RUN:
@@ -272,7 +307,6 @@ def run(task: dict) -> dict:
     if not qa.get("pass"):
         raise RuntimeError(f"QA rejected puzzle for {design['word']}: {json.dumps(qa)[:200]}")
 
-    svg = build_solution_svg(layout, design["word"])
     result = submit_level(design["word"], puzzle_png, svg, meta=design | {"qa": qa})
 
     from agent.tools import preview

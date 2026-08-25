@@ -134,5 +134,6 @@ docs/               architecture diagram
 - **Google Play minting** is Console-only (no API, by Google's design) — handled
   via the agent-driven reply-to-restock email loop, not full headless
   automation.
-- **No CI/CD** yet (scaffolded with `skip`); long-running generation is bounded
-  but not yet async (Cloud Tasks) — both are clean next steps.
+- **Long-running generation** (Veo ~2 min, Runpod ~1-2 min) is time-bounded per
+  invocation and self-paces across pulses; moving it to Cloud Tasks for full async
+  is a clean next step.

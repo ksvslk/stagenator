@@ -167,7 +167,8 @@ def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) ->
 
     pack_ref = gdb.collection("packs").document(PACK_ID)
     pack = pack_ref.get()
-    if not pack.exists:
+    first_level = not pack.exists
+    if first_level:
         pack_ref.set(
             {
                 "categoryId": "words",
@@ -213,7 +214,8 @@ def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) ->
                 "hintType": "highlight",
                 "hints": {},
                 "isEnabled": True,
-                "notifyOnPublish": meta.get("notify", True),
+                # first level of a brand-new pack ships silent (owner eyeballs it in-game)
+                "notifyOnPublish": meta.get("notify", not first_level),
                 "createdBy": "stagenator",
                 "theme": meta.get("theme", ""),
                 "createdAt": firestore.SERVER_TIMESTAMP,

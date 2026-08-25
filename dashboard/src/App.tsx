@@ -478,6 +478,7 @@ function CostOverview() {
   if (!cost) return null;
   const pct = Number(cost.budget_pct ?? 0);
   const services = (cost.services ?? []) as { service: string; usd: number }[];
+  const byProject = (cost.by_project ?? []) as { project: string; month_usd: number; today_usd: number }[];
   return (
     <section>
       <SectionTitle>
@@ -509,6 +510,18 @@ function CostOverview() {
                 style={{ width: `${Math.min(100, pct)}%` }}
               />
             </div>
+            {byProject.length > 0 && (
+              <div className="flex flex-col gap-0.5 pt-1 border-t border-zinc-800">
+                <div className="text-zinc-600 uppercase tracking-wide text-[10px]">by project · month</div>
+                {byProject.map((p) => (
+                  <div key={p.project} className="flex justify-between text-zinc-400">
+                    <span className="truncate">{p.project}</span>
+                    <span>${p.month_usd.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="text-zinc-600 uppercase tracking-wide text-[10px] pt-1">by service · month</div>
             {services.map((s) => (
               <div key={s.service} className="flex justify-between text-zinc-500">
                 <span className="truncate">{s.service}</span>

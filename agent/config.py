@@ -67,6 +67,14 @@ GAMES: dict[str, dict] = {
 
 ACTIVE_GAMES = {g for g, cfg in GAMES.items() if cfg.get("active", True)}
 
+# Every GCP/Firebase project this agent system incurs cost in. All bill to one
+# account, so all land in the single billing-export table (keyed by project.id):
+# the home/billing project, take-codes (proffer.codes), and each active game's
+# project. Inactive games (billing often disabled) are excluded.
+STAGENATOR_PROJECTS = {HOME_PROJECT, TAKECODES_PROJECT} | {
+    GAMES[g]["project"] for g in ACTIVE_GAMES
+}
+
 
 # --- Hard caps (enforced in guardrails.py, never negotiable by the LLM) ---
 CAPS = {

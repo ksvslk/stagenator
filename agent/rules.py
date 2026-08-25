@@ -77,9 +77,12 @@ def campaign_inventory(game: str, platform: str | None = None) -> dict:
 
 def refresh_cost_summary() -> None:
     """REAL spend from the BigQuery Cloud Billing export (no estimates).
-    Auto-detects the gcp_billing_export table; sums net cost (cost + credits)
-    for HOME_PROJECT, month-to-date and today, grouped by service. If billing
-    export isn't enabled/populated yet, marks the panel awaiting data."""
+    Covers EVERY project this agent system spans (config.STAGENATOR_PROJECTS):
+    each active game's Firebase project plus the home/billing project
+    (operation-sunrise) and take-codes. They all bill to one account, so their
+    cost lands in one export table keyed by project.id. Sums net cost
+    (cost + credits) month-to-date and today, per project and per service.
+    If billing export isn't enabled/populated yet, marks the panel awaiting."""
     from google.cloud import bigquery
 
     from agent import state
@@ -94,37 +97,59 @@ def refresh_cost_summary() -> None:
         if table:
             break
 
+    projects = sorted(config.STAGENATOR_PROJECTS)
     doc = state.db().collection(config.COL_PLAYBOOK).document("cost_summary")
     if not table:
         doc.set({"status": "awaiting billing export (enable in console)",
+                 "projects": projects,
                  "runpod_note": "external prepaid service — not in GCP billing",
                  "updated": state.now()})
         return
 
     q = f"""
       SELECT
+        project.id AS project,
         service.description AS service,
         SUM(cost) AS cost,
         SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)) AS credits,
         SUM(CASE WHEN DATE(usage_start_time) = CURRENT_DATE() THEN cost ELSE 0 END) AS cost_today
       FROM {table}
-      WHERE project.id = @project
+      WHERE project.id IN UNNEST(@projects)
         AND DATE(_PARTITIONTIME) >= DATE_TRUNC(CURRENT_DATE(), MONTH)
-      GROUP BY service
+      GROUP BY project, service
       ORDER BY cost DESC
     """
     job = bq.query(q, job_config=bigquery.QueryJobConfig(
-        query_parameters=[bigquery.ScalarQueryParameter("project", "STRING", config.HOME_PROJECT)]))
+        query_parameters=[bigquery.ArrayQueryParameter("projects", "STRING", projects)]))
     rows = list(job.result())
-    services = [{"service": r["service"], "usd": round((r["cost"] or 0) + (r["credits"] or 0), 4)}
-                for r in rows if abs((r["cost"] or 0) + (r["credits"] or 0)) > 0.0001]
-    month = round(sum(s["usd"] for s in services), 2)
-    today = round(sum((r["cost_today"] or 0) for r in rows), 2)
+
+    by_project: dict[str, dict] = {}
+    services_tot: dict[str, float] = {}
+    for r in rows:
+        net = (r["cost"] or 0) + (r["credits"] or 0)
+        p = r["project"] or "unknown"
+        bp = by_project.setdefault(p, {"month": 0.0, "today": 0.0})
+        bp["month"] += net
+        bp["today"] += (r["cost_today"] or 0)
+        if abs(net) > 0.0001:
+            services_tot[r["service"]] = services_tot.get(r["service"], 0.0) + net
+
+    by_project_out = sorted(
+        ({"project": p, "month_usd": round(v["month"], 2), "today_usd": round(v["today"], 2)}
+         for p, v in by_project.items()),
+        key=lambda x: x["month_usd"], reverse=True)
+    services = sorted(
+        ({"service": s, "usd": round(u, 4)} for s, u in services_tot.items() if abs(u) > 0.0001),
+        key=lambda x: x["usd"], reverse=True)
+    month = round(sum(p["month_usd"] for p in by_project_out), 2)
+    today = round(sum(p["today_usd"] for p in by_project_out), 2)
     budget_usd = config.MONTHLY_BUDGET_EUR * config.EUR_USD
     doc.set({
         "status": "live",
         "today_usd": today, "month_usd": month,
+        "by_project": by_project_out,
         "services": services[:8],
+        "projects": projects,
         "budget_usd": round(budget_usd, 2),
         "budget_pct": round(100 * month / budget_usd, 1) if budget_usd else 0,
         "runpod_note": "external prepaid service — not in GCP billing",

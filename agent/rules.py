@@ -88,14 +88,17 @@ def refresh_cost_summary() -> None:
     from agent import state
 
     bq = bigquery.Client(project=config.HOME_PROJECT)
-    table = None
+    # Either export flavor works — both carry project.id/service/cost/credits.
+    # Prefer standard (v1); fall back to the detailed/resource table (resource_v1).
+    std = res = None
     for ds in bq.list_datasets():
         for t in bq.list_tables(ds.dataset_id):
+            ref = f"`{config.HOME_PROJECT}.{ds.dataset_id}.{t.table_id}`"
             if t.table_id.startswith("gcp_billing_export_v1_"):
-                table = f"`{config.HOME_PROJECT}.{ds.dataset_id}.{t.table_id}`"
-                break
-        if table:
-            break
+                std = std or ref
+            elif t.table_id.startswith("gcp_billing_export_resource_v1_"):
+                res = res or ref
+    table = std or res
 
     projects = sorted(config.STAGENATOR_PROJECTS)
     doc = state.db().collection(config.COL_PLAYBOOK).document("cost_summary")

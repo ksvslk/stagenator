@@ -194,7 +194,6 @@ def refresh_impact_summary() -> None:
             "codes_claimed": claimed,
             "dead_codes_quarantined": expired_found,
         },
-        "validation": {"unit_tests": 24, "eval": "pass", "fault_drills": 4},
         "outcome_note": "engagement/retention lift instrumented (per-code funnel, "
                         "GA level outcomes, Reflector evidence) — awaiting user scale",
         "updated": state.now(),
@@ -232,11 +231,6 @@ def refresh_codes_summary() -> None:
 def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []
-    try:
-        from agent.pipelines.codes import restore_banner_if_expired
-        restore_banner_if_expired()
-    except Exception as e:
-        log.warning("banner restore check failed: %s", e)
     for _fn in (refresh_codes_summary, refresh_cost_summary, refresh_impact_summary):
         try:
             _fn()

@@ -13,7 +13,6 @@ VALID_TYPES = {
     "ship_level",
     "send_code_drop",
     "send_individual_code",
-    "activate_promo_banner",
     "send_level_push",
     "none",
 }
@@ -38,8 +37,6 @@ def validate(action: dict) -> dict | None:
         return {"error": f"{game} is not active"}
 
     if t in ("send_code_drop", "send_individual_code"):
-        if not config.GAMES[game].get("fcm_token_collections"):
-            return {"error": f"{game} can't guarantee per-user codes (no per-user FCM tokens)"}
         sent = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
         n = action.get("n_codes") or 1
         if sent + n > config.CAPS["codes_per_game_per_day"]:
@@ -58,9 +55,6 @@ def validate(action: dict) -> dict | None:
         if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
             return {"error": f"push-action/4h cap reached for {game}"}
 
-    if t == "activate_promo_banner" and game != "palindrome":
-        return {"error": "promo banner only exists for palindrome"}
-
     if t in ("send_code_drop", "send_individual_code", "send_level_push") and not config.GAMES[game]["level_push_topic"] and t != "send_code_drop":
         return {"error": f"{game} has no push channel"}
 
@@ -71,7 +65,6 @@ ACTION_TO_TASK = {
     "ship_level": "level_pipeline",
     "send_code_drop": "code_drop",
     "send_individual_code": "individual_code",
-    "activate_promo_banner": "promo_banner",
     "send_level_push": "level_push",
 }
 

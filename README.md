@@ -4,9 +4,8 @@
 Google Analytics, decides what will grow engagement, and acts on its own —
 shipping AI-generated levels, distributing promo/offer codes, keeping code
 inventory alive, and learning day by day — with no human in the loop and full
-observability. It currently runs two live games (Subliminal Words, AI Movie
-Quiz); a third (Palindrome) has its full pipeline built and is one app-update
-away from activation.
+observability. It runs two live games (Subliminal Words and AI Movie Quiz),
+shipping real AI-generated content into apps that real players download.
 
 > All Things Agentic Hackathon · **Taskmaster** track — *a complete workflow,
 > not a chatbot.* Live Mission Control: https://stagenator-mission.web.app
@@ -86,9 +85,10 @@ Two honest levels:
   `level_finish`/`level_skipped`, Reflector evidence tags); it proves itself as
   users scale.
 
-**Validation:** 24 unit tests (expiry rules, caps, palindrome/SVG contracts) ·
+**Validation:** unit tests (expiry rules, caps, SVG contract, memory discipline) ·
 `agents-cli eval` behavioral suite (decision quality, channel compliance, idle
-efficiency, reflector restraint) · **4 live fault drills** against the deployed
+efficiency, reflector restraint) · resilience proven live (retry → dead-letter)
+against the deployed
 agent (dead-letter, retry-recovery, idempotency, guardrail rejection).
 
 ## Google Cloud stack
@@ -134,7 +134,5 @@ docs/               architecture diagram
 - **Google Play minting** is Console-only (no API, by Google's design) — handled
   via the agent-driven reply-to-restock email loop, not full headless
   automation.
-- **Palindrome** deactivated for now (its app ships levels bundled + no push);
-  full pipeline preserved, one app-update away.
 - **No CI/CD** yet (scaffolded with `skip`); long-running generation is bounded
   but not yet async (Cloud Tasks) — both are clean next steps.

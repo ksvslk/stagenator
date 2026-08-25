@@ -60,24 +60,6 @@ class TestExpiryJudgement:
                       "google", NOW_MS, TODAY) == "valid"
 
 
-# ------------------------------------------------------------- palindrome ----
-
-class TestPalindromeValidation:
-    @pytest.mark.parametrize("text", ["TAAT", "たまのまた", "Elu par cette crapule.",
-                                      "GATEMAN SEES NAME, GARAGEMAN SEES NAME TAG."])
-    def test_valid_palindromes(self, text):
-        assert levels._is_palindrome(text)
-
-    @pytest.mark.parametrize("text", ["HELLO", "AB", "", "NOT A PALINDROME"])
-    def test_invalid_palindromes(self, text):
-        assert not levels._is_palindrome(text)
-
-    def test_normalization_ignores_case_punct(self):
-        assert levels._norm("Elu par CETTE crapule.") == levels._norm("eluparcettecrapule")
-
-
-# ------------------------------------------------- subliminal svg contract ----
-
 class TestSubliminalContract:
     def test_layout_within_word_level_svg_ranges(self):
         for _ in range(50):

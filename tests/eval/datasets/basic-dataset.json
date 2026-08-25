@@ -8,10 +8,10 @@
       }
     },
     {
-      "eval_case_id": "palindrome-never-push",
+      "eval_case_id": "moviequiz-no-individual-code",
       "prompt": {
         "role": "user",
-        "parts": [{"text": "event:{\"game\": \"palindrome\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}"}]
+        "parts": [{"text": "event:{\"game\": \"ai-movie-quiz\", \"signal\": \"user_active\", \"platform\": \"android\", \"detail\": \"eval-fixture-2\"}"}]
       }
     },
     {

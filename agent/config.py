@@ -49,20 +49,6 @@ GAMES: dict[str, dict] = {
         "play_package": "com.indest.aimoviequiz",
         "app_store_id": "6752119990",
     },
-    "palindrome": {
-        "display": "Palindrome",
-        "project": "hah-35889753",
-        "ga_property": "307701325",
-        "platforms": ["android", "ios"],
-        "level_push_topic": None,  # no FCM in apps — promos banner is the channel
-        "fcm_token_collections": [],
-        "tier": 0,
-        "level_backend": "user_submitted_levels",
-        "play_package": "com.indest.hah",
-        "active": False,  # out of scope for now (app ships levels bundled, no push).
-                          # Full pipeline built & proven; Future Phase (needs app update).
-        "app_store_id": "1673006365",
-    },
 }
 
 ACTIVE_GAMES = {g for g, cfg in GAMES.items() if cfg.get("active", True)}

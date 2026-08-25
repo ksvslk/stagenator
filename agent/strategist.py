@@ -15,7 +15,7 @@ from agent import config
 class Action(BaseModel):
     type: str = Field(
         description="One of: ship_level | send_code_drop | send_individual_code | "
-        "activate_promo_banner | send_level_push | none"
+        "send_level_push | none"
     )
     game: str = Field(description=f"One of: {', '.join(config.ACTIVE_GAMES)}")
     reason: str = Field(description="One sentence: why this action, tied to a signal + playbook rule")
@@ -41,8 +41,6 @@ strategist = LlmAgent(
         "the current PLAYBOOK (your learned strategy — follow it), recent ledger entries "
         "(what was already done — never repeat an equivalent action), and any CEO "
         "directives (owner guidance — high priority, address them in directive_responses).\n\n"
-        "Only Subliminal Words can receive codes right now (per-user delivery); AI Movie "
-        "Quiz is levels-only until an app update.\n"
         "Decide the minimal set of actions that best serves engagement and retention "
         "RIGHT NOW. Rules:\n"
         "- Few users: each one matters. But do not spam — one meaningful touch beats three pushes.\n"

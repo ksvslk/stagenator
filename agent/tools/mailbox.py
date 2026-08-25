@@ -31,7 +31,6 @@ TAG_RE = re.compile(r"\[stagenator-restock:([A-Za-z0-9]+)\]")
 PLAY_GIFT = {
     "subliminal-words": ("No ad breaks", "one-time product"),
     "ai-movie-quiz": ("Premium (1 month)", "subscription"),
-    "palindrome": ("No Ads", "one-time product"),
 }
 
 

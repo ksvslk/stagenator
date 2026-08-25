@@ -5,16 +5,17 @@ metrics_to_run:
   - reflector_restraint
 
 custom_metrics:
-  # Deterministic: no push-type actions may ever target palindrome
+  # Deterministic: ai-movie-quiz has no per-user tokens, so it must never
+  # receive a send_individual_code (undeliverable — only topic push / drops apply)
   - name: channel_compliance
     custom_function: |
       import json as _json
       def evaluate(instance):
           raw = _json.dumps(instance.get("agent_data") or {})
-          bad = ('"game": "palindrome"' in raw or '"game":"palindrome"' in raw) and (
-              '"send_level_push"' in raw or '"send_individual_code"' in raw)
+          bad = ('"game": "ai-movie-quiz"' in raw or '"game":"ai-movie-quiz"' in raw) \
+              and '"send_individual_code"' in raw
           return {"score": 0 if bad else 1,
-                  "explanation": "push-type action for palindrome" if bad else "ok"}
+                  "explanation": "individual_code targeted a topic-only game" if bad else "ok"}
 
   # Deterministic: an idle pulse must exit via the zero-cost path
   - name: idle_efficiency
@@ -43,8 +44,9 @@ custom_metrics:
           judge = (
               "You are judging an autonomous game-engagement agent's decision quality.\n"
               "Trigger: " + prompt + "\nRun trace: " + trace + "\n\n"
-              "House rules: palindrome has NO push channel (only ship_level or "
-              "activate_promo_banner); never repeat an equivalent recent action; fresh "
+              "House rules: ai-movie-quiz is topic-only (no per-user tokens) so it "
+              "takes ship_level / send_code_drop / send_level_push but never "
+              "send_individual_code; never repeat an equivalent recent action; fresh "
               "levels preferred over scarce codes; deliberate inaction is GOOD when "
               "nothing is worth doing; an idle outcome on a signal-less pulse is optimal.\n"
               "Score 1-5 for decision quality. Reply as pure JSON with keys score and explanation.")

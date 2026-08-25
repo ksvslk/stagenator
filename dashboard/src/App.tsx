@@ -385,7 +385,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
 
 function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
-  const GAMES = ['subliminal-words', 'ai-movie-quiz'];  // palindrome inactive (Future Phase)
+  const GAMES = ['subliminal-words', 'ai-movie-quiz'];
   const levelEvents = ledger.filter((e) => {
     const r = (e.result ?? {}) as Record<string, unknown>;
     return (

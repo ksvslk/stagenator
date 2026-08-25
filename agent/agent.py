@@ -125,8 +125,12 @@ def apply_night(node_input: dict) -> dict:
 
 
 def plan_replenish(node_input: str) -> dict:
-    """Replenish path: enqueue mint tasks for every low campaign + balance checks."""
+    """Replenish path: audit first, import any minted CSVs, then escalate shortages."""
     enqueued = []
+    for t, g in (("audit_inventory", "all"), ("mint_import", "all")):
+        tid = state.enqueue(t, g, {}, dedupe_key=f"{t}-{state.now().date().isoformat()}")
+        if tid:
+            enqueued.append(tid)
     for game in config.GAMES:
         inv = rules.campaign_inventory(game)
         if inv["campaign_id"] and (inv["available"] or 0) <= 5:

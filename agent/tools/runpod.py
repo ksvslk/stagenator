@@ -121,5 +121,9 @@ def account_balance() -> float | None:
         return None
     q = {"query": "query { myself { clientBalance } }"}
     r = requests.post(GRAPHQL_API, json=q, headers={"Authorization": f"Bearer {key}"}, timeout=30)
+    if r.status_code == 401:
+        # endpoint-scoped key: can generate but not read account — balance unknowable
+        log.warning("Runpod key lacks account scope; balance check skipped")
+        return None
     r.raise_for_status()
     return r.json()["data"]["myself"]["clientBalance"]

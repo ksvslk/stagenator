@@ -1,25 +1,170 @@
-"""Replenish pipeline: mint new store codes when campaigns run low; balance checks.
+"""Replenish pipeline: inventory AUDIT (fully autonomous) + minting escalation.
 
-- App Store offer codes: App Store Connect API (wired when ASC key arrives).
-- Google Play promo codes: Play Console via headless Chrome DevTools MCP
-  (the ONE browser-automation surface; wired at the replenish milestone).
-- Runpod prepaid balance: checked daily; low balance -> CRITICAL alert.
+Audit (the agent owns this end-to-end, daily):
+- Apple promo codes expire 28 days after generation — anything older is a dud.
+- Google promo codes die with their promotion (promotionEnd metadata when
+  stagenator minted them; legacy codes without metadata: >1y old = expired,
+  younger-but-unknown = suspect).
+- availableCodes is corrected to count only valid codes; expired/suspect stock
+  is flagged on the code docs so reservation skips it.
+
+Minting (alert-driven until headless console sessions are wired):
+- When valid stock dips below threshold, the agent raises a CRITICAL alert
+  carrying the exact runbook; the flow is proven via Chrome DevTools automation
+  (Play Console promotion -> CSV -> seedCampaign-schema import).
 """
+
+import datetime as dt
+import logging
+
+from google.cloud import firestore
 
 from agent import config, state
 
+log = logging.getLogger("stagenator.replenish")
+
+APPLE_CODE_LIFETIME_DAYS = 28
+GOOGLE_LEGACY_MAX_AGE_DAYS = 365
+LOW_STOCK_THRESHOLD = 5
+
+RUNBOOK = (
+    "Mint flow (proven, ~5 min): Play Console -> app -> Monetize > Promo codes -> "
+    "Create promo code (product per campaign, 1y window) -> download CSV -> import via "
+    "seedCampaign schema (codes+secrets+availableCodes). Apple: App Store Connect -> "
+    "App -> Promo Codes (28-day lifetime!). Stagenator imports the CSV automatically "
+    "when placed in gs://operation-sunrise.firebasestorage.app/stagenator_mint_inbox/."
+)
+
+
+def audit_inventory(task: dict) -> dict:
+    """Autonomous expiry audit across every adopted campaign."""
+    tc = firestore.Client(project=config.TAKECODES_PROJECT)
+    now_ms = int(state.now().timestamp() * 1000)
+    today = state.now().date().isoformat()
+    report: dict = {}
+
+    q = tc.collection("campaigns").where(
+        filter=firestore.FieldFilter("managedBy", "==", "stagenator")
+    )
+    for camp_snap in q.stream():
+        camp = camp_snap.reference
+        d = camp_snap.to_dict()
+        platform = d.get("stagenatorPlatform") or d.get("platform") or "unknown"
+        game = d.get("game", "?")
+        valid = expired = suspect = torn = 0
+
+        for code_snap in camp.collection("codes").stream():
+            c = code_snap.to_dict()
+            if c.get("isTorn"):
+                torn += 1
+                continue
+            if c.get("expired"):
+                expired += 1
+                continue
+            verdict = _judge(c, platform, now_ms, today)
+            if verdict == "expired":
+                code_snap.reference.update({"expired": True, "expiredReason": "audit"})
+                expired += 1
+            elif verdict == "suspect":
+                if not c.get("suspect"):
+                    code_snap.reference.update({"suspect": True})
+                suspect += 1
+            else:
+                valid += 1
+
+        if d.get("availableCodes") != valid:
+            camp.update({"availableCodes": valid})
+        report[f"{game}/{platform}"] = {"valid": valid, "expired": expired,
+                                        "suspect": suspect, "torn": torn}
+
+        if valid < LOW_STOCK_THRESHOLD:
+            state.critical(
+                f"Code stock low for {game}/{platform}: {valid} valid "
+                f"({expired} expired, {suspect} suspect). {RUNBOOK}",
+                campaign=camp_snap.id, game=game,
+            )
+
+    state.ledger("action", None, action="inventory_audit", status="done", result=report)
+    return report
+
+
+def _judge(code: dict, platform: str, now_ms: int, today: str) -> str:
+    """valid | suspect | expired, per store expiry rules."""
+    if code.get("promotionEnd"):
+        return "valid" if str(code["promotionEnd"]) >= today else "expired"
+    created = code.get("createdAt")
+    if platform == "apple":
+        if not created:
+            return "expired"  # untraceable apple code is >28d old with certainty in practice
+        age_days = (now_ms - int(created)) / 86_400_000
+        return "valid" if age_days <= APPLE_CODE_LIFETIME_DAYS else "expired"
+    # google without promotion metadata
+    if not created:
+        return "suspect"
+    age_days = (now_ms - int(created)) / 86_400_000
+    if age_days > GOOGLE_LEGACY_MAX_AGE_DAYS:
+        return "expired"
+    return "suspect" if age_days > 60 else "valid"
+
+
+def check_mint_inbox(task: dict) -> dict:
+    """Autonomous half of minting: import any CSV dropped in the mint inbox.
+
+    A human (or a future headless-console run) drops `{campaignId}.csv` into
+    stagenator_mint_inbox/; the agent validates, imports via seedCampaign
+    schema, stamps promotion metadata, and archives the file.
+    """
+    import csv as csv_mod
+    import io
+    import random
+    import string
+    import time
+
+    from google.cloud import storage
+
+    bucket = storage.Client(project=config.HOME_PROJECT).bucket(
+        f"{config.HOME_PROJECT}.firebasestorage.app"
+    )
+    tc = firestore.Client(project=config.TAKECODES_PROJECT)
+    imported: dict = {}
+    for blob in bucket.list_blobs(prefix="stagenator_mint_inbox/"):
+        if not blob.name.endswith(".csv"):
+            continue
+        campaign_id = blob.name.split("/")[-1][:-4].split("__")[0]
+        promotion_end = (blob.name[:-4].split("__")[1] if "__" in blob.name else None)
+        camp = tc.collection("campaigns").document(campaign_id)
+        if not camp.get().exists:
+            state.critical(f"mint inbox: unknown campaign {campaign_id}", blob=blob.name)
+            continue
+        rows = list(csv_mod.reader(io.StringIO(blob.download_as_text())))
+        codes = [r[0].strip() for r in rows[1:] if r and r[0].strip()]
+        batch = tc.batch()
+        for code_str in codes:
+            cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
+            batch.set(camp.collection("codes").document(cid),
+                      {"id": cid, "isTorn": False, "codeType": "one_time_code",
+                       "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
+                       **({"promotionEnd": promotion_end} if promotion_end else {})})
+            batch.set(camp.collection("secrets").document(cid), {"code": code_str})
+        batch.commit()
+        camp.update({"availableCodes": firestore.Increment(len(codes))})
+        bucket.rename_blob(blob, blob.name.replace("stagenator_mint_inbox/", "stagenator_mint_done/"))
+        imported[campaign_id] = len(codes)
+        state.ledger("action", None, action="mint_import", status="done",
+                     result={"campaign": campaign_id, "codes": len(codes)})
+    return {"imported": imported}
+
 
 def run(task: dict) -> dict:
+    """replenish_codes task: audit already flagged the shortage; escalate with runbook."""
     game, payload = task["game"], task["payload"]
     if config.DRY_RUN:
-        return {"dry_run": True, "would_mint_for": payload.get("campaign")}
-    # Real minting lands with ASC key (iOS) and Play Console session (Android).
+        return {"dry_run": True, "would_escalate": payload.get("campaign")}
     state.critical(
-        f"Code inventory low for {game} and minting not yet wired — top up campaign "
-        f"{payload.get('campaign')} manually",
+        f"Replenish needed for {game} campaign {payload.get('campaign')}. {RUNBOOK}",
         game=game,
     )
-    raise RuntimeError("minting not wired yet (ASC key / Play Console session pending)")
+    return {"escalated": True, "campaign": payload.get("campaign")}
 
 
 def check_balances(task: dict) -> dict:

@@ -14,6 +14,8 @@ _DISPATCH = {
     "promo_banner": codes.run_banner,
     "replenish_codes": replenish.run,
     "check_balances": replenish.check_balances,
+    "audit_inventory": replenish.audit_inventory,
+    "mint_import": replenish.check_mint_inbox,
 }
 
 

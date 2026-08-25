@@ -491,6 +491,14 @@ function CostOverview() {
             <div className="text-zinc-600 mt-1">
               Enable Billing → BigQuery export; real spend appears once it populates.
             </div>
+            {cost.runpod_balance_usd != null && (
+              <div className="flex justify-between items-baseline mt-2 pt-2 border-t border-zinc-800">
+                <span className="text-zinc-400">Runpod balance</span>
+                <span className={`font-bold text-sm ${Number(cost.runpod_balance_usd) < 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  ${Number(cost.runpod_balance_usd).toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -530,8 +538,13 @@ function CostOverview() {
             ))}
           </>
         )}
-        <div className="text-zinc-600 pt-1 border-t border-zinc-800">
-          Runpod: {String(cost.runpod_note ?? 'external')}
+        <div className="flex justify-between items-baseline pt-1 border-t border-zinc-800 text-zinc-500">
+          <span>Runpod balance <span className="text-zinc-600">· prepaid, not in GCP billing</span></span>
+          {cost.runpod_balance_usd != null && (
+            <span className={Number(cost.runpod_balance_usd) < 5 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+              ${Number(cost.runpod_balance_usd).toFixed(2)}
+            </span>
+          )}
         </div>
       </div>
     </section>

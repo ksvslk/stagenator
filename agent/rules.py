@@ -86,6 +86,15 @@ def refresh_cost_summary() -> None:
     from google.cloud import bigquery
 
     from agent import state
+    from agent.tools import runpod
+
+    # Live external-service balance (Runpod prepaid) — shown even before GCP
+    # billing export populates, so the panel always carries a real number.
+    try:
+        runpod_balance = runpod.account_balance()
+    except Exception as e:  # never let a balance hiccup break cost refresh
+        log.warning("runpod balance read failed: %s", e)
+        runpod_balance = None
 
     bq = bigquery.Client(project=config.HOME_PROJECT)
     # Either export flavor works — both carry project.id/service/cost/credits.
@@ -105,6 +114,7 @@ def refresh_cost_summary() -> None:
     if not table:
         doc.set({"status": "awaiting billing export (enable in console)",
                  "projects": projects,
+                 "runpod_balance_usd": runpod_balance,
                  "runpod_note": "external prepaid service — not in GCP billing",
                  "updated": state.now()})
         return
@@ -155,6 +165,7 @@ def refresh_cost_summary() -> None:
         "projects": projects,
         "budget_usd": round(budget_usd, 2),
         "budget_pct": round(100 * month / budget_usd, 1) if budget_usd else 0,
+        "runpod_balance_usd": runpod_balance,
         "runpod_note": "external prepaid service — not in GCP billing",
         "updated": state.now(),
     })

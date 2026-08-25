@@ -70,6 +70,13 @@ def detect(node_input: str) -> Event:
 def gate(node_input: dict) -> dict:
     """Validate the Strategist's structured Decision, enqueue what passes."""
     result = guardrails.gate_and_enqueue(node_input)
+    # every decision is visible — including deliberate inaction
+    state.ledger(
+        "decision", None, action="strategist",
+        actions=len(node_input.get("actions", [])),
+        enqueued=len(result["enqueued"]), rejected=len(result["rejected"]),
+        notes=str(node_input.get("notes", ""))[:500],
+    )
     for d in state.pending_directives():
         responses = [
             r for a in node_input.get("actions", []) for r in (a.get("directive_responses") or [])

@@ -41,7 +41,8 @@ def design_level(used: set[str]) -> dict | None:
         "You design levels for 'AI Movie Quiz' — players watch an 8-second AI-generated "
         "clip that *evokes* a famous movie (mood, setting, iconic imagery) and guess the film.\n"
         f"Movies already used (do NOT repeat): {sorted(used)[:300]}\n"
-        "Pick ONE widely-known movie (any era, internationally recognizable) and write a "
+        "Pick ONE widely-known movie (any era, internationally recognizable) — give its title "
+        "in proper official capitalization — and write a "
         "Veo video prompt for an 8-second cinematic clip that clearly evokes it WITHOUT "
         "using the title, character names, actor likenesses, or any on-screen text/logos. "
         "Think: the iconic scenario, reimagined.\n"
@@ -137,7 +138,7 @@ def submit_level(design: dict, final_path: str, level_number: int) -> dict:
             {
                 # exact schema enforced by firestore.rules isValidLevelData
                 "levelNumber": level_number,
-                "name": design["movie"],
+                "name": design["movie"].strip(),  # proper title case requested from the model
                 "path": final_path,
                 "sound": design.get("sound") or "drama",
                 "characteristic": design.get("characteristic") or "Iconic",

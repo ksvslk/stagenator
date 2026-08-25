@@ -95,9 +95,11 @@ def run_personal_codes(task: dict) -> dict:
         })
         url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
         try:
-            fcm.send_to_token(game, token, title="A gift for you 🎁",
-                              body=payload.get("reason") or "You've earned a reward — tap to claim it.",
-                              data={"claimUrl": url})
+            _r = payload.get("reason")
+            _b = (f"{_r} Your code is reserved just for you — tap to claim."
+                  if _r else "You've earned a reward, reserved just for you — tap to claim.")
+            fcm.send_to_token(game, token, title="🎁 A gift for you",
+                              body=_b, data={"claimUrl": url})
             sent.append(uid)
         except Exception as e:  # one bad token never blocks the rest
             _tc().collection("campaigns").document(inv_campaign).collection("codes") \
@@ -141,10 +143,14 @@ def _run_drop_shared(task: dict) -> dict:
     topic = config.GAMES[game]["level_push_topic"]
     push = None
     if topic:
+        _reason = payload.get("reason")
+        _body = (f"{_reason} Limited codes — first come, first served! ⏳"
+                 if _reason else
+                 "A limited code drop just went live — grab yours before they're gone! ⏳")
         push = fcm.send_topic_push(
             game,
-            title="A gift for you 🎁",
-            body=payload.get("reason") or "A limited code drop just went live — first come, first served!",
+            title="🎁 Limited code drop",
+            body=_body,
             data={"claimUrl": url},
         )
     return {"drop_id": drop_id, "url": url, "codes": len(code_ids), "push": push}

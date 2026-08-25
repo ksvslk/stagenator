@@ -206,6 +206,8 @@ function Dashboard() {
             </div>
           </section>
 
+          <LevelsOverview ledger={ledger} tasks={tasks} />
+
           <section>
             <SectionTitle>
               Playbook{' '}
@@ -247,6 +249,56 @@ function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
+  const GAMES = ['subliminal-words', 'ai-movie-quiz', 'palindrome'];
+  const levelEvents = ledger.filter(
+    (e) => e.kind === 'action' && e.action === 'level_pipeline' && (e.status === 'done' || e.status === 'preview'),
+  );
+  const pendingByGame = (g: string) =>
+    tasks.filter((t) => t.type === 'level_pipeline' && t.game === g && (t.status === 'pending' || t.status === 'running')).length;
+
+  const title = (r: Record<string, unknown>) =>
+    String(r.movie ?? r.word ?? r.published ?? r.would_publish ?? '?');
+
+  return (
+    <section>
+      <SectionTitle>Levels created</SectionTitle>
+      <div className="flex flex-col gap-3">
+        {GAMES.map((g) => {
+          const events = levelEvents.filter((e) => e.game === g);
+          const pending = pendingByGame(g);
+          return (
+            <div key={g} className="bg-zinc-900/60 rounded-lg p-2.5">
+              <div className="flex items-baseline gap-2 text-[11px] mb-1">
+                <span className="text-zinc-200 font-bold">{g}</span>
+                <span className="text-zinc-600 ml-auto">
+                  {events.length} created{pending ? ` · ${pending} pending` : ''}
+                </span>
+              </div>
+              {events.length === 0 && !pending && <Empty>none yet</Empty>}
+              {events.slice(0, 4).map((e) => {
+                const r = (e.result ?? {}) as Record<string, unknown>;
+                return (
+                  <div key={e.id} className="text-[11px] flex gap-2 items-baseline py-0.5">
+                    <span className={e.status === 'preview' ? 'text-amber-400' : 'text-emerald-400'}>
+                      {e.status === 'preview' ? '◔ preview' : '✓ live'}
+                    </span>
+                    <span className="text-zinc-300 font-bold">{title(r)}</span>
+                    {r.qa ? <span className="text-zinc-500">qa:{String(r.qa)}</span> : null}
+                    {r.levelId ? <span className="text-zinc-500">#{String(r.levelId)}</span> : null}
+                    {r.level ? <span className="text-zinc-500">#{String(r.level)}</span> : null}
+                    <span className="text-zinc-600 ml-auto">{ts(e.ts)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

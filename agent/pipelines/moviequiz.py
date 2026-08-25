@@ -162,6 +162,32 @@ def submit_level(design: dict, final_path: str, level_number: int) -> dict:
     return {"level": level_number, "movie": design["movie"], "path": final_path}
 
 
+def _self_validate(level_number: int, video_path: str) -> None:
+    """Post-publish: level doc matches schema and the processed video blob exists."""
+    from google.cloud import storage
+
+    gdb = state.game_db("ai-movie-quiz")
+    doc = gdb.collection("levels").document(str(level_number)).get().to_dict() or {}
+    problems = []
+    for k in ("levelNumber", "name", "path", "sound", "characteristic", "hints"):
+        if k not in doc:
+            problems.append(f"missing {k}")
+    if not all(h in (doc.get("hints") or {}) for h in ("actor", "quote", "year")):
+        problems.append("hints incomplete")
+    bucket = storage.Client(project="operation-sunrise").bucket(BUCKET)
+    if not bucket.blob(video_path).exists():
+        problems.append(f"video blob missing: {video_path}")
+    if problems:
+        # roll back cleanly (delete level + decrement counter) so a retry re-ships
+        # at the same number — AMQ shows levels by counter, so a broken one can't
+        # just be disabled.
+        gdb.collection("levels").document(str(level_number)).delete()
+        gdb.collection("counters").document("levelsCounter").update(
+            {"count": firestore.Increment(-1)})
+        state.critical(f"AMQ level {level_number} failed self-validation, rolled back: {problems}")
+        raise RuntimeError(f"self-validation failed: {problems}")
+
+
 def run(task: dict) -> dict:
     used = existing_movies()
     design = None
@@ -184,6 +210,7 @@ def run(task: dict) -> dict:
     next_n = (gdb.collection("counters").document("levelsCounter").get().to_dict() or {}).get("count", 0) + 1
     final_path = process_video(clip, next_n)
     result = submit_level(design, final_path, next_n)
+    _self_validate(next_n, final_path)
 
     from agent.tools import preview
 

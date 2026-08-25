@@ -279,6 +279,29 @@ def _upload_webp(bucket, path: str, png_bytes: bytes, size: int | None = None) -
 
 # ------------------------------------------------------------------- runner ----
 
+def _self_validate(level_id: str, word: str, svg: str) -> None:
+    """Post-publish check: the delivered solution SVG must be canonical and have
+    exactly one positioned <text> per letter. On failure, disable the level and
+    raise (so the task retries -> re-ships a good one)."""
+    problems = []
+    if 'font-family="Roboto' not in svg or "data-x=" not in svg:
+        problems.append("solution SVG not in canonical format")
+    n_text = svg.count("</text>")
+    if n_text != len(word):
+        problems.append(f"solution has {n_text} letters, word has {len(word)}")
+    for i in range(len(word)):
+        if f'id="letter_{i+1}"' not in svg:
+            problems.append(f"missing letter_{i+1}")
+            break
+    if problems:
+        gdb = state.game_db("subliminal-words")
+        gdb.collection("packs").document(PACK_ID).collection("levels").document(str(level_id)).update(
+            {"isEnabled": False, "selfHealReason": "; ".join(problems)})
+        state.critical(f"Subliminal level {level_id} ({word}) failed self-validation, "
+                       f"disabled: {problems}")
+        raise RuntimeError(f"self-validation failed: {problems}")
+
+
 def run(task: dict) -> dict:
     payload = task.get("payload", {})
     used = existing_words()
@@ -308,6 +331,7 @@ def run(task: dict) -> dict:
         raise RuntimeError(f"QA rejected puzzle for {design['word']}: {json.dumps(qa)[:200]}")
 
     result = submit_level(design["word"], puzzle_png, svg, meta=design | {"qa": qa})
+    _self_validate(result["level"], design["word"], svg)
 
     from agent.tools import preview
 

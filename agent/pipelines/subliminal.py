@@ -132,7 +132,7 @@ def build_solution_svg(layout: list[dict], word: str) -> str:
 BASE_FONT_SIZE = 150  # kept for eval import compatibility
 
 
-def render_mask(layout: list[dict], solution_svg: str | None = None) -> bytes:
+def render_mask(layout: list[dict], solution_svg: str | None = None, paint: bool = False) -> bytes:
     """ControlNet mask = the canonical solution SVG rasterized to 1024x1024
     (black letters on white). Rasterizing the SAME svg guarantees the hidden
     word lands exactly where the solution highlights it. Uses PIL with the same
@@ -166,9 +166,32 @@ def render_mask(layout: list[dict], solution_svg: str | None = None) -> bytes:
         tile = tile.rotate(-L["rotationDegrees"], resample=Image.BICUBIC, center=(cx, cy))
         px, py = int(L["x"] * CANVAS), int(L["y"] * CANVAS)
         img.paste(0, (px - pad // 2, py - pad // 2), mask=tile)
+    if paint:
+        _add_paint_strokes(img, layout)
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="PNG")
     return buf.getvalue()
+
+
+def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
+    """Agent equivalent of the admin dashboard's paint mode: a few freehand brush
+    strokes swept across the word band and baked into the ControlNet mask, so the
+    generated puzzle carries extra obscuring marks and the hidden word is harder to
+    pick out. The reveal SVG stays clean letters — strokes live only in the mask."""
+    from PIL import ImageDraw
+
+    d = ImageDraw.Draw(img)
+    xs = [L["x"] * CANVAS for L in layout]
+    x0, x1 = min(xs), max(xs)
+    ymid = (sum(L["y"] for L in layout) / len(layout)) * CANVAS
+    for _ in range(n if n is not None else random.randint(2, 4)):
+        width = random.randint(8, 34)                  # brush size (admin range 1-50)
+        sx = random.uniform(x0 - 80, x0 + 120)
+        ex = random.uniform(x1 - 120, x1 + 80)
+        steps = random.randint(4, 7)
+        pts = [(sx + (ex - sx) * (i / (steps - 1)), ymid + random.uniform(-140, 140))
+               for i in range(steps)]
+        d.line(pts, fill=0, width=width, joint="curve")
 
 
 # ---------------------------------------------------------------- QA + dedup ----
@@ -323,15 +346,14 @@ def run(task: dict) -> dict:
 
     layout = build_layout(design["word"])
     svg = build_solution_svg(layout, design["word"])
-    mask_png = render_mask(layout, svg)
+    # "Paint mode" on some levels (agent-equivalent of the admin paint tool): brush
+    # strokes baked into the mask to make the hidden word harder to guess.
+    paint = payload.get("paint")
+    paint = (random.random() < 0.35) if paint is None else bool(paint)
+    mask_png = render_mask(layout, svg, paint=paint)
     # Difficulty = ControlNet strength (higher = word more visible = easier). Keep it
     # STABLE: only a small ±0.1 variance around the 1.0 baseline for variety — no big swings.
     difficulty = round(1.0 + random.uniform(-0.10, 0.10), 3)
-    # "Paint mode" on some levels: lower ControlNet end_percent so the letters only guide
-    # early diffusion, then the scene is painted more freely (word subtler, less letter-y).
-    paint = payload.get("paint")
-    paint = (random.random() < 0.35) if paint is None else bool(paint)
-    end_percent = 0.55 if paint else 1.0
 
     if config.DRY_RUN:
         return {"dry_run": True, "word": design["word"], "prompt": design["prompt"],
@@ -339,7 +361,7 @@ def run(task: dict) -> dict:
                 "culture": culture, "mask_bytes": len(mask_png)}
 
     puzzle_png = runpod.generate_puzzle(
-        design["prompt"], difficulty, base64.b64encode(mask_png).decode(), end_percent=end_percent
+        design["prompt"], difficulty, base64.b64encode(mask_png).decode()
     )
     qa = qa_puzzle(puzzle_png, design["word"])
     if not qa.get("pass"):

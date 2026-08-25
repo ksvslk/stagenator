@@ -156,15 +156,50 @@ def check_mint_inbox(task: dict) -> dict:
 
 
 def run(task: dict) -> dict:
-    """replenish_codes task: audit already flagged the shortage; escalate with runbook."""
+    """replenish_codes task.
+
+    Apple campaigns with a giftIapId: FULLY AUTONOMOUS — mint a fresh offer-code
+    batch via the ASC API and import 50 into the campaign (rest of the batch
+    stays unimported; batches are free and expiry-tracked).
+    Everything else (Play Console; apple without a configured gift): escalate
+    with the runbook.
+    """
+    import random
+    import string
+    import time as _time
+
     game, payload = task["game"], task["payload"]
     if config.DRY_RUN:
-        return {"dry_run": True, "would_escalate": payload.get("campaign")}
+        return {"dry_run": True, "would_replenish": payload.get("campaign")}
+
+    campaign_id = payload.get("campaign")
+    tc = firestore.Client(project=config.TAKECODES_PROJECT)
+    camp = tc.collection("campaigns").document(campaign_id)
+    d = camp.get().to_dict() or {}
+    platform = d.get("stagenatorPlatform") or d.get("platform")
+
+    if platform == "apple" and d.get("giftIapId"):
+        from agent.tools import asc
+
+        rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
+        batch = tc.batch()
+        for code, url in rows[:50]:
+            cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
+            batch.set(camp.collection("codes").document(cid),
+                      {"id": cid, "isTorn": False, "codeType": "one_time_code",
+                       "createdAt": int(_time.time() * 1000), "mintedBy": "stagenator",
+                       "promotionEnd": expiration, "offerType": "iap_offer_code"})
+            batch.set(camp.collection("secrets").document(cid), {"code": code, "redeemUrl": url})
+        batch.commit()
+        camp.update({"availableCodes": firestore.Increment(50)})
+        return {"autonomous": True, "store": "app-store", "imported": 50,
+                "minted": len(rows), "valid_until": expiration}
+
     state.critical(
-        f"Replenish needed for {game} campaign {payload.get('campaign')}. {RUNBOOK}",
+        f"Replenish needed for {game} campaign {campaign_id}. {RUNBOOK}",
         game=game,
     )
-    return {"escalated": True, "campaign": payload.get("campaign")}
+    return {"escalated": True, "campaign": campaign_id}
 
 
 def check_balances(task: dict) -> dict:

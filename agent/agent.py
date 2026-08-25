@@ -163,7 +163,7 @@ root_agent = Workflow(
         # routed by trigger kind
         (dispatch, {"pulse": detect, "nightly": gather_day, "replenish": plan_replenish}),
         # pulse / eventarc fast path
-        (detect, {"decide": strategist, "idle": idle}),
+        (detect, {"decide": strategist, "idle": execute}),  # idle still drains the queue
         (strategist, gate),
         (gate, execute),
         # nightly learning loop

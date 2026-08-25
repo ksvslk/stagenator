@@ -20,6 +20,19 @@ _DISPATCH = {
 }
 
 
+def _faultdrill(task: dict) -> dict:
+    """Canary: always raises, to prove retry -> dead-letter -> alert works
+    without wedging the loop. Payload {"mode": "transient"} succeeds on the
+    3rd attempt to demonstrate recovery-by-retry."""
+    attempts = task.get("attempts", 0)
+    if task.get("payload", {}).get("mode") == "transient" and attempts >= 3:
+        return {"recovered": True, "on_attempt": attempts}
+    raise RuntimeError(f"fault drill: deliberate failure (attempt {attempts})")
+
+
+_DISPATCH["faultdrill"] = _faultdrill
+
+
 def run_task(task: dict) -> dict:
     handler = _DISPATCH.get(task["type"])
     if handler is None:

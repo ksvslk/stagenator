@@ -1,103 +1,35 @@
-flowchart TB
+flowchart LR
+  subgraph SIGNALS["📡 Signals"]
+    GA["Google Analytics<br/>+ BigQuery"]
+    EV["Eventarc<br/>(new user)"]
+  end
 
-subgraph PLAYERS["🎮 Players & Games"]
-  SW["Subliminal Words<br/>(Flutter · FCM ✓)"]
-  MQ["AI Movie Quiz<br/>(Flutter · FCM ✓)"]
-  PAL["Palindrome<br/>(native · no FCM)"]
-end
+  subgraph BRAIN["🧠 Stagenator · Cloud Run (ADK)"]
+    direction TB
+    RULES["detect · code"] --> STRAT["🤖 Strategist<br/>Gemini · decides"]
+    STRAT --> GUARD["guardrails · caps"]
+    GUARD --> QUEUE["task queue<br/>idempotent · retry · dead-letter"]
+    REFL["🌙 Reflector<br/>Gemini · learns nightly"]
+  end
 
-subgraph SIGNALS["📡 Signal Layer"]
-  GA["Google Analytics 4<br/>3 properties"]
-  BQ["BigQuery<br/>GA4 export · per-user events<br/>streaks · cohorts · funnels"]
-  EA["Eventarc<br/>Firestore triggers (Tier 1)"]
-end
+  subgraph ACT["⚙️ Actions (code + tools)"]
+    LEVELS["ship levels<br/>Runpod · Veo · Gemini"]
+    CODES["send codes<br/>Apple API · Play email"]
+    AUDIT["audit + replenish<br/>codes never expire silently"]
+  end
 
-subgraph TRIGGERS["⏰ Triggers (Cloud Scheduler)"]
-  T1["pulse · every 5 min"]
-  T2["nightly · Reflector"]
-  T3["replenish · daily"]
-end
+  subgraph OUT["📬 Players & Owner"]
+    GAMES["3 games<br/>levels + pushes"]
+    PROFFER["proffer.codes<br/>no-login claim"]
+    MC["Mission Control<br/>+ daily brief"]
+  end
 
-subgraph BRAIN["🧠 Stagenator — ADK on Cloud Run (operation-sunrise)"]
-  RULES["rules.py<br/>signal detection — pure code"]
-  STRAT["Strategist<br/>LlmAgent · Gemini<br/>structured Action out"]
-  GUARD["guardrails.py<br/>hard caps · before_tool"]
-  QUEUE["task queue<br/>idempotent · retries · dead-letter"]
-  REFL["Reflector<br/>LlmAgent · Gemini<br/>outcomes → playbook + daily brief"]
-end
-
-subgraph TOOLS["🔧 Tools & MCPs"]
-  GAMCP["GA MCP<br/>(official)"]
-  BQT["BigQuery<br/>segment queries"]
-  FST["Firestore Admin SDK<br/>transactional writes"]
-  FCM["FCM<br/>topic + token pushes"]
-  VEO["Veo 3.1 Lite<br/>Vertex AI · 8s clips"]
-  RP["Runpod MCP<br/>puzzle images"]
-  ASC["App Store Connect API<br/>offer codes"]
-  CHR["Chrome DevTools MCP<br/>headless · Play Console ONLY"]
-end
-
-subgraph PIPES["⚙️ Executor Pipelines (plain code)"]
-  P1["level: Subliminal Words<br/>Runpod img → solution SVG →<br/>validate+dedup → submit"]
-  P2["level: AI Movie Quiz<br/>Veo clip → validate → submit"]
-  P3["level: Palindrome<br/>curate submissions → fill hints →<br/>levelId + isFeatured"]
-  P4["codes<br/>reserve → claim/drop link →<br/>push / banner"]
-  P5["replenish<br/>mint Play + ASC codes ·<br/>Runpod balance check"]
-end
-
-subgraph STATE["🗄️ Firestore State (system of record)"]
-  LED["decision ledger"]
-  PB["playbook<br/>learned strategy · CEO directives"]
-  GFS["game projects<br/>levels · packs · fcmTokens · promos"]
-  TC["take-codes<br/>campaigns · codes · claims"]
-end
-
-subgraph DELIVER["📬 Delivery"]
-  PUSH["push notifications<br/>new level (auto) · code drops"]
-  CLAIM["proffer.codes<br/>/claim/:token · /drop/:dropId<br/>anonymous auth · no login wall"]
-  BAN["Palindrome promos banner"]
-  STORES["Play Store / App Store<br/>redeem links"]
-end
-
-subgraph OBS["👁️ Observability (human watches, never blocks)"]
-  MC["Mission Control<br/>Vite PWA · live ledger · playbook diff<br/>CEO directive input"]
-  BRIEF["daily brief<br/>FCM web push"]
-  ALERT["CRITICAL alerts → email<br/>budget alerts · Runpod low balance"]
-end
-
-SW & MQ & PAL -->|events| GA
-GA -->|export| BQ
-GFS -->|user-doc writes| EA
-
-GA --> GAMCP --> RULES
-BQ --> BQT --> RULES
-EA -->|instant| RULES
-T1 & T2 & T3 --> BRAIN
-T2 --> REFL
-
-RULES -->|signals| STRAT
-PB -.->|strategy| STRAT
-STRAT --> GUARD --> QUEUE
-QUEUE --> P1 & P2 & P3 & P4
-T3 --> P5
-
-P1 --> RP
-P1 & P2 & P3 --> FST -->|level write| GFS
-P2 --> VEO
-P4 --> TC
-P4 --> FCM --> PUSH
-P4 --> BAN
-P5 --> CHR -->|Play promo codes| TC
-P5 --> ASC -->|offer codes| TC
-
-GFS -->|notifyOnNewLevel trigger| PUSH
-PUSH --> CLAIM
-CLAIM --> STORES
-CLAIM -->|tear transaction| TC
-
-P1 & P2 & P3 & P4 & P5 --> LED
-LED --> REFL -->|updates| PB
-REFL --> BRIEF
-LED --> MC
-MC -->|directives| PB
-BRAIN --> ALERT
+  CLOCK(["⏰ every 5 min · nightly"]) --> RULES
+  GA --> RULES
+  EV --> RULES
+  QUEUE --> LEVELS --> GAMES
+  QUEUE --> CODES --> PROFFER
+  QUEUE --> AUDIT --> PROFFER
+  LEVELS & CODES & AUDIT --> LEDGER[("Firestore<br/>ledger + playbook")]
+  LEDGER --> REFL --> STRAT
+  LEDGER --> MC

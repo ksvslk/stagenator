@@ -459,7 +459,7 @@ function CostOverview() {
   );
 }
 
-function Directives() {function Directives() {
+function Directives() {
   const [text, setText] = useState('');
   const [sent, setSent] = useState(false);
   const directives = useCollection('stagenator_directives', 'ts', 5);

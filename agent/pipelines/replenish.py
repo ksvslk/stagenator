@@ -178,8 +178,18 @@ def run(task: dict) -> dict:
     d = camp.get().to_dict() or {}
     platform = d.get("stagenatorPlatform") or d.get("platform")
 
-    if platform == "apple" and d.get("giftIapId"):
+    if platform == "apple":
         from agent.tools import asc
+
+        if not d.get("giftIapId"):
+            gift = _select_gift(game, d)
+            if not gift:
+                state.critical(f"Could not select a gift product for {game}/apple. {RUNBOOK}", game=game)
+                return {"escalated": True, "campaign": campaign_id, "reason": "gift selection failed"}
+            camp.update({"giftIapId": gift["id"], "giftProduct": gift.get("productId")})
+            d["giftIapId"] = gift["id"]
+            state.ledger("decision", game, action="gift_selection",
+                         reason=gift.get("reason", ""), product=gift.get("productId"))
 
         rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
         batch = tc.batch()
@@ -200,6 +210,45 @@ def run(task: dict) -> dict:
         game=game,
     )
     return {"escalated": True, "campaign": campaign_id}
+
+
+def _select_gift(game: str, campaign: dict) -> dict | None:
+    """Bounded LLM choice: pick the gift product from the app's REAL catalog.
+
+    Guardrails: the choice must exist in the catalog (validated in code);
+    playbook philosophy + any pending CEO directives steer the taste."""
+    from agent.tools import asc, genai_client
+
+    app_id = config.GAMES.get(game, {}).get("app_store_id")
+    if not app_id:
+        return None
+    catalog = asc.list_products(app_id)
+    if not catalog:
+        return None
+    playbook = state.get_playbook()
+    directives = [d.get("text", "") for d in state.pending_directives()]
+    reply = genai_client.generate_json(
+        f"You choose which product an engagement agent gifts to players of {game!r} "
+        f"via free App Store offer codes.\n"
+        f"Catalog (choose EXACTLY one by its 'id'): {catalog}\n"
+        f"Playbook philosophy: {playbook.get('philosophy','')}\n"
+        f"Owner directives (highest priority if relevant): {directives}\n"
+        "Guidance: prefer a meaningful mid-tier gift (quality-of-life like ads removal, "
+        "or a content pack) over the full-unlock bundle (protects future revenue) — "
+        "unless a directive says otherwise.\n"
+        'Reply JSON: {"id": "...", "productId": "...", "reason": "one sentence"}'
+    )
+    if not reply or not reply.get("id"):
+        return None
+    valid = {p["id"]: p for p in catalog}
+    if reply["id"] not in valid:
+        return None
+    chosen = valid[reply["id"]]
+    if chosen["kind"] != "iap":
+        # subscription offer codes need the prices ceremony — restrict to IAPs for now
+        iaps = [p for p in catalog if p["kind"] == "iap"]
+        return ({**iaps[0], "reason": "fallback: chosen product was a subscription"} if iaps else None)
+    return {**chosen, "reason": reply.get("reason", "")}
 
 
 def check_balances(task: dict) -> dict:

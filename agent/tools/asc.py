@@ -43,6 +43,26 @@ def _req(method: str, path: str, **kw) -> dict:
     return r.json() if r.text else {}
 
 
+def list_products(app_store_id: str) -> list[dict]:
+    """The app's reward catalog: approved one-time IAPs + subscriptions."""
+    products = []
+    iaps = _req("GET", f"/apps/{app_store_id}/inAppPurchasesV2?limit=50").get("data", [])
+    for i in iaps:
+        a = i["attributes"]
+        if a.get("state") == "APPROVED":
+            products.append({"id": i["id"], "productId": a.get("productId"),
+                             "name": a.get("name"), "kind": "iap",
+                             "type": a.get("inAppPurchaseType")})
+    for g in _req("GET", f"/apps/{app_store_id}/subscriptionGroups").get("data", []):
+        for s_ in _req("GET", f"/subscriptionGroups/{g['id']}/subscriptions").get("data", []):
+            a = s_["attributes"]
+            if a.get("state") == "APPROVED":
+                products.append({"id": s_["id"], "productId": a.get("productId"),
+                                 "name": a.get("name"), "kind": "subscription",
+                                 "period": a.get("subscriptionPeriod")})
+    return products
+
+
 def find_or_create_iap_offer(iap_id: str) -> str:
     """Reuse or create the 'Stagenator Gift' free offer on a one-time IAP."""
     offers = requests.get(f"{API.replace('/v1','')}/v2/inAppPurchases/{iap_id}/offerCodes",

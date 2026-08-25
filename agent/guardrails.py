@@ -34,6 +34,8 @@ def validate(action: dict) -> dict | None:
         return {"error": f"unknown action type {t!r}"}
     if game not in config.GAMES:
         return {"error": f"unknown game {game!r}"}
+    if game not in config.ACTIVE_GAMES:
+        return {"error": f"{game} is not active"}
 
     if t in ("send_code_drop", "send_individual_code"):
         sent = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)

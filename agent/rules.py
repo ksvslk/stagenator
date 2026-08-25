@@ -118,7 +118,7 @@ def detect_signals() -> list[dict]:
     recent = state.recent_ledger(hours=4, kind="signal")
     seen = {(e.get("game"), e.get("signal"), e.get("detail")) for e in recent}
 
-    for game in config.GAMES:
+    for game in config.ACTIVE_GAMES:
         snapshot = realtime_snapshot(game)
         active = sum(snapshot.values())
         if active > 0:

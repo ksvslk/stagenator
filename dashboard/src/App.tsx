@@ -317,7 +317,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
 
 function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
-  const GAMES = ['subliminal-words', 'ai-movie-quiz', 'palindrome'];
+  const GAMES = ['subliminal-words', 'ai-movie-quiz'];  // palindrome inactive (Future Phase)
   const levelEvents = ledger.filter((e) => {
     const r = (e.result ?? {}) as Record<string, unknown>;
     return (
@@ -394,7 +394,7 @@ function CodesOverview() {
                 stock {Object.entries(stock).map(([p, s]) => `${p}:${s.available ?? '?'}`).join(' · ')}
               </span>
               <span className="text-emerald-400 ml-auto">
-                {claims.teared ?? 0} teared / {claims.codes_backing ?? 0} sent
+                {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
               </span>
             </div>
           );

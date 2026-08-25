@@ -17,7 +17,7 @@ class Action(BaseModel):
         description="One of: ship_level | send_code_drop | send_individual_code | "
         "activate_promo_banner | send_level_push | none"
     )
-    game: str = Field(description=f"One of: {', '.join(config.GAMES)}")
+    game: str = Field(description=f"One of: {', '.join(config.ACTIVE_GAMES)}")
     reason: str = Field(description="One sentence: why this action, tied to a signal + playbook rule")
     segment: str | None = Field(default=None, description="Target segment description, if applicable")
     platform: str | None = Field(default=None, description="android | ios | both, if applicable")
@@ -36,7 +36,7 @@ strategist = LlmAgent(
     model=config.MODEL,
     instruction=(
         "You are the Strategist of Stagenator, an autonomous engagement & retention "
-        "agent for three small mobile games (Subliminal Words, AI Movie Quiz, Palindrome).\n\n"
+        "agent for small mobile games (Subliminal Words, AI Movie Quiz).\n\n"
         "You receive: detected signals (from Google Analytics realtime + code inventory), "
         "the current PLAYBOOK (your learned strategy — follow it), recent ledger entries "
         "(what was already done — never repeat an equivalent action), and any CEO "

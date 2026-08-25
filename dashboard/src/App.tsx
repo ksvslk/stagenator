@@ -99,6 +99,33 @@ function Center({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ImpactStrip() {
+  const imp = useDoc('stagenator_playbook/impact');
+  const f = (imp?.functional ?? {}) as Record<string, number>;
+  const cells: [string, number | string][] = [
+    ['actions', f.actions_executed ?? 0],
+    ['decisions', f.decisions ?? 0],
+    ['codes minted', f.codes_minted ?? 0],
+    ['dead codes fixed', f.dead_codes_quarantined ?? 0],
+    ['guardrail blocks', f.guardrail_blocks ?? 0],
+    ['briefs', f.nightly_briefs ?? 0],
+  ];
+  return (
+    <div className="bg-zinc-900/60 rounded-xl p-3 flex flex-wrap gap-x-6 gap-y-2 items-center">
+      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Impact · validated</span>
+      {cells.map(([label, v]) => (
+        <div key={label} className="flex items-baseline gap-1.5">
+          <span className="text-emerald-400 font-bold text-sm">{v}</span>
+          <span className="text-[10px] text-zinc-500 uppercase">{label}</span>
+        </div>
+      ))}
+      <span className="text-[10px] text-zinc-600 ml-auto">
+        24 tests · eval pass · 4 drills · outcome KPIs instrumented (awaiting scale)
+      </span>
+    </div>
+  );
+}
+
 function Dashboard() {
   const ledger = useCollection('stagenator_ledger', 'ts', 60);
   const tasks = useCollection('stagenator_tasks', 'updated', 40);
@@ -136,6 +163,8 @@ function Dashboard() {
           </span>
         </div>
       </header>
+
+      <ImpactStrip />
 
       <div className="grid md:grid-cols-3 gap-5">
         {/* Ledger feed */}

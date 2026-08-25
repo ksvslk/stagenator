@@ -223,5 +223,13 @@ def critical(message: str, **context: Any) -> None:
 
 
 def heartbeat(run_kind: str) -> None:
-    """INFO heartbeat; its absence trips the missing-heartbeat alert."""
+    """INFO heartbeat log (absence trips the missing-heartbeat alert) + a
+    dashboard-readable doc (lives under the playbook path so the already-
+    deployed owner-read rules cover it)."""
     log.info(json.dumps({"heartbeat": "stagenator", "run": run_kind, "ts": now().isoformat()}))
+    try:
+        db().collection(config.COL_PLAYBOOK).document("heartbeat").set(
+            {"kind": run_kind, "at": now()}, merge=True
+        )
+    except Exception as e:  # noqa: BLE001 — heartbeat must never break a run
+        log.warning("heartbeat doc write failed: %s", e)

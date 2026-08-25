@@ -104,6 +104,7 @@ function Dashboard() {
   const tasks = useCollection('stagenator_tasks', 'updated', 40);
   const briefs = useCollection('stagenator_briefs', 'ts', 3);
   const playbook = useDoc('stagenator_playbook/current');
+  const heartbeat = useDoc('stagenator_playbook/heartbeat');
 
   const taskBuckets = useMemo(() => {
     const b: Record<string, Doc[]> = { pending: [], running: [], done: [], dead: [] };
@@ -121,6 +122,9 @@ function Dashboard() {
           <h1 className="font-bold tracking-widest uppercase text-sm">Stagenator · Mission Control</h1>
         </div>
         <div className="flex items-center gap-4 text-[11px] text-zinc-500">
+          <span>
+            last pulse {heartbeat ? `${ts(heartbeat.at)} · ${String(heartbeat.kind)}` : '—'}
+          </span>
           <span>last event {lastHeartbeat}</span>
           <span className="flex items-center gap-1.5">
             <span

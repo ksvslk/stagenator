@@ -45,7 +45,7 @@ def generate_json_with_video(prompt: str, video_bytes: bytes) -> dict | None:
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
         return json.loads(resp.text)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("generate_json_with_video failed: %s", e)
         return None
 
@@ -61,7 +61,7 @@ def generate_json_with_image(prompt: str, image_bytes: bytes) -> dict | None:
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
         return json.loads(resp.text)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("generate_json_with_image failed: %s", e)
         return None
 
@@ -74,6 +74,6 @@ def generate_json(prompt: str) -> dict | None:
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
         return json.loads(resp.text)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("generate_json failed: %s", e)
         return None

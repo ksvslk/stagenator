@@ -166,12 +166,12 @@ def detect_signals() -> list[dict]:
     try:
         from agent.pipelines.codes import restore_banner_if_expired
         restore_banner_if_expired()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("banner restore check failed: %s", e)
     for _fn in (refresh_codes_summary, refresh_cost_summary):
         try:
             _fn()
-        except Exception as e:  # noqa: BLE001 — summaries are cosmetic, never block a pulse
+        except Exception as e:
             log.warning("%s failed: %s", _fn.__name__, e)
     recent = state.recent_ledger(hours=4, kind="signal")
     seen = {(e.get("game"), e.get("signal"), e.get("detail")) for e in recent}

@@ -131,7 +131,6 @@ def render_mask(layout: list[dict], solution_svg: str | None = None) -> bytes:
     word lands exactly where the solution highlights it. Uses PIL with the same
     transform math (translate->rotate->skew->scale, anchor middle/middle)."""
     from PIL import Image, ImageDraw, ImageFont
-    import math
 
     img = Image.new("L", (CANVAS, CANVAS), 255)
     for L in layout:

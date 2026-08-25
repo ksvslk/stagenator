@@ -14,7 +14,6 @@ Minting (alert-driven until headless console sessions are wired):
   (Play Console promotion -> CSV -> seedCampaign-schema import).
 """
 
-import datetime as dt
 import logging
 
 from google.cloud import firestore
@@ -216,7 +215,7 @@ def run(task: dict) -> dict:
     try:
         mailbox.send_restock_request(game, campaign_id, play_app_id)
         return {"escalated": True, "via": "email", "campaign": campaign_id}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         state.critical(f"Replenish needed for {game} campaign {campaign_id} "
                        f"(email failed: {e}). {RUNBOOK}", game=game)
         return {"escalated": True, "via": "critical-log", "campaign": campaign_id}

@@ -20,8 +20,9 @@ from agent.tools import genai_client
 
 log = logging.getLogger("stagenator.moviequiz")
 
-BUCKET = "operation-sunrise.firebasestorage.app"
-PROCESS_FN_URL = "https://us-central1-operation-sunrise.cloudfunctions.net/processUploadedVideo"
+BUCKET = f"{config.GAMES['ai-movie-quiz']['project']}.firebasestorage.app"
+PROCESS_FN_URL = (f"https://{config.REGION}-{config.GAMES['ai-movie-quiz']['project']}"
+                 ".cloudfunctions.net/processUploadedVideo")
 VEO_MODEL = "veo-3.1-lite-generate-001"
 
 # distinct values observed in existing levels; Gemini picks the closest
@@ -102,7 +103,7 @@ def generate_clip(prompt: str) -> bytes:
 def process_video(clip: bytes, level_number: int) -> str:
     """Reuse the game's processUploadedVideo (ffmpeg+watermark+thumbnail)."""
     temp_path = f"temp_uploads/{uuid.uuid4()}/stagenator.mp4"
-    bucket = storage.Client(project="operation-sunrise").bucket(BUCKET)
+    bucket = storage.Client(project=config.GAMES["ai-movie-quiz"]["project"]).bucket(BUCKET)
     bucket.blob(temp_path).upload_from_string(clip, content_type="video/mp4")
 
     r = requests.post(
@@ -174,7 +175,7 @@ def _self_validate(level_number: int, video_path: str) -> None:
             problems.append(f"missing {k}")
     if not all(h in (doc.get("hints") or {}) for h in ("actor", "quote", "year")):
         problems.append("hints incomplete")
-    bucket = storage.Client(project="operation-sunrise").bucket(BUCKET)
+    bucket = storage.Client(project=config.GAMES["ai-movie-quiz"]["project"]).bucket(BUCKET)
     if not bucket.blob(video_path).exists():
         problems.append(f"video blob missing: {video_path}")
     if problems:

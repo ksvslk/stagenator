@@ -56,7 +56,7 @@ async def event(request: Request) -> dict:
     """Eventarc Firestore trigger — fast path. Body may be CloudEvent JSON."""
     try:
         body = await request.json()
-    except Exception:  # noqa: BLE001
+    except Exception:
         body = {}
     payload = {
         "game": _game_from_event(body),

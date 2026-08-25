@@ -11,7 +11,6 @@ their submit paths are ready; generation raises a clear error until wired,
 so tasks dead-letter visibly instead of pretending.
 """
 
-import json
 
 from google.cloud import firestore
 
@@ -60,9 +59,7 @@ def _palindrome_curate(task: dict) -> dict:
     pal = state.game_db("palindrome")
     col = pal.collection("user_submitted_levels")
 
-    pending = [
-        s for s in col.where(filter=firestore.FieldFilter("levelId", "==", -1337)).limit(25).stream()
-    ]
+    pending = list(col.where(filter=firestore.FieldFilter("levelId", "==", -1337)).limit(25).stream())
     if not pending:
         raise RuntimeError("no pending palindrome submissions to curate")
 

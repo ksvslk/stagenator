@@ -37,7 +37,7 @@ def game_db(game: str) -> firestore.Client:
 
 
 def now() -> dt.datetime:
-    return dt.datetime.now(dt.timezone.utc)
+    return dt.datetime.now(dt.UTC)
 
 
 # ---------------------------------------------------------------- ledger ----
@@ -142,6 +142,16 @@ def claim_pending(limit: int = 10) -> list[dict]:
     return tasks
 
 
+def defer_task(task_id: str, reason: str) -> None:
+    """Return a claimed task to pending WITHOUT counting the claim as an attempt
+    (deferral for time-budget or not-yet-due is not a failure)."""
+    ref = db().collection(config.COL_TASKS).document(task_id)
+    snap = ref.get().to_dict() or {}
+    ref.update({"status": "pending", "updated": now(),
+                "attempts": max(0, snap.get("attempts", 1) - 1),
+                "lastDefer": reason})
+
+
 def finish_task(task_id: str, ok: bool, error: str | None = None, result: dict | None = None) -> None:
     ref = db().collection(config.COL_TASKS).document(task_id)
     if ok:
@@ -231,5 +241,5 @@ def heartbeat(run_kind: str) -> None:
         db().collection(config.COL_PLAYBOOK).document("heartbeat").set(
             {"kind": run_kind, "at": now()}, merge=True
         )
-    except Exception as e:  # noqa: BLE001 — heartbeat must never break a run
+    except Exception as e:
         log.warning("heartbeat doc write failed: %s", e)

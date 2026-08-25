@@ -11,6 +11,7 @@ LLM nodes: exactly two (strategist, reflector). Everything else is code.
 
 import json
 import logging
+import time as _time
 
 from google.adk.apps import App
 from google.adk.events.event import Event
@@ -86,15 +87,33 @@ def gate(node_input: dict) -> dict:
     return result
 
 
+# Long-running generation (Veo ~2min, Runpod ~1-2min) runs inside the
+# scheduler-triggered HTTP handler, which has a 540s deadline. Bound each
+# invocation well under that: stop claiming new work past the soft budget and
+# process at most one heavy generation per invocation. Remaining tasks stay
+# pending and drain on the next pulse (every 5 min) — the queue self-paces.
+EXECUTOR_SOFT_BUDGET_S = 420
+HEAVY_TASKS = {"level_pipeline"}
+
+
 def execute(node_input) -> dict:
-    """Drain the task queue through the executor pipelines. Fault-isolated per task."""
+    """Drain the task queue, time-bounded so one trigger can't exceed the deadline."""
     from agent import pipelines
 
-    ran, failed = [], []
+    ran, failed, deferred = [], [], 0
+    started = _time.monotonic()
+    heavy_done = 0
     for task in state.claim_pending():
+        # stop before the deadline; leave the rest pending for the next pulse
+        if _time.monotonic() - started > EXECUTOR_SOFT_BUDGET_S or (
+            task["type"] in HEAVY_TASKS and heavy_done >= 1
+        ):
+            state.defer_task(task["id"], "budget/heavy-cap")  # not a failed attempt
+            deferred += 1
+            continue
         not_before = task.get("payload", {}).get("not_before")
         if not_before and not_before > state.now().isoformat():
-            state.finish_task(task["id"], ok=False, error="not yet due")  # back to pending
+            state.defer_task(task["id"], "not yet due")  # scheduled — not a failed attempt
             continue
         try:
             result = pipelines.run_task(task)
@@ -102,11 +121,14 @@ def execute(node_input) -> dict:
             state.ledger("action", task["game"], action=task["type"], task=task["id"],
                          status="done", result=result)
             ran.append(task["id"])
-        except Exception as e:  # noqa: BLE001 — one bad task never wedges the loop
+            if task["type"] in HEAVY_TASKS:
+                heavy_done += 1
+        except Exception as e:
             log.exception("task %s failed", task["id"])
             state.finish_task(task["id"], ok=False, error=str(e))
             failed.append({"task": task["id"], "error": str(e)})
-    return {"ran": ran, "failed": failed, "gate": node_input if isinstance(node_input, dict) else None}
+    return {"ran": ran, "failed": failed, "deferred": deferred,
+            "gate": node_input if isinstance(node_input, dict) else None}
 
 
 def idle(node_input) -> Event:
@@ -121,7 +143,7 @@ def gather_day(node_input: str) -> str:
         "ledger_24h": state.recent_ledger(hours=24),
         "playbook": state.get_playbook(),
         "directives": state.pending_directives(),
-        "inventory": {g: rules.campaign_inventory(g) for g in config.GAMES},
+        "inventory": {g: rules.campaign_inventory(g) for g in config.ACTIVE_GAMES},
     }
     return json.dumps(context, default=str)
 
@@ -140,7 +162,7 @@ def plan_replenish(node_input: str) -> dict:
         tid = state.enqueue(t, g, {}, dedupe_key=f"{t}-{state.now().date().isoformat()}")
         if tid:
             enqueued.append(tid)
-    for game in config.GAMES:
+    for game in config.ACTIVE_GAMES:
         inv = rules.campaign_inventory(game)
         if inv["campaign_id"] and (inv["available"] or 0) <= 5:
             t = state.enqueue("replenish_codes", game, {"campaign": inv["campaign_id"]})
@@ -157,7 +179,7 @@ def plan_replenish(node_input: str) -> dict:
 
 root_agent = Workflow(
     name="stagenator",
-    description="Autonomous engagement & retention agent for three mobile games.",
+    description="Autonomous engagement & retention agent for mobile games.",
     edges=[
         ("START", dispatch),
         # routed by trigger kind

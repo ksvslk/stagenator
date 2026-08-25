@@ -89,6 +89,15 @@ COL_PLAYBOOK = f"{_PREFIX}_playbook"  # doc id: "current"; history in subcollect
 COL_DIRECTIVES = f"{_PREFIX}_directives"
 COL_BRIEFS = f"{_PREFIX}_briefs"
 
+# --- Cost model (USD, for the Mission Control spend estimate) ---
+UNIT_COSTS = {
+    "veo_clip": 0.40,        # AI Movie Quiz level (Veo 3.1 Lite, 8s)
+    "runpod_puzzle": 0.05,   # Subliminal Words level (ComfyUI endpoint run)
+    "gemini_call": 0.004,    # a Strategist/Reflector/QA/design Gemini call
+}
+MONTHLY_BUDGET_EUR = 25.0
+EUR_USD = 1.08
+
 # --- Alerting ---
 # severity=CRITICAL structured logs drive the Cloud Monitoring email alert policy.
 CRITICAL_LOG_NAME = "stagenator-critical"

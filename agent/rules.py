@@ -75,6 +75,41 @@ def campaign_inventory(game: str, platform: str | None = None) -> dict:
     return {**chosen, "campaigns": campaigns}
 
 
+def refresh_cost_summary() -> None:
+    """Estimate agent spend from ledger actions x known unit costs (self-contained,
+    real-time). Written to stagenator_playbook/cost_summary for Mission Control."""
+    from agent import state
+
+    def spend(hours: int) -> dict:
+        led = state.recent_ledger(hours=hours)
+        veo = runpod = gem = 0
+        for e in led:
+            k, a, st_ = e.get("kind"), e.get("action"), e.get("status")
+            if k == "action" and a == "level_pipeline" and st_ == "done":
+                g = e.get("game")
+                if g == "ai-movie-quiz":
+                    veo += 1
+                elif g == "subliminal-words":
+                    runpod += 1; gem += 2  # design + QA
+            if k in ("decision", "brief") or a in ("gift_selection", "inventory_verification"):
+                gem += 1
+        c = config.UNIT_COSTS
+        total = veo * c["veo_clip"] + runpod * c["runpod_puzzle"] + gem * c["gemini_call"]
+        return {"veo_clips": veo, "runpod_puzzles": runpod, "gemini_calls": gem,
+                "usd": round(total, 3)}
+
+    today = spend(24)
+    month = spend(24 * 30)
+    budget_usd = config.MONTHLY_BUDGET_EUR * config.EUR_USD
+    state.db().collection(config.COL_PLAYBOOK).document("cost_summary").set({
+        "today": today, "month": month,
+        "budget_usd": round(budget_usd, 2),
+        "budget_pct": round(100 * month["usd"] / budget_usd, 1),
+        "runpod_balance": None,  # endpoint-scoped key can't read account balance
+        "updated": state.now(),
+    })
+
+
 def refresh_codes_summary() -> None:
     """Dashboard-readable summary of code stock + claims via agent links.
 
@@ -111,10 +146,11 @@ def detect_signals() -> list[dict]:
         restore_banner_if_expired()
     except Exception as e:  # noqa: BLE001
         log.warning("banner restore check failed: %s", e)
-    try:
-        refresh_codes_summary()
-    except Exception as e:  # noqa: BLE001 — summary is cosmetic, never blocks a pulse
-        log.warning("codes summary refresh failed: %s", e)
+    for _fn in (refresh_codes_summary, refresh_cost_summary):
+        try:
+            _fn()
+        except Exception as e:  # noqa: BLE001 — summaries are cosmetic, never block a pulse
+            log.warning("%s failed: %s", _fn.__name__, e)
     recent = state.recent_ledger(hours=4, kind="signal")
     seen = {(e.get("game"), e.get("signal"), e.get("detail")) for e in recent}
 

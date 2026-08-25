@@ -210,6 +210,8 @@ function Dashboard() {
 
           <CodesOverview />
 
+          <CostOverview />
+
           <section>
             <SectionTitle>
               Playbook{' '}
@@ -400,6 +402,43 @@ function CodesOverview() {
           );
         })}
         {!summary && <Empty>updates on next pulse</Empty>}
+      </div>
+    </section>
+  );
+}
+
+function CostOverview() {
+  const cost = useDoc('stagenator_playbook/cost_summary');
+  if (!cost) return null;
+  const today = (cost.today ?? {}) as Record<string, number>;
+  const month = (cost.month ?? {}) as Record<string, number>;
+  const pct = Number(cost.budget_pct ?? 0);
+  return (
+    <section>
+      <SectionTitle>
+        Spend <span className="text-zinc-600 normal-case">· est · {ts(cost.updated)}</span>
+      </SectionTitle>
+      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
+        <div className="flex justify-between items-baseline">
+          <span className="text-zinc-400">today</span>
+          <span className="text-emerald-400 font-bold text-sm">${Number(today.usd ?? 0).toFixed(2)}</span>
+        </div>
+        <div className="text-zinc-600">
+          {today.veo_clips ?? 0} Veo · {today.runpod_puzzles ?? 0} puzzles · {today.gemini_calls ?? 0} Gemini
+        </div>
+        <div className="flex justify-between items-baseline pt-1">
+          <span className="text-zinc-400">month · ${Number(month.usd ?? 0).toFixed(2)} / ${Number(cost.budget_usd ?? 0).toFixed(0)}</span>
+          <span className="text-zinc-500">{pct.toFixed(1)}%</span>
+        </div>
+        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${pct > 90 ? 'bg-red-500' : pct > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+            style={{ width: `${Math.min(100, pct)}%` }}
+          />
+        </div>
+        <div className="text-zinc-600 pt-1">
+          Runpod balance: {cost.runpod_balance == null ? 'n/a (endpoint-scoped key)' : `$${cost.runpod_balance}`}
+        </div>
       </div>
     </section>
   );

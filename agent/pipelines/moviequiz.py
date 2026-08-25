@@ -46,6 +46,12 @@ def design_level(used: set[str]) -> dict | None:
         "Veo video prompt for an 8-second cinematic clip that clearly evokes it WITHOUT "
         "using the title, character names, actor likenesses, or any on-screen text/logos. "
         "Think: the iconic scenario, reimagined.\n"
+        "Choose a prompt STRATEGY (controls difficulty — vary across levels):\n"
+        "- 'visual': pure imagery, no sound direction (hardest)\n"
+        "- 'scene+ambience': add atmosphere/SFX/score direction (medium)\n"
+        "- 'scene+dialogue': a character SPEAKS one thematically evocative line — write the "
+        "spoken line into the prompt in quotes; NOT the movie's famous verbatim quote (that "
+        "is the in-game hint) and never naming title or characters (easiest)\n"
         "Also provide level metadata: sound (closest of "
         f"{SOUND_TAGS}), characteristic (ONE evocative adjective), and hints: actor "
         "(lead actor's real name), quote (a famous line from the film), year (release year "
@@ -182,4 +188,4 @@ def run(task: dict) -> dict:
 
     media = {"clip": preview.upload(clip, f"{design['movie'].replace(' ', '_')}.mp4", "video/mp4")}
     return {**result, "qa": qa.get("recognizable"), "media": media,
-            "design": {k: design.get(k) for k in ("veo_prompt", "sound", "characteristic", "actor", "quote", "year")}}
+            "design": {k: design.get(k) for k in ("strategy", "veo_prompt", "sound", "characteristic", "actor", "quote", "year")}}

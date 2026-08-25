@@ -209,11 +209,17 @@ def run(task: dict) -> dict:
         return {"autonomous": True, "store": "app-store", "imported": 50,
                 "minted": len(rows), "valid_until": expiration}
 
-    state.critical(
-        f"Replenish needed for {game} campaign {campaign_id}. {RUNBOOK}",
-        game=game,
-    )
-    return {"escalated": True, "campaign": campaign_id}
+    # Google Play (no mint API): email the owner a precise restock request.
+    from agent.tools import mailbox
+
+    play_app_id = d.get("playAppId")
+    try:
+        mailbox.send_restock_request(game, campaign_id, play_app_id)
+        return {"escalated": True, "via": "email", "campaign": campaign_id}
+    except Exception as e:  # noqa: BLE001
+        state.critical(f"Replenish needed for {game} campaign {campaign_id} "
+                       f"(email failed: {e}). {RUNBOOK}", game=game)
+        return {"escalated": True, "via": "critical-log", "campaign": campaign_id}
 
 
 def _select_gift(game: str, campaign: dict) -> dict | None:
@@ -249,6 +255,15 @@ def _select_gift(game: str, campaign: dict) -> dict | None:
         return None
     # both kinds are mintable now (IAP offers and subscription free-trial offers)
     return {**valid[reply["id"]], "reason": reply.get("reason", "")}
+
+
+def poll_restock_inbox(task: dict) -> dict:
+    """Import any Play code CSVs the owner replied with by email."""
+    if config.DRY_RUN:
+        return {"dry_run": True}
+    from agent.tools import mailbox
+
+    return mailbox.poll_and_import()
 
 
 def check_balances(task: dict) -> dict:

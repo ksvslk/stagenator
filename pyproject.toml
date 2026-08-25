@@ -26,6 +26,7 @@ dependencies = [
     "google-cloud-secret-manager>=2.30.0",
     "requests>=2.34.2",
     "pillow>=12.3.0",
+    "playwright>=1.62.0",
 ]
 requires-python = ">=3.11,<3.14"
 

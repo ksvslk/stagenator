@@ -40,7 +40,7 @@ away from activation.
 ## Architecture — and why
 
 One ADK **Workflow graph** on Cloud Run, fired by Cloud Scheduler (pulse every
-5 min + nightly + replenish) and Eventarc. See [`docs/architecture.mmd`](docs/architecture.mmd).
+5 min + nightly + replenish) and Eventarc. See [`docs/architecture.mmd`](docs/architecture.mmd) (simple) and [`docs/architecture-detailed.mmd`](docs/architecture-detailed.mmd) (with the real tech).
 
 **The core decision: the *code* holds the tools; the *model* holds the
 judgment.** A conventional agent hands the LLM a set of tools and lets it call

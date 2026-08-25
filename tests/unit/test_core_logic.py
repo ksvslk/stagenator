@@ -12,13 +12,11 @@ from agent.pipelines.replenish import (
     _judge,
 )
 from agent.pipelines.subliminal import (
-    BASE_FONT_SIZE,
     build_layout,
     build_solution_svg,
 )
 
-
-NOW_MS = int(dt.datetime(2026, 8, 25, tzinfo=dt.timezone.utc).timestamp() * 1000)
+NOW_MS = int(dt.datetime(2026, 8, 25, tzinfo=dt.UTC).timestamp() * 1000)
 TODAY = "2026-08-25"
 
 
@@ -113,7 +111,7 @@ class TestCaps:
         assert config.CAPS["push_actions_per_game_per_4h"] == 1
 
     def test_all_games_configured(self):
-        for game, cfg in config.GAMES.items():
+        for cfg in config.GAMES.values():
             assert cfg["project"] and cfg["ga_property"]
             assert "level_backend" in cfg
 

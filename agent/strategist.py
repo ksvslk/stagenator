@@ -47,7 +47,6 @@ strategist = LlmAgent(
         "- Fresh levels are cheap and always welcome; codes are scarce — reserve them for "
         "returning/lapsing players per the playbook.\n"
         "- Respect playbook send windows via delay_minutes.\n"
-        "- Palindrome has no push: use activate_promo_banner or ship_level only.\n"
         "- If nothing is worth doing, return an empty actions list. That is a good decision.\n"
         "- Never exceed: "
         f"{config.CAPS['codes_per_game_per_day']} codes/game/day, "

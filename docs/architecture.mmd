@@ -1,35 +1,16 @@
 flowchart LR
-  subgraph SIGNALS["📡 Signals"]
-    GA["Google Analytics<br/>+ BigQuery"]
-    EV["Eventarc<br/>(new user)"]
-  end
+  GA["📊 Google Analytics<br/>who's playing"] --> AGENT
 
-  subgraph BRAIN["🧠 Stagenator · Cloud Run (ADK)"]
+  subgraph AGENT["🤖 Stagenator (runs itself, 24/7)"]
     direction TB
-    RULES["detect · code"] --> STRAT["🤖 Strategist<br/>Gemini · decides"]
-    STRAT --> GUARD["guardrails · caps"]
-    GUARD --> QUEUE["task queue<br/>idempotent · retry · dead-letter"]
-    REFL["🌙 Reflector<br/>Gemini · learns nightly"]
+    A["1 · SEE the players"] --> B["2 · DECIDE what helps<br/>(Gemini)"]
+    B --> C["3 · ACT"]
+    C --> D["4 · LEARN overnight<br/>(Gemini)"]
+    D -.improves.-> B
   end
 
-  subgraph ACT["⚙️ Actions (code + tools)"]
-    LEVELS["ship levels<br/>Runpod · Veo · Gemini"]
-    CODES["send codes<br/>Apple API · Play email"]
-    AUDIT["audit + replenish<br/>codes never expire silently"]
-  end
-
-  subgraph OUT["📬 Players & Owner"]
-    GAMES["3 games<br/>levels + pushes"]
-    PROFFER["proffer.codes<br/>no-login claim"]
-    MC["Mission Control<br/>+ daily brief"]
-  end
-
-  CLOCK(["⏰ every 5 min · nightly"]) --> RULES
-  GA --> RULES
-  EV --> RULES
-  QUEUE --> LEVELS --> GAMES
-  QUEUE --> CODES --> PROFFER
-  QUEUE --> AUDIT --> PROFFER
-  LEVELS & CODES & AUDIT --> LEDGER[("Firestore<br/>ledger + playbook")]
-  LEDGER --> REFL --> STRAT
-  LEDGER --> MC
+  AGENT --> LEVELS["🎮 New game levels<br/>(AI-generated)"]
+  AGENT --> CODES["🎁 Free codes to players<br/>(no sign-in)"]
+  LEVELS --> PLAYERS["😊 Players"]
+  CODES --> PLAYERS
+  PLAYERS -.come back.-> GA

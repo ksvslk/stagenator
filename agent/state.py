@@ -182,7 +182,7 @@ DEFAULT_PLAYBOOK: dict = {
         {"id": "new-user-welcome", "when": "first_open detected", "action": "ensure fresh level live; note for D1 follow-up"},
         {"id": "lapsed-return", "when": "user active after >=3 days away", "action": "consider code drop for their game"},
     ],
-    "capability_tiers": {g: cfg["tier"] for g, cfg in config.GAMES.items()},
+    "capability_tiers": {g: config.GAMES[g]["tier"] for g in config.ACTIVE_GAMES},
     "ceo_directives": [],
     "evidence": {},  # rule_id -> weak|strong + notes, maintained by Reflector
 }

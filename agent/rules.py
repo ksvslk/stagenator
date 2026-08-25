@@ -141,7 +141,7 @@ def refresh_codes_summary() -> None:
 
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
     summary: dict = {}
-    for game in config.GAMES:
+    for game in config.ACTIVE_GAMES:
         inv = campaign_inventory(game)
         summary[game] = {"stock": inv["campaigns"]}
     tokens = tc.collection("claimTokens").where(

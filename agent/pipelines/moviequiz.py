@@ -56,7 +56,8 @@ def design_level(used: set[str]) -> dict | None:
         f"{SOUND_TAGS}), characteristic (ONE evocative adjective), and hints: actor "
         "(lead actor's real name), quote (a famous line from the film), year (release year "
         "as a 4-digit string).\n"
-        'Reply JSON: {"movie": "...", "veo_prompt": "...", "sound": "...", '
+        'Reply JSON: {"movie": "...", "strategy": "visual|scene+ambience|scene+dialogue", '
+        '"veo_prompt": "...", "sound": "...", '
         '"characteristic": "...", "actor": "...", "quote": "...", "year": "..."}'
     )
     if not reply or not reply.get("movie") or not reply.get("veo_prompt"):

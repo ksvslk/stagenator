@@ -28,7 +28,7 @@ def _reserve_codes(campaign_id: str, n: int) -> list[str]:
         if len(reserved) >= n:
             break
         d = snap.to_dict()
-        if d.get("reservedBy"):
+        if d.get("reservedBy") or d.get("expired"):
             continue
         snap.reference.update({"reservedBy": "stagenator", "reservedAt": state.now()})
         reserved.append(snap.id)

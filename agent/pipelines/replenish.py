@@ -265,6 +265,28 @@ def poll_restock_inbox(task: dict) -> dict:
     return mailbox.poll_and_import()
 
 
+def cleanup_storage(task: dict) -> dict:
+    """Keep storage light: delete Mission Control preview media > 14 days and any
+    leftover AMQ temp_uploads > 1 day."""
+    import datetime as dt
+
+    from google.cloud import storage
+
+    if config.DRY_RUN:
+        return {"dry_run": True}
+    removed = 0
+    home = storage.Client(project=config.HOME_PROJECT).bucket(f"{config.HOME_PROJECT}.firebasestorage.app")
+    cutoff_prev = state.now() - dt.timedelta(days=14)
+    for blob in home.list_blobs(prefix="stagenator_previews/"):
+        if blob.time_created and blob.time_created < cutoff_prev:
+            blob.delete(); removed += 1
+    cutoff_tmp = state.now() - dt.timedelta(days=1)
+    for blob in home.list_blobs(prefix="temp_uploads/"):
+        if blob.time_created and blob.time_created < cutoff_tmp:
+            blob.delete(); removed += 1
+    return {"removed_blobs": removed}
+
+
 def check_balances(task: dict) -> dict:
     if config.DRY_RUN:
         return {"dry_run": True, "check": "runpod"}

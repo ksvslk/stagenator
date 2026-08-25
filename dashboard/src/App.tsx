@@ -45,6 +45,48 @@ const ts = (v: unknown): string => {
   return d ? d.toLocaleString('en-GB', { hour12: false }).slice(0, 17) : '';
 };
 
+function ledgerLine(e: Doc): string {
+  const r = (e.result ?? {}) as Record<string, unknown>;
+  const parts: string[] = [];
+  const push = (v: unknown) => v != null && v !== '' && parts.push(String(v));
+  switch (String(e.kind)) {
+    case 'signal':
+      push(e.signal); push(e.detail);
+      break;
+    case 'decision':
+      if (e.action === 'strategist') push(`${e.enqueued ?? 0} enqueued · ${e.rejected ?? 0} rejected`);
+      push(e.notes ?? e.reason ?? e.product);
+      break;
+    case 'action': {
+      push(e.action); push(e.status);
+      // pull the most meaningful result field per action type
+      push(r.word ?? r.movie ?? r.published);
+      if (r.level != null) push(`#${r.level}`);
+      if (r.levelId != null) push(`#${r.levelId}`);
+      if (r.qa) push(`qa:${r.qa}`);
+      if (r.codes != null) push(`${r.codes} codes`);
+      if (r.imported != null) push(`imported ${r.imported}`);
+      if (r.minted != null) push(`minted ${r.minted}`);
+      if (r.dead_letter || r.retry_recovery) push('fault-drill');
+      if (r.escalated) push('escalated');
+      if (e.reason) push(`— ${e.reason}`);
+      break;
+    }
+    case 'rejected':
+      push(e.action); push(`✕ ${e.reason}`);
+      break;
+    case 'brief':
+      push(String(e.brief ?? '').replace(/#+\s?/g, '').replace(/\n+/g, ' · ').slice(0, 140));
+      break;
+    case 'outcome':
+      push(e.action); push(JSON.stringify(r).slice(0, 120));
+      break;
+    default:
+      push(e.action ?? e.reason);
+  }
+  return parts.join(' · ') || String(e.action ?? '');
+}
+
 const KIND_COLORS: Record<string, string> = {
   signal: 'text-sky-400 border-sky-800',
   decision: 'text-violet-400 border-violet-800',
@@ -183,12 +225,7 @@ function Dashboard() {
                   {e.game ? <span className="text-zinc-400">{String(e.game)}</span> : null}
                   <span className="text-zinc-600 ml-auto">{ts(e.ts)}</span>
                 </div>
-                <div className="text-zinc-400 mt-0.5 break-words">
-                  {String(e.signal ?? e.action ?? e.reason ?? '')}
-                  {e.status ? ` · ${String(e.status)}` : ''}
-                  {e.detail ? ` · ${String(e.detail)}` : ''}
-                  {e.reason && e.action ? ` — ${String(e.reason)}` : ''}
-                </div>
+                <div className="text-zinc-400 mt-0.5 break-words">{ledgerLine(e)}</div>
               </div>
             ))}
             {ledger.length === 0 && <Empty>no events yet</Empty>}

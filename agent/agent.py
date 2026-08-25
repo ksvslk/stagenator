@@ -183,7 +183,8 @@ def apply_night(node_input: dict) -> dict:
 def plan_replenish(node_input: str) -> dict:
     """Replenish path: audit first, import any minted CSVs, then escalate shortages."""
     enqueued = []
-    for t, g in (("audit_inventory", "all"), ("mint_import", "all"), ("poll_restock_inbox", "all")):
+    for t, g in (("audit_inventory", "all"), ("mint_import", "all"),
+                 ("poll_restock_inbox", "all"), ("cleanup_storage", "all")):
         tid = state.enqueue(t, g, {}, dedupe_key=f"{t}-{state.now().date().isoformat()}")
         if tid:
             enqueued.append(tid)

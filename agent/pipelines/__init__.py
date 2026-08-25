@@ -17,6 +17,7 @@ _DISPATCH = {
     "audit_inventory": replenish.audit_inventory,
     "mint_import": replenish.check_mint_inbox,
     "poll_restock_inbox": replenish.poll_restock_inbox,
+    "cleanup_storage": replenish.cleanup_storage,
 }
 
 

@@ -55,7 +55,7 @@ function ledgerLine(e: Doc): string {
       break;
     case 'decision':
       if (e.action === 'strategist') push(`${e.enqueued ?? 0} enqueued · ${e.rejected ?? 0} rejected`);
-      push(e.notes ?? e.reason ?? e.product);
+      push(String(e.notes ?? e.reason ?? e.product ?? '').slice(0, 130));
       break;
     case 'action': {
       push(e.action); push(e.status);
@@ -67,7 +67,6 @@ function ledgerLine(e: Doc): string {
       if (r.codes != null) push(`${r.codes} codes`);
       if (r.imported != null) push(`imported ${r.imported}`);
       if (r.minted != null) push(`minted ${r.minted}`);
-      if (r.dead_letter || r.retry_recovery) push('fault-drill');
       if (r.escalated) push('escalated');
       if (e.reason) push(`— ${e.reason}`);
       break;
@@ -79,7 +78,9 @@ function ledgerLine(e: Doc): string {
       push(String(e.brief ?? '').replace(/#+\s?/g, '').replace(/\n+/g, ' · ').slice(0, 140));
       break;
     case 'outcome':
-      push(e.action); push(JSON.stringify(r).slice(0, 120));
+      push(e.action ?? e.signal);
+      push(r.word ?? r.movie ?? r.note ?? r.detail);
+      if (r.claimed != null) push(`${r.claimed} claimed`);
       break;
     default:
       push(e.action ?? e.reason);

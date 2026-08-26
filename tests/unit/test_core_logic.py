@@ -3,10 +3,7 @@ correctness is non-negotiable and no LLM is involved."""
 
 import datetime as dt
 
-import pytest
-
 from agent import config
-from agent.pipelines import levels
 from agent.pipelines.replenish import (
     APPLE_CODE_LIFETIME_DAYS,
     _judge,

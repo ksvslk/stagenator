@@ -379,6 +379,39 @@ def refresh_earnings() -> None:
         {"games": out, "updated": state.now()})
 
 
+def refresh_push_outcomes() -> None:
+    """Push EFFECTIVENESS from GA4: notification_receive / _open / _dismiss counts per game
+    (30d) with an open rate. The real 'did the push land?' outcome the Reflector learns from.
+    Populates once the analytics_label sends accrue events and users opt in; degrades honestly."""
+    from agent import state
+
+    out: dict = {}
+    for game in config.ACTIVE_GAMES:
+        prop = config.GAMES[game]["ga_property"]
+        req = RunReportRequest(
+            property=f"properties/{prop}",
+            date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
+            dimensions=[Dimension(name="eventName")],
+            metrics=[Metric(name="eventCount")],
+        )
+        try:
+            counts = {r.dimension_values[0].value: int(r.metric_values[0].value)
+                      for r in ga().run_report(req).rows}
+            recv = counts.get("notification_receive", 0)
+            opened = counts.get("notification_open", 0)
+            dism = counts.get("notification_dismiss", 0)
+            out[game] = {
+                "received": recv, "opened": opened, "dismissed": dism,
+                "open_rate": round(opened / recv, 3) if recv else None,
+                "status": ("live" if recv else
+                           "no notification events yet — pushes are now labelled; accrues as they're sent"),
+            }
+        except Exception as e:
+            out[game] = {"status": f"unavailable: {e}"[:140]}
+    state.db().collection(config.COL_PLAYBOOK).document("push_outcomes").set(
+        {"games": out, "updated": state.now()})
+
+
 def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []

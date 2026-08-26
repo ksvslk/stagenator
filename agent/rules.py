@@ -344,33 +344,44 @@ def refresh_audience_profile() -> None:
         {"games": out, "updated": state.now()})
 
 
+def _revenue(prop: str, start_date: str) -> tuple[float, float, int]:
+    """(totalRevenue, purchaseRevenue, activeUsers) for start_date..today. Raises on GA error."""
+    req = RunReportRequest(
+        property=f"properties/{prop}",
+        date_ranges=[DateRange(start_date=start_date, end_date="today")],
+        metrics=[Metric(name="totalRevenue"), Metric(name="purchaseRevenue"),
+                 Metric(name="activeUsers")],
+    )
+    rows = ga().run_report(req).rows
+    if not rows:
+        return (0.0, 0.0, 0)
+    m = rows[0].metric_values
+    return (float(m[0].value), float(m[1].value), int(m[2].value))
+
+
 def refresh_earnings() -> None:
-    """Per-game EARNINGS from GA4 revenue metrics (totalRevenue = purchases + subs + ads
-    when instrumented). Real plumbing, no estimates: if the games don't log revenue
-    events it honestly reports $0 / 'not instrumented' rather than inventing a number.
-    Earnings are the ultimate goal; the Reflector weighs them against engagement."""
+    """Per-game EARNINGS from GA4 revenue (totalRevenue = purchases + subs + ads when
+    instrumented), across MULTIPLE windows — today, 7d, 30d, and lifetime — so the panel
+    and Reflector see run-rate, recent trend, AND cumulative total, not one arbitrary
+    snapshot. Real plumbing: honestly $0 / not-instrumented when there's no revenue."""
     from agent import state
 
     out: dict = {}
     for game in config.ACTIVE_GAMES:
         prop = config.GAMES[game]["ga_property"]
-        req = RunReportRequest(
-            property=f"properties/{prop}",
-            date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
-            metrics=[Metric(name="totalRevenue"), Metric(name="purchaseRevenue"),
-                     Metric(name="activeUsers")],
-        )
         try:
-            resp = ga().run_report(req)
-            r = resp.rows[0] if resp.rows else None
-            total = float(r.metric_values[0].value) if r else 0.0
-            purchase = float(r.metric_values[1].value) if r else 0.0
-            users = int(r.metric_values[2].value) if r else 0
+            today, _, _ = _revenue(prop, "today")
+            d7, _, _ = _revenue(prop, "7daysAgo")
+            d30, _, users30 = _revenue(prop, "30daysAgo")
+            life, purch_life, _ = _revenue(prop, "2020-01-01")  # from property start = lifetime
             out[game] = {
-                "total_usd_30d": round(total, 2),
-                "purchase_usd_30d": round(purchase, 2),
-                "arpu_30d": round(total / users, 3) if users else 0.0,
-                "status": ("live" if total > 0 else
+                "today_usd": round(today, 2),
+                "d7_usd": round(d7, 2),
+                "d30_usd": round(d30, 2),
+                "lifetime_usd": round(life, 2),
+                "purchase_lifetime_usd": round(purch_life, 2),
+                "arpu_30d": round(d30 / users30, 3) if users30 else 0.0,
+                "status": ("live" if life > 0 else
                            "no revenue recorded — monetization (IAP/ads) not instrumented in GA4"),
             }
         except Exception as e:

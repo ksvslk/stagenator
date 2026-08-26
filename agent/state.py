@@ -252,6 +252,12 @@ def audience_profile() -> dict:
     return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
 
 
+
+
+def earnings() -> dict:
+    """Cached per-game earnings (GA4 revenue), refreshed nightly. Empty until first run."""
+    snap = db().collection(config.COL_PLAYBOOK).document("earnings").get()
+    return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
 def health_status() -> dict:
     """Compact dependency health for the decision layer: overall status plus which
     dependencies are currently DOWN or degraded. Lets the Strategist avoid proposing

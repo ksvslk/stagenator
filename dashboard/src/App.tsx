@@ -336,6 +336,8 @@ function Dashboard() {
 
           <CodesOverview />
 
+          <EarningsOverview />
+
           <CostOverview />
 
           <section>
@@ -589,6 +591,38 @@ function HealthOverview() {
           ))}
           {checks.length === 0 && <span className="text-zinc-600 italic">runs at deploy + daily</span>}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function EarningsOverview() {
+  const e = useDoc('stagenator_playbook/earnings');
+  if (!e) return null;
+  const games = (e.games ?? {}) as Record<string, { total_usd_30d?: number; purchase_usd_30d?: number; arpu_30d?: number; status?: string }>;
+  return (
+    <section>
+      <SectionTitle>Earnings <span className="text-zinc-600 normal-case">· GA4 · 30d · {ts(e.updated)}</span></SectionTitle>
+      <div className="flex flex-col gap-1.5">
+        {Object.entries(games).map(([g, d]) => {
+          const live = (d.total_usd_30d ?? 0) > 0;
+          return (
+            <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2">
+              <div className="flex justify-between items-baseline">
+                <span className="text-zinc-200 font-bold">{g}</span>
+                <span className={live ? 'text-emerald-400 font-bold text-sm' : 'text-zinc-500'}>
+                  ${Number(d.total_usd_30d ?? 0).toFixed(2)}
+                </span>
+              </div>
+              {live ? (
+                <div className="text-zinc-500 mt-0.5">IAP ${Number(d.purchase_usd_30d ?? 0).toFixed(2)} · ARPU ${Number(d.arpu_30d ?? 0).toFixed(3)}</div>
+              ) : (
+                <div className="text-zinc-600 mt-0.5">{String(d.status ?? '')}</div>
+              )}
+            </div>
+          );
+        })}
+        {Object.keys(games).length === 0 && <Empty>refreshes on tonight's run</Empty>}
       </div>
     </section>
   );

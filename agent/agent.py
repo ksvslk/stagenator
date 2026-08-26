@@ -154,10 +154,11 @@ def gather_day(node_input: str) -> str:
     Bounded regardless of volume: actions aggregated to counts, outcomes kept in
     full (they're what learning needs), verbose fields (media URLs, prompts) and
     the Reflector's own past briefs dropped."""
-    try:
-        rules.refresh_audience_profile()  # nightly GA4 audience-value refresh
-    except Exception as e:
-        log.warning("audience refresh failed: %s", e)
+    for _fn in (rules.refresh_audience_profile, rules.refresh_earnings):  # nightly GA4 refreshes
+        try:
+            _fn()
+        except Exception as e:
+            log.warning("%s failed: %s", _fn.__name__, e)
     led = state.recent_ledger(hours=24)
     action_counts: dict[str, int] = {}
     rejections: list[str] = []
@@ -194,6 +195,7 @@ def gather_day(node_input: str) -> str:
         "rejections": rejections[:20],
         "outcomes": outcomes,                # the actual results to learn from
         "codes": {g: rules.campaign_inventory(g).get("campaigns", {}) for g in config.ACTIVE_GAMES},
+        "earnings": state.earnings(),   # the ultimate goal — weigh engagement against it
         "playbook": state.get_playbook(),
         "directives": state.pending_directives(),
     }

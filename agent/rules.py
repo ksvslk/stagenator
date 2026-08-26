@@ -9,10 +9,12 @@ import logging
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
+    DateRange,
     Dimension,
     Metric,
     MinuteRange,
     RunRealtimeReportRequest,
+    RunReportRequest,
 )
 from google.cloud import firestore
 
@@ -339,6 +341,41 @@ def refresh_audience_profile() -> None:
             "note": "players are pseudonymous in GA; set setUserId(uid) in-app for 1:1 code targeting",
         }
     state.db().collection(config.COL_PLAYBOOK).document("audience").set(
+        {"games": out, "updated": state.now()})
+
+
+def refresh_earnings() -> None:
+    """Per-game EARNINGS from GA4 revenue metrics (totalRevenue = purchases + subs + ads
+    when instrumented). Real plumbing, no estimates: if the games don't log revenue
+    events it honestly reports $0 / 'not instrumented' rather than inventing a number.
+    Earnings are the ultimate goal; the Reflector weighs them against engagement."""
+    from agent import state
+
+    out: dict = {}
+    for game in config.ACTIVE_GAMES:
+        prop = config.GAMES[game]["ga_property"]
+        req = RunReportRequest(
+            property=f"properties/{prop}",
+            date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
+            metrics=[Metric(name="totalRevenue"), Metric(name="purchaseRevenue"),
+                     Metric(name="activeUsers")],
+        )
+        try:
+            resp = ga().run_report(req)
+            r = resp.rows[0] if resp.rows else None
+            total = float(r.metric_values[0].value) if r else 0.0
+            purchase = float(r.metric_values[1].value) if r else 0.0
+            users = int(r.metric_values[2].value) if r else 0
+            out[game] = {
+                "total_usd_30d": round(total, 2),
+                "purchase_usd_30d": round(purchase, 2),
+                "arpu_30d": round(total / users, 3) if users else 0.0,
+                "status": ("live" if total > 0 else
+                           "no revenue recorded — monetization (IAP/ads) not instrumented in GA4"),
+            }
+        except Exception as e:
+            out[game] = {"status": f"unavailable: {e}"[:140]}
+    state.db().collection(config.COL_PLAYBOOK).document("earnings").set(
         {"games": out, "updated": state.now()})
 
 

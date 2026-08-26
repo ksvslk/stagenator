@@ -43,6 +43,11 @@ reflector = LlmAgent(
         "`code_send_windows_utc` toward the peak-activity hours so sends reach the MOST players — "
         "not fired at whatever hour a lone user happens to appear. While data is thin, stay humble.\n"
         "- Fold in unhandled CEO directives as playbook entries under ceo_directives.\n"
+        "- EARNINGS are the ultimate goal; engagement is the lever. You are given per-game "
+        "`earnings` (GA4 revenue). When revenue data exists, analyze the engagement<->earnings "
+        "relationship — does more engagement / more codes actually grow revenue? — and steer "
+        "strategy toward what grows EARNINGS, not just activity. Be explicit and honest when "
+        "earnings data is absent ($0 / not instrumented) — do not infer revenue you can't see.\n"
         "- Keep the playbook SHORT and operational — it is read by the Strategist every pulse.\n"
         "- The brief must be honest: if nothing happened, say so plainly."
     ),

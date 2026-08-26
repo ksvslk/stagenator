@@ -593,7 +593,6 @@ function HistoryOverview() {
   if (keys.length < 2) return null;
   const games = ['subliminal-words', 'ai-movie-quiz'];
   const colors: Record<string, string> = { 'subliminal-words': 'var(--sw-c)', 'ai-movie-quiz': '#d9a514' };
-  const color = colors[game];
   const W = 580, PAD = 8;
   const slot = (W - 2 * PAD) / keys.length;
   const x0 = (i: number) => PAD + i * slot;
@@ -671,7 +670,7 @@ function HistoryOverview() {
               const v = days[k]?.[game]?.players ?? 0;
               if (!v) return null;
               const bh = (v / pMax) * 54;
-              return <rect key={k} x={x0(i)} y={62 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" fill={color} />;
+              return <rect key={k} x={x0(i)} y={62 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" className="fill-sky-600 dark:fill-sky-400" />;
             })}
             {keys.map((k, i) =>
               i % 7 === 0 || i === keys.length - 1 ? (
@@ -693,7 +692,7 @@ function HistoryOverview() {
               const v = days[k]?.[game]?.engagement_min ?? 0;
               if (!v) return null;
               const bh = (v / eMax) * 46;
-              return <rect key={k} x={x0(i)} y={56 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" fill={color} opacity="0.85" />;
+              return <rect key={k} x={x0(i)} y={56 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" className="fill-violet-600 dark:fill-violet-400" opacity="0.9" />;
             })}
           </svg>
         </div>

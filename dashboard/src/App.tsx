@@ -349,7 +349,18 @@ function Dashboard() {
 
           <LearningOverview ledger={ledger} briefs={briefs} playbook={playbook} />
 
-          <HealthOverview />
+          <section>
+            <SectionTitle>Daily summary</SectionTitle>
+            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+              {briefs.map((b) => (
+                <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
+                  <div className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
+                  <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
+                </div>
+              ))}
+              {briefs.length === 0 && <Empty>first summary arrives after tonight's run</Empty>}
+            </div>
+          </section>
 
           <LevelsOverview ledger={ledger} tasks={tasks} />
 
@@ -357,7 +368,7 @@ function Dashboard() {
 
           <EarningsOverview />
 
-          <CostOverview />
+          <HealthOverview />
 
           <section>
             <SectionTitle>
@@ -385,18 +396,6 @@ function Dashboard() {
 
           <Directives />
 
-          <section>
-            <SectionTitle>Daily summary</SectionTitle>
-            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
-              {briefs.map((b) => (
-                <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
-                  <div className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
-                  <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
-                </div>
-              ))}
-              {briefs.length === 0 && <Empty>first summary arrives after tonight's run</Empty>}
-            </div>
-          </section>
         </div>
       </div>
     </div>
@@ -651,33 +650,6 @@ function EarningsOverview() {
   );
 }
 
-function CostOverview() {
-  const cost = useDoc('stagenator_playbook/cost_summary');
-  if (!cost) return null;
-  const bal = cost.runpod_balance_usd;
-  return (
-    <section>
-      <SectionTitle>
-        Spend <span className="text-zinc-600 dark:text-zinc-400 normal-case">· Runpod balance · {ts(cost.updated)}</span>
-      </SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-1.5 text-[11px]">
-        <div className="flex justify-between items-baseline">
-          <span className="text-zinc-700 dark:text-zinc-300">generation balance</span>
-          {bal != null ? (
-            <span className={`font-bold text-sm ${Number(bal) < 1 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-              ${Number(bal).toFixed(2)}
-            </span>
-          ) : (
-            <span className="text-zinc-500 dark:text-zinc-400">unreadable</span>
-          )}
-        </div>
-        {bal != null && Number(bal) < 1 && (
-          <div className="text-amber-600 dark:text-amber-400">low — top up to keep levels generating</div>
-        )}
-      </div>
-    </section>
-  );
-}
 
 function Directives() {
   const [text, setText] = useState('');

@@ -175,9 +175,21 @@ def gather_day(node_input: str) -> str:
         elif kind == "signal":
             s = e.get("signal", "?")
             signal_counts[s] = signal_counts.get(s, 0) + 1
+    # when are players actually active? (last 7d, by UTC hour) — lets the Reflector
+    # learn peak send windows at scale, so sends land when the MOST players are online.
+    hourly: dict[str, int] = {}
+    for e in state.recent_ledger(hours=24 * 7, kind="signal"):
+        if str(e.get("signal", "")).endswith("user_active"):
+            t = e.get("ts")
+            if t is not None and hasattr(t, "hour"):
+                h = str(t.hour)
+                hourly[h] = hourly.get(h, 0) + int(e.get("count", 1) or 1)
+    activity_by_hour = dict(sorted(hourly.items(), key=lambda x: int(x[0])))
+
     context = {
         "period": "last 24h",
         "signals": signal_counts,
+        "activity_by_hour_utc": activity_by_hour,
         "actions_taken": action_counts,      # aggregated counts, not raw entries
         "rejections": rejections[:20],
         "outcomes": outcomes,                # the actual results to learn from

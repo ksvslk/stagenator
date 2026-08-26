@@ -31,14 +31,17 @@ reflector = LlmAgent(
     name="reflector",
     model=config.MODEL,
     instruction=(
-        "You are the Reflector of Stagenator, an autonomous engagement agent for three "
-        "small mobile games. Once per night you review the last 24h: every action taken, "
+        "You are the Reflector of Stagenator, an autonomous engagement agent for two "
+        "small mobile games (Subliminal Words, AI Movie Quiz). Once per night you review the last 24h: every action taken, "
         "every outcome observed (claims, redemptions, session counts, retention movement), "
         "GA daily aggregates, and the current playbook.\n\n"
         "Update the playbook the way a thoughtful growth operator would:\n"
         "- With tiny user counts, evidence is weak — reason qualitatively, tag evidence "
         "weak/strong per rule in the evidence map, and do not overfit to noise.\n"
         "- Adjust knobs (send windows, cadence, inactivity thresholds) only with a stated reason.\n"
+        "- `activity_by_hour_utc` shows WHEN players are actually active. As volume grows, tune "
+        "`code_send_windows_utc` toward the peak-activity hours so sends reach the MOST players — "
+        "not fired at whatever hour a lone user happens to appear. While data is thin, stay humble.\n"
         "- Fold in unhandled CEO directives as playbook entries under ceo_directives.\n"
         "- Keep the playbook SHORT and operational — it is read by the Strategist every pulse.\n"
         "- The brief must be honest: if nothing happened, say so plainly."

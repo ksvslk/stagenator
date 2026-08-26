@@ -368,8 +368,6 @@ function Dashboard() {
 
           <EarningsOverview />
 
-          <HealthOverview />
-
           <section>
             <SectionTitle>
               Plan{' '}
@@ -395,6 +393,8 @@ function Dashboard() {
           </section>
 
           <Directives />
+
+          <HealthOverview />
 
         </div>
       </div>

@@ -43,12 +43,15 @@ def audit_inventory(task: dict) -> dict:
     today = state.now().date().isoformat()
     report: dict = {}
 
-    # ALL campaigns are audited (proffer.codes-wide inventory health);
-    # only stagenator-managed ones escalate to CRITICAL alerts.
-    for camp_snap in tc.collection("campaigns").stream():
+    # ONLY audit campaigns WE own. Never read or modify the owner's other campaigns —
+    # applying our Apple/Play expiry heuristic to a game we don't manage wrongly marks
+    # its codes expired and zeroes its availableCodes (a serious overreach bug, now fixed).
+    managed_q = tc.collection("campaigns").where(
+        filter=firestore.FieldFilter("managedBy", "==", "stagenator"))
+    for camp_snap in managed_q.stream():
         camp = camp_snap.reference
         d = camp_snap.to_dict()
-        managed = d.get("managedBy") == "stagenator"
+        managed = True
         platform = d.get("stagenatorPlatform") or d.get("platform") or "unknown"
         game = d.get("game") or d.get("title") or "?"
         valid = expired = suspect = torn = 0

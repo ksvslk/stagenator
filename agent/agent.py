@@ -108,16 +108,16 @@ def execute(node_input) -> dict:
         if _time.monotonic() - started > EXECUTOR_SOFT_BUDGET_S or (
             task["type"] in HEAVY_TASKS and heavy_done >= 1
         ):
-            state.defer_task(task["id"], "budget/heavy-cap")  # not a failed attempt
+            state.defer_task(task["id"], task.get("lease"), "budget/heavy-cap")  # not a failed attempt
             deferred += 1
             continue
         not_before = task.get("payload", {}).get("not_before")
         if not_before and not_before > state.now().isoformat():
-            state.defer_task(task["id"], "not yet due")  # scheduled — not a failed attempt
+            state.defer_task(task["id"], task.get("lease"), "not yet due")  # scheduled — not a failed attempt
             continue
         try:
             result = pipelines.run_task(task)
-            state.finish_task(task["id"], ok=True, result=result)
+            state.finish_task(task["id"], task.get("lease"), ok=True, result=result)
             state.ledger("action", task["game"], action=task["type"], task=task["id"],
                          status="done", result=result)
             ran.append(task["id"])
@@ -125,7 +125,7 @@ def execute(node_input) -> dict:
                 heavy_done += 1
         except Exception as e:
             log.exception("task %s failed", task["id"])
-            state.finish_task(task["id"], ok=False, error=str(e))
+            state.finish_task(task["id"], task.get("lease"), ok=False, error=str(e))
             failed.append({"task": task["id"], "error": str(e)})
     return {"ran": ran, "failed": failed, "deferred": deferred,
             "gate": node_input if isinstance(node_input, dict) else None}

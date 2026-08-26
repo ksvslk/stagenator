@@ -15,6 +15,7 @@ import datetime as dt
 import hashlib
 import json
 import logging
+import secrets
 from typing import Any
 
 from google.cloud import firestore
@@ -98,7 +99,8 @@ def enqueue(task_type: str, game: str, payload: dict, dedupe_key: str | None = N
                 "game": game,
                 "payload": payload,
                 "status": "pending",
-                "attempts": 0,
+                "attempts": 0,   # claim count (shown on dashboard)
+                "failures": 0,   # genuine failures — only this drives dead-lettering
                 "created": now(),
                 "updated": now(),
             },
@@ -123,16 +125,24 @@ def claim_pending(limit: int = 10) -> list[dict]:
     for snap in list(pending) + stuck:
         ref = col.document(snap.id)
 
+        lease = secrets.token_hex(8)
+
         @firestore.transactional
-        def _claim(tx: firestore.Transaction, ref=ref):
+        def _claim(tx: firestore.Transaction, ref=ref, lease=lease):
             cur = ref.get(transaction=tx).to_dict()
-            if cur["status"] == "running" and cur["updated"] > stale:
+            if not cur:  # deleted between stream and tx
                 return None
-            if cur["attempts"] >= config.MAX_TASK_ATTEMPTS:
+            upd = cur.get("updated")
+            if cur.get("status") == "running" and upd and upd > stale:
+                return None  # a live owner still holds it
+            # dead-letter on genuine FAILURES only — infra kills (which bump claims,
+            # not failures) must never dead-letter a task that never actually failed.
+            if cur.get("failures", 0) >= config.MAX_TASK_ATTEMPTS:
                 tx.update(ref, {"status": "dead", "updated": now()})
                 return {"dead": True, **cur, "id": ref.id}
-            tx.update(ref, {"status": "running", "attempts": cur["attempts"] + 1, "updated": now()})
-            return {**cur, "id": ref.id, "attempts": cur["attempts"] + 1}
+            tx.update(ref, {"status": "running", "attempts": cur.get("attempts", 0) + 1,
+                            "lease": lease, "leasedAt": now(), "updated": now()})
+            return {**cur, "id": ref.id, "attempts": cur.get("attempts", 0) + 1, "lease": lease}
 
         claimed = _claim(db().transaction())
         if claimed and claimed.get("dead"):
@@ -142,26 +152,49 @@ def claim_pending(limit: int = 10) -> list[dict]:
     return tasks
 
 
-def defer_task(task_id: str, reason: str) -> None:
-    """Return a claimed task to pending WITHOUT counting the claim as an attempt
-    (deferral for time-budget or not-yet-due is not a failure)."""
+def defer_task(task_id: str, lease: str | None, reason: str) -> None:
+    """Return a claimed task to pending. Lease-checked: if we no longer own the
+    lease (a stale re-lease handed it to another invocation) this is a no-op, so
+    a defer can't clobber the new owner. Deferral is not a failure — `failures`
+    is untouched, so it never contributes to dead-lettering."""
     ref = db().collection(config.COL_TASKS).document(task_id)
-    snap = ref.get().to_dict() or {}
-    ref.update({"status": "pending", "updated": now(),
-                "attempts": max(0, snap.get("attempts", 1) - 1),
-                "lastDefer": reason})
+
+    @firestore.transactional
+    def _tx(tx: firestore.Transaction):
+        cur = ref.get(transaction=tx).to_dict()
+        if not cur or (lease and cur.get("lease") not in (None, lease)):
+            return
+        tx.update(ref, {"status": "pending", "updated": now(),
+                        "lastDefer": reason, "lease": firestore.DELETE_FIELD})
+
+    _tx(db().transaction())
 
 
-def finish_task(task_id: str, ok: bool, error: str | None = None, result: dict | None = None) -> None:
+def finish_task(task_id: str, lease: str | None, ok: bool,
+                error: str | None = None, result: dict | None = None) -> None:
+    """Record a task outcome. Lease-checked so a stale duplicate can't overwrite the
+    real owner's result. A genuine failure increments `failures`; dead-lettering is
+    driven by `failures` (not claim count), so infra kills don't dead-letter."""
     ref = db().collection(config.COL_TASKS).document(task_id)
-    if ok:
-        ref.update({"status": "done", "updated": now(), "result": result or {}})
-    else:
-        snap = ref.get().to_dict()
-        dead = snap["attempts"] >= config.MAX_TASK_ATTEMPTS
-        ref.update({"status": "dead" if dead else "pending", "updated": now(), "error": error})
-        if dead:
-            critical(f"Task {task_id} dead-lettered: {error}", task_id=task_id)
+
+    @firestore.transactional
+    def _tx(tx: firestore.Transaction):
+        cur = ref.get(transaction=tx).to_dict()
+        if not cur or (lease and cur.get("lease") not in (None, lease)):
+            return False  # we no longer own it — don't clobber the new owner
+        if ok:
+            tx.update(ref, {"status": "done", "updated": now(),
+                            "result": result or {}, "lease": firestore.DELETE_FIELD})
+            return False
+        failures = cur.get("failures", 0) + 1
+        dead = failures >= config.MAX_TASK_ATTEMPTS
+        tx.update(ref, {"status": "dead" if dead else "pending", "updated": now(),
+                        "error": error, "failures": failures, "lease": firestore.DELETE_FIELD})
+        return dead
+
+    dead = _tx(db().transaction())
+    if dead:
+        critical(f"Task {task_id} dead-lettered: {error}", task_id=task_id)
 
 
 # --------------------------------------------------------------- playbook ----

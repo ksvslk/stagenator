@@ -55,8 +55,9 @@ def validate(action: dict) -> dict | None:
         if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
             return {"error": f"push-action/4h cap reached for {game}"}
 
-    if t in ("send_code_drop", "send_individual_code", "send_level_push") and not config.GAMES[game]["level_push_topic"] and t != "send_code_drop":
-        return {"error": f"{game} has no push channel"}
+    # A level push needs the game's level topic; code paths use FCM tokens / drops, not it.
+    if t == "send_level_push" and not config.GAMES[game].get("level_push_topic"):
+        return {"error": f"{game} has no level push topic"}
 
     return None
 
@@ -75,7 +76,9 @@ def gate_and_enqueue(decision: dict) -> dict:
     for action in decision.get("actions", []):
         verdict = validate(action)
         if verdict is None:
-            not_before = state.now() + dt.timedelta(minutes=action.get("delay_minutes") or 0)
+            # clamp: never backdate (negative) or park a task beyond ~12h
+            _delay = max(0, min(int(action.get("delay_minutes") or 0), 720))
+            not_before = state.now() + dt.timedelta(minutes=_delay)
             task_id = state.enqueue(
                 ACTION_TO_TASK[action["type"]],
                 action["game"],

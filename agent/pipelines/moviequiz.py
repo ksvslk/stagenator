@@ -91,10 +91,10 @@ def generate_clip(prompt: str) -> bytes:
             number_of_videos=1,
         ),
     )
-    deadline = time.monotonic() + 600
+    deadline = time.monotonic() + 330
     while not operation.done:
         if time.monotonic() > deadline:
-            raise RuntimeError("Veo generation timed out after 600s")
+            raise RuntimeError("Veo generation timed out after 330s")
         time.sleep(15)
         operation = client.operations.get(operation)
     videos = operation.response.generated_videos if operation.response else None
@@ -191,10 +191,23 @@ def _self_validate(level_number: int, video_path: str) -> None:
         # roll back cleanly (delete level + decrement counter) so a retry re-ships
         # at the same number — AMQ shows levels by counter, so a broken one can't
         # just be disabled.
-        gdb.collection("levels").document(str(level_number)).delete()
-        gdb.collection("counters").document("levelsCounter").update(
-            {"count": firestore.Increment(-1)})
-        state.critical(f"AMQ level {level_number} failed self-validation, rolled back: {problems}")
+        cref = gdb.collection("counters").document("levelsCounter")
+        lref = gdb.collection("levels").document(str(level_number))
+
+        @firestore.transactional
+        def _rollback(tx: firestore.Transaction):
+            count = (cref.get(transaction=tx).to_dict() or {}).get("count", 0)
+            if lref.get(transaction=tx).exists:
+                tx.delete(lref)
+            # decrement ONLY if this level is still the latest; if a concurrent submit
+            # advanced the counter, a blind -1 would wedge numbering forever.
+            if count == level_number:
+                tx.update(cref, {"count": firestore.Increment(-1)})
+                return "rolled back"
+            return "deleted (counter left — a newer level exists)"
+
+        outcome = _rollback(gdb.transaction())
+        state.critical(f"AMQ level {level_number} failed self-validation ({outcome}): {problems}")
         raise RuntimeError(f"self-validation failed: {problems}")
 
 

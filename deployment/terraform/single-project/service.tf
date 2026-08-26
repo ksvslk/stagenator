@@ -47,6 +47,24 @@ resource "google_cloud_run_v2_service" "app" {
         value = "True"
       }
 
+      # Prod runtime — pinned so a bundled local .env can never boot prod into
+      # dry-run or the eval collection prefix (see deploy.sh, which enforces the
+      # same on the agents-cli path).
+      env {
+        name  = "DRY_RUN"
+        value = "false"
+      }
+
+      env {
+        name  = "MODEL_NAME"
+        value = "gemini-3.7-flash"
+      }
+
+      env {
+        name  = "OWNER_EMAIL"
+        value = "indrekl@gmail.com"
+      }
+
       resources {
         limits = {
           cpu    = "1"

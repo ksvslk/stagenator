@@ -60,12 +60,28 @@ def apply_reflection(reflection: dict) -> dict:
     except (KeyError, json.JSONDecodeError) as e:
         state.critical(f"Reflector produced unparseable playbook: {e}")
         return {"applied": False, "error": str(e)}
+    if not isinstance(playbook, dict):  # valid JSON but not an object (null/list/str)
+        state.critical(f"Reflector playbook is not an object: {type(playbook).__name__}")
+        return {"applied": False, "error": "playbook is not a JSON object"}
 
-    import json as _json
-    if len(_json.dumps(playbook, default=str)) > PLAYBOOK_MAX_CHARS:
-        # bound growth: trim the longest-lived, least-critical section (evidence log)
-        playbook["evidence"] = {"note": "trimmed to bound memory size"}
-        playbook.setdefault("segment_rules", playbook.get("segment_rules", [])[:8])
+    # Preserve any sections the model omitted — merge over the current playbook so a
+    # forgotten `knobs`/`philosophy` isn't silently dropped.
+    merged = {**state.get_playbook(), **playbook}
+
+    def _too_big() -> bool:
+        return len(json.dumps(merged, default=str)) > PLAYBOOK_MAX_CHARS
+
+    # Actually enforce the bound (the old setdefault trim was dead code): trim the
+    # evidence log, then cap segment_rules, then drop least-critical sections until it fits.
+    if _too_big():
+        merged["evidence"] = {"note": "trimmed to bound memory size"}
+    if _too_big() and isinstance(merged.get("segment_rules"), list):
+        merged["segment_rules"] = merged["segment_rules"][:8]
+    for _k in ("evidence", "segment_rules"):
+        if not _too_big():
+            break
+        merged.pop(_k, None)
+    playbook = merged
     state.update_playbook(playbook, reason=reflection.get("changes_summary", "nightly reflection"))
     state.db().collection(config.COL_BRIEFS).document().set(
         {"ts": state.now(), "brief": reflection.get("brief", ""), "changes": reflection.get("changes_summary", "")}

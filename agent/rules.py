@@ -280,7 +280,7 @@ def detect_signals() -> list[dict]:
             for key, count in snapshot.items():
                 platform, cohort = key.split(":", 1)
                 sig = "new_user_active" if cohort.lower() == "new" else "user_active"
-                detail = f"{platform}:{count}"
+                detail = platform  # stable — don't re-fire as the live count wiggles
                 if (game, sig, detail) not in seen:
                     sigd = {"game": game, "signal": sig, "detail": detail,
                             "platform": platform, "count": count}
@@ -290,7 +290,7 @@ def detect_signals() -> list[dict]:
 
         inv = campaign_inventory(game)
         if inv["campaign_id"] and inv["available"] is not None and inv["available"] <= 5:
-            detail = f"{inv['campaign_id']}:{inv['available']}"
+            detail = inv["campaign_id"]  # stable — don't re-fire on each stock decrement
             if (game, "inventory_low", detail) not in seen:
                 signals.append({"game": game, "signal": "inventory_low", **inv, "detail": detail})
 

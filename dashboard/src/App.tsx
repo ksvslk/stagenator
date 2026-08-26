@@ -19,13 +19,22 @@ import { auth, db, gisSignIn, isOwner } from './firebase';
 
 type Doc = Record<string, unknown> & { id: string };
 
+function reportListenerError(path: string, err: unknown) {
+  // Never fail silently: a permission / App Check / missing-index error otherwise
+  // leaves a blank authenticated screen with no clue. Log it AND surface a banner.
+  // eslint-disable-next-line no-console
+  console.error(`[stagenator] Firestore listener failed for ${path}:`, err);
+  const message = (err as { message?: string })?.message ?? String(err);
+  window.dispatchEvent(new CustomEvent('sg-listener-error', { detail: { path, message } }));
+}
+
 function useCollection(path: string, orderField: string, n = 50): Doc[] {
   const [docs, setDocs] = useState<Doc[]>([]);
   useEffect(() => {
     const q = query(collection(db, path), orderBy(orderField, 'desc'), limit(n));
-    return onSnapshot(q, (snap) => {
-      setDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    return onSnapshot(q,
+      (snap) => setDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (err) => reportListenerError(path, err));
   }, [path, orderField, n]);
   return docs;
 }
@@ -33,9 +42,9 @@ function useCollection(path: string, orderField: string, n = 50): Doc[] {
 function useDoc(path: string): Doc | null {
   const [data, setData] = useState<Doc | null>(null);
   useEffect(() => {
-    return onSnapshot(doc(db, path), (snap) => {
-      setData(snap.exists() ? ({ id: snap.id, ...snap.data() } as Doc) : null);
-    });
+    return onSnapshot(doc(db, path),
+      (snap) => setData(snap.exists() ? ({ id: snap.id, ...snap.data() } as Doc) : null),
+      (err) => reportListenerError(path, err));
   }, [path]);
   return data;
 }
@@ -138,6 +147,23 @@ function SignIn({ denied }: { denied: boolean }) {
   );
 }
 
+function ListenerErrorBanner() {
+  const [err, setErr] = useState<{ path: string; message: string } | null>(null);
+  useEffect(() => {
+    const h = (e: Event) => setErr((e as CustomEvent).detail);
+    window.addEventListener('sg-listener-error', h);
+    return () => window.removeEventListener('sg-listener-error', h);
+  }, []);
+  if (!err) return null;
+  return (
+    <div className="bg-red-950/70 border border-red-800 text-red-200 rounded-lg px-4 py-2 text-xs flex items-center gap-2">
+      <span className="font-bold uppercase tracking-wide">Data error</span>
+      <span className="text-red-300/90">{err.path}: {err.message}</span>
+      <span className="text-red-400/70 ml-auto">check App Check · rules · indexes</span>
+    </div>
+  );
+}
+
 function Center({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex items-center justify-center text-zinc-300">{children}</div>
@@ -211,6 +237,7 @@ function Dashboard() {
         </div>
       </header>
 
+      <ListenerErrorBanner />
       <ImpactStrip />
 
       <div className="grid md:grid-cols-3 gap-5 md:gap-6">

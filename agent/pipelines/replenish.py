@@ -14,6 +14,7 @@ Minting (alert-driven until headless console sessions are wired):
   (Play Console promotion -> CSV -> seedCampaign-schema import).
 """
 
+import datetime as dt
 import logging
 
 from google.cloud import firestore
@@ -53,23 +54,27 @@ def audit_inventory(task: dict) -> dict:
         valid = expired = suspect = torn = 0
 
         for code_snap in camp.collection("codes").stream():
-            c = code_snap.to_dict()
-            if c.get("isTorn"):
-                torn += 1
-                continue
-            if c.get("expired"):
-                expired += 1
-                continue
-            verdict = _judge(c, platform, now_ms, today)
-            if verdict == "expired":
-                code_snap.reference.update({"expired": True, "expiredReason": "audit"})
-                expired += 1
-            elif verdict == "suspect":
-                if not c.get("suspect"):
-                    code_snap.reference.update({"suspect": True})
+            try:
+                c = code_snap.to_dict() or {}
+                if c.get("isTorn"):
+                    torn += 1
+                    continue
+                if c.get("expired"):
+                    expired += 1
+                    continue
+                verdict = _judge(c, platform, now_ms, today)
+                if verdict == "expired":
+                    code_snap.reference.update({"expired": True, "expiredReason": "audit"})
+                    expired += 1
+                elif verdict == "suspect":
+                    if not c.get("suspect"):
+                        code_snap.reference.update({"suspect": True})
+                    suspect += 1
+                else:
+                    valid += 1
+            except Exception as e:  # one malformed code never aborts the whole audit
+                log.warning("audit skipped a code in %s: %s", camp_snap.id, e)
                 suspect += 1
-            else:
-                valid += 1
 
         if d.get("availableCodes") != valid:
             camp.update({"availableCodes": valid})
@@ -87,20 +92,58 @@ def audit_inventory(task: dict) -> dict:
     return report
 
 
+def _ms(v) -> int | None:
+    """Best-effort epoch-ms from int/float, ISO string, or Firestore Timestamp/datetime.
+    Returns None when the shape is unrecognizable — callers treat that as 'unknown',
+    NEVER as 'expired', so a legacy timestamp shape can't mass-tear live codes."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return int(v)
+    if hasattr(v, "timestamp"):  # datetime / Firestore Timestamp
+        try:
+            return int(v.timestamp() * 1000)
+        except Exception:
+            return None
+    t = str(v).strip()
+    if t.isdigit():
+        return int(t)
+    try:
+        return int(dt.datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp() * 1000)
+    except Exception:
+        return None
+
+
+def _end_date(v) -> str | None:
+    """promotionEnd as a YYYY-MM-DD string for a date compare, or None if unparseable.
+    An ISO date/datetime string is used directly (no tz round-trip that could shift the
+    day); only epoch/Timestamp shapes are converted."""
+    t = str(v).strip()
+    if len(t) >= 10 and t[4:5] == "-" and t[7:8] == "-":
+        return t[:10]
+    ms = _ms(v)
+    if ms is not None:
+        return dt.datetime.fromtimestamp(ms / 1000, dt.UTC).date().isoformat()
+    return None
+
+
 def _judge(code: dict, platform: str, now_ms: int, today: str) -> str:
-    """valid | suspect | expired, per store expiry rules."""
+    """valid | suspect | expired, per store expiry rules. Timestamps are parsed
+    defensively — an unparseable value is 'unknown' and never tears a code outright."""
     if code.get("promotionEnd"):
-        return "valid" if str(code["promotionEnd"]) >= today else "expired"
-    created = code.get("createdAt")
+        end = _end_date(code["promotionEnd"])
+        if end is not None:
+            return "valid" if end >= today else "expired"
+        # unparseable promotionEnd -> fall through to age logic, don't mass-expire
+    created_ms = _ms(code.get("createdAt"))
     if platform == "apple":
-        if not created:
-            return "expired"  # untraceable apple code is >28d old with certainty in practice
-        age_days = (now_ms - int(created)) / 86_400_000
+        if created_ms is None:
+            return "expired"  # untraceable apple code is >28d old with practical certainty
+        age_days = (now_ms - created_ms) / 86_400_000
         return "valid" if age_days <= APPLE_CODE_LIFETIME_DAYS else "expired"
-    # google without promotion metadata
-    if not created:
+    if created_ms is None:
         return "suspect"
-    age_days = (now_ms - int(created)) / 86_400_000
+    age_days = (now_ms - created_ms) / 86_400_000
     if age_days > GOOGLE_LEGACY_MAX_AGE_DAYS:
         return "expired"
     return "suspect" if age_days > 60 else "valid"

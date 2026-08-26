@@ -78,7 +78,7 @@ def _extract_image(status_data: dict) -> str:
 
 
 def generate_puzzle(prompt: str, difficulty: float, mask_png_b64: str,
-                    timeout_s: int = 420, poll_s: int = 10) -> bytes:
+                    timeout_s: int = 300, poll_s: int = 10) -> bytes:
     """Submit a generation, poll to completion, return the puzzle image bytes."""
     import base64
 

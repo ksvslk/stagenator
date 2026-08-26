@@ -56,6 +56,30 @@ def realtime_snapshot(game: str) -> dict:
     return rows
 
 
+def realtime_activity(game: str) -> dict:
+    """Live gameplay evidence for the poll window: total event count + the top event
+    names firing right now (level_start, level_complete, ...). This grounds "engaged"
+    in what the active user is actually DOING, instead of inferring it from mere
+    presence. Aggregate (not per-player), but with a lone active user it IS that user.
+    Separate from realtime_snapshot and fully guarded — if it fails, the core signal
+    still fires; we just lose the enrichment (never blindness)."""
+    prop = config.GAMES[game]["ga_property"]
+    req = RunRealtimeReportRequest(
+        property=f"properties/{prop}",
+        dimensions=[Dimension(name="eventName")],
+        metrics=[Metric(name="eventCount")],
+        minute_ranges=[MinuteRange(start_minutes_ago=config.GA_POLL_MINUTES, end_minutes_ago=0)],
+    )
+    try:
+        resp = ga().run_realtime_report(req)
+        events = sorted(((r.dimension_values[0].value, int(r.metric_values[0].value))
+                         for r in resp.rows), key=lambda x: -x[1])
+        return {"total": sum(c for _, c in events), "top": events[:5]}
+    except Exception as e:
+        log.warning("GA realtime activity failed for %s: %s", game, e)
+        return {}
+
+
 def top_country(game: str) -> str | None:
     """Best-effort: the country with the most active users right now. Used ONLY as an
     optional soft hint for localizing a level — returns None on any GA hiccup."""
@@ -333,12 +357,17 @@ def detect_signals() -> list[dict]:
         snapshot = realtime_snapshot(game)
         active = sum(snapshot.values())
         if active > 0:
+            activity = realtime_activity(game)  # what they're actually doing, live
             for key, count in snapshot.items():
                 platform, country = key.split(":", 1)
                 detail = key  # platform:country — stable and distinct per segment
                 if (game, "user_active", detail) not in seen:
-                    signals.append({"game": game, "signal": "user_active", "detail": detail,
-                                    "platform": platform, "country": country, "count": count})
+                    sig = {"game": game, "signal": "user_active", "detail": detail,
+                           "platform": platform, "country": country, "count": count}
+                    if activity.get("total"):
+                        sig["events_10min"] = activity["total"]
+                        sig["top_events"] = [f"{n} ({c})" for n, c in activity["top"]]
+                    signals.append(sig)
 
         inv = campaign_inventory(game)
         if inv["campaign_id"] and inv["available"] is not None and inv["available"] <= 5:

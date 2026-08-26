@@ -99,6 +99,15 @@ function ledgerLine(e: Doc): string {
   return parts.join(' · ') || String(e.action ?? '');
 }
 
+function fullEntry(e: Doc): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(e)) {
+    if (k === 'id') continue;
+    out[k] = v && typeof v === 'object' && 'toDate' in (v as object) ? ts(v) : v;
+  }
+  return out;
+}
+
 const KIND_COLORS: Record<string, string> = {
   signal: 'text-sky-400 border-sky-800',
   decision: 'text-violet-400 border-violet-800',
@@ -201,6 +210,9 @@ function ImpactStrip() {
 
 function Dashboard() {
   const ledger = useCollection('stagenator_ledger', 'ts', 60);
+  const [openLog, setOpenLog] = useState<Set<string>>(new Set());
+  const toggleLog = (id: string) =>
+    setOpenLog((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const tasks = useCollection('stagenator_tasks', 'updated', 40);
   const briefs = useCollection('stagenator_briefs', 'ts', 3);
   const playbook = useDoc('stagenator_playbook/current');
@@ -253,16 +265,23 @@ function Dashboard() {
             {ledger.map((e) => (
               <div
                 key={e.id}
-                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-zinc-900/60 rounded-r-lg transition-colors hover:bg-zinc-900 ${
+                onClick={() => toggleLog(e.id)}
+                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-zinc-900/60 rounded-r-lg transition-colors hover:bg-zinc-900 cursor-pointer ${
                   KIND_COLORS[String(e.kind)] ?? 'text-zinc-400 border-zinc-700'
                 }`}
               >
                 <div className="flex gap-2 items-baseline flex-wrap">
+                  <span className="text-zinc-600">{openLog.has(e.id) ? '▾' : '▸'}</span>
                   <span className="uppercase font-bold">{String(e.kind)}</span>
                   {e.game ? <span className="text-zinc-400">{String(e.game)}</span> : null}
                   <span className="text-zinc-600 ml-auto">{ts(e.ts)}</span>
                 </div>
                 <div className="text-zinc-400 mt-0.5 break-words">{ledgerLine(e)}</div>
+                {openLog.has(e.id) && (
+                  <pre className="mt-2 text-[10.5px] leading-relaxed text-zinc-400 bg-zinc-950/60 border border-zinc-800 rounded-lg p-2.5 whitespace-pre-wrap break-words overflow-x-auto">
+                    {JSON.stringify(fullEntry(e), null, 2)}
+                  </pre>
+                )}
               </div>
             ))}
             {ledger.length === 0 && <Empty>no events yet</Empty>}

@@ -87,28 +87,41 @@ def mint_play_dev() -> str:
 
 
 def poll_and_import() -> dict:
-    """Read unseen replies carrying CSVs; import each to its campaign."""
+    """Read unseen replies carrying CSVs; import each to its campaign. Every message
+    is isolated (one bad reply never aborts the batch) and marked Seen once handled,
+    including untagged / no-code replies, so nothing is reprocessed on a loop."""
     imported: dict = {}
-    with imaplib.IMAP4_SSL("imap.gmail.com") as m:
-        m.login(USER, _pw())
-        m.select("INBOX")
-        _typ, data = m.search(None, '(UNSEEN SUBJECT "stagenator-restock")')
-        for num in data[0].split():
-            _t, raw = m.fetch(num, "(RFC822)")
-            msg = email.message_from_bytes(raw[0][1])
-            tag = TAG_RE.search(msg.get("Subject", ""))
-            if not tag:
-                continue
-            campaign_id = tag.group(1)
-            codes = _extract_codes(msg)
-            if not codes:
-                continue
-            n = _import_codes(campaign_id, codes)
-            imported[campaign_id] = n
-            m.store(num, "+FLAGS", "\\Seen")
-            state.ledger("action", None, action="restock_import", status="done",
-                         result={"campaign": campaign_id, "codes": n, "via": "email reply"})
-            _reply_confirm(m, msg, campaign_id, n)
+    try:
+        with imaplib.IMAP4_SSL("imap.gmail.com") as m:
+            m.login(USER, _pw())
+            m.select("INBOX")
+            _typ, data = m.search(None, '(UNSEEN SUBJECT "stagenator-restock")')
+            for num in data[0].split():
+                try:
+                    _t, raw = m.fetch(num, "(RFC822)")
+                    msg = email.message_from_bytes(raw[0][1])
+                    tag = TAG_RE.search(msg.get("Subject", ""))
+                    if not tag:
+                        m.store(num, "+FLAGS", "\\Seen")  # matched subject but untagged — don't reprocess
+                        continue
+                    campaign_id = tag.group(1)
+                    codes = _extract_codes(msg)
+                    if not codes:
+                        m.store(num, "+FLAGS", "\\Seen")  # nothing to import — don't loop
+                        continue
+                    n = _import_codes(campaign_id, codes)
+                    m.store(num, "+FLAGS", "\\Seen")  # mark BEFORE the confirm reply
+                    imported[campaign_id] = n
+                    state.ledger("action", None, action="restock_import", status="done",
+                                 result={"campaign": campaign_id, "codes": n, "via": "email reply"})
+                    try:
+                        _reply_confirm(m, msg, campaign_id, n)
+                    except Exception as e:
+                        log.warning("restock confirm reply failed: %s", e)
+                except Exception as e:  # one bad message never aborts the whole poll
+                    log.warning("restock: skipped a message: %s", e)
+    except Exception as e:  # bad app password / Gmail outage — recover next run
+        log.warning("restock poll (IMAP) failed: %s", e)
     return {"imported": imported}
 
 
@@ -117,7 +130,10 @@ def _extract_codes(msg) -> list[str]:
     for part in msg.walk():
         fn = (part.get_filename() or "").lower()
         if fn.endswith(".csv") or part.get_content_type() == "text/csv":
-            text = part.get_payload(decode=True).decode("utf-8", "ignore")
+            raw = part.get_payload(decode=True)
+            if raw is None:  # undecodable part — skip rather than crash
+                continue
+            text = raw.decode("utf-8", "ignore")
             for line in text.splitlines()[1:]:
                 c = line.split(",")[0].strip()
                 if c and c.lower() != "promotion code":
@@ -126,8 +142,7 @@ def _extract_codes(msg) -> list[str]:
 
 
 def _import_codes(campaign_id: str, codes: list[str]) -> int:
-    import random
-    import string
+    import hashlib
     import time
 
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
@@ -136,15 +151,18 @@ def _import_codes(campaign_id: str, codes: list[str]) -> int:
         state.critical(f"restock reply for unknown campaign {campaign_id}")
         return 0
     end = (dt.date.today() + dt.timedelta(days=364)).isoformat()
-    batch = tc.batch()
-    for code in codes:
-        cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
-        batch.set(camp.collection("codes").document(cid),
-                  {"id": cid, "isTorn": False, "codeType": "one_time_code",
-                   "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
-                   "promotionEnd": end})
-        batch.set(camp.collection("secrets").document(cid), {"code": code})
-    batch.commit()
+    # Deterministic id per code → a duplicate reply overwrites, never double-inserts.
+    # Chunk under Firestore's 500-op batch cap (2 writes per code).
+    for i in range(0, len(codes), 200):
+        batch = tc.batch()
+        for code in codes[i:i + 200]:
+            cid = hashlib.sha1(f"{campaign_id}:{code}".encode()).hexdigest()[:16]
+            batch.set(camp.collection("codes").document(cid),
+                      {"id": cid, "isTorn": False, "codeType": "one_time_code",
+                       "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
+                       "promotionEnd": end})
+            batch.set(camp.collection("secrets").document(cid), {"code": code})
+        batch.commit()
     camp.update({"availableCodes": firestore.Increment(len(codes))})
     return len(codes)
 

@@ -9,6 +9,7 @@ One graph serves all trigger kinds; START input routes it:
 LLM nodes: exactly two (strategist, reflector). Everything else is code.
 """
 
+import datetime as dt
 import json
 import logging
 import time as _time
@@ -113,9 +114,17 @@ def execute(node_input) -> dict:
             deferred += 1
             continue
         not_before = task.get("payload", {}).get("not_before")
-        if not_before and not_before > state.now().isoformat():
-            state.defer_task(task["id"], task.get("lease"), "not yet due")  # scheduled — not a failed attempt
-            continue
+        if not_before:
+            try:
+                nb = dt.datetime.fromisoformat(str(not_before))
+                if nb.tzinfo is None:
+                    nb = nb.replace(tzinfo=dt.UTC)
+                due = state.now() < nb
+            except (ValueError, TypeError):
+                due = False  # unparseable schedule -> run now rather than crash/never
+            if due:
+                state.defer_task(task["id"], task.get("lease"), "not yet due")  # scheduled, not a failure
+                continue
         try:
             result = pipelines.run_task(task)
             state.finish_task(task["id"], task.get("lease"), ok=True, result=result)

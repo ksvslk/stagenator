@@ -120,10 +120,18 @@ def account_balance() -> float | None:
         log.warning("RUNPOD_API_KEY not set — balance unknown")
         return None
     q = {"query": "query { myself { clientBalance } }"}
-    r = requests.post(GRAPHQL_API, json=q, headers={"Authorization": f"Bearer {key}"}, timeout=30)
-    if r.status_code == 401:
-        # endpoint-scoped key: can generate but not read account — balance unknowable
-        log.warning("Runpod key lacks account scope; balance check skipped")
+    try:
+        r = requests.post(GRAPHQL_API, json=q, headers={"Authorization": f"Bearer {key}"}, timeout=30)
+        if r.status_code == 401:
+            # endpoint-scoped key: can generate but not read account — balance unknowable
+            log.warning("Runpod key lacks account scope; balance check skipped")
+            return None
+        r.raise_for_status()
+        data = r.json().get("data")  # GraphQL returns 200 with data:null on errors
+        if not data or not data.get("myself"):
+            log.warning("Runpod balance: no data in response: %s", str(r.json())[:200])
+            return None
+        return data["myself"].get("clientBalance")
+    except Exception as e:  # transient 5xx / network / parse — never crash the balance task
+        log.warning("Runpod balance check failed: %s", e)
         return None
-    r.raise_for_status()
-    return r.json()["data"]["myself"]["clientBalance"]

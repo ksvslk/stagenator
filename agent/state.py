@@ -91,6 +91,15 @@ def enqueue(task_type: str, game: str, payload: dict, dedupe_key: str | None = N
     def _tx(tx: firestore.Transaction):
         snap = ref.get(transaction=tx)
         if snap.exists:
+            cur = snap.to_dict() or {}
+            # A previously terminal task (dead-lettered or done) with this key can be
+            # retried fresh — otherwise a recurring need (e.g. a code shortage) would be
+            # deduped against its own tombstone forever. An active task still dedupes.
+            if cur.get("status") in ("dead", "done"):
+                tx.update(ref, {"status": "pending", "attempts": 0, "failures": 0,
+                                "payload": payload, "updated": now(),
+                                "error": firestore.DELETE_FIELD, "lease": firestore.DELETE_FIELD})
+                return key
             return None
         tx.set(
             ref,

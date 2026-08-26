@@ -246,10 +246,15 @@ def run(task: dict) -> dict:
             state.ledger("decision", game, action="gift_selection",
                          reason=gift.get("reason", ""), product=gift.get("productId"))
 
-        if d.get("giftSubscriptionId"):
-            rows, expiration = asc.mint_subscription_offer_codes(d["giftSubscriptionId"])
-        else:
-            rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
+        try:
+            if d.get("giftSubscriptionId"):
+                rows, expiration = asc.mint_subscription_offer_codes(d["giftSubscriptionId"])
+            else:
+                rows, expiration = asc.mint_iap_offer_codes(d["giftIapId"])
+        except Exception as e:  # symmetry with the Google path: escalate, don't die silently
+            state.critical(f"Apple mint failed for {game}/apple: {e}. {RUNBOOK}",
+                           game=game, campaign=campaign_id)
+            return {"escalated": True, "campaign": campaign_id, "reason": f"ASC mint failed: {e}"}
         batch = tc.batch()
         for code, url in rows[:50]:
             cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))

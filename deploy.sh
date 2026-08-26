@@ -26,3 +26,10 @@ gcloud run services update stagenator --project "$PROJECT" --region "$REGION" \
 echo "✓ deployed. Verifying DRY_RUN…"
 gcloud run services describe stagenator --project "$PROJECT" --region "$REGION" \
   --format="value(spec.template.spec.containers[0].env)" | grep -o "DRY_RUN[^,]*" || true
+
+echo "→ running deployment health check…"
+URL=$(gcloud run services describe stagenator --project "$PROJECT" --region "$REGION" --format="value(status.url)")
+TOKEN=$(gcloud auth print-identity-token)
+curl -s -o /dev/null -w "  health trigger: HTTP %{http_code}\n" -X POST "$URL/triggers/health" \
+  -H "Authorization: Bearer $TOKEN" -d "health:deploy" || true
+echo "  → see stagenator_playbook/health (Mission Control 'Health' panel) for the result"

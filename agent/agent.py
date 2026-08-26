@@ -36,7 +36,7 @@ def dispatch(node_input) -> Event:
         text = str(node_input)
     kind = text.strip().split(":", 1)[0] or "pulse"
     state.heartbeat(kind)
-    if kind not in ("pulse", "nightly", "replenish"):
+    if kind not in ("pulse", "nightly", "replenish", "health"):
         kind = "pulse"  # eventarc events ride the pulse path; detect() sees the payload
     return Event(output=text.strip(), route=kind, state={"trigger": text.strip()})
 
@@ -194,6 +194,17 @@ def apply_night(node_input: dict) -> dict:
     return result
 
 
+def health(node_input) -> dict:
+    """Run the full dependency health check and write stagenator_playbook/health."""
+    from agent import health as _health
+    trigger = "manual"
+    try:
+        trigger = str(node_input).split(":", 1)[1] if ":" in str(node_input) else "scheduled"
+    except Exception:
+        pass
+    return _health.run_health_checks(trigger=trigger)
+
+
 def plan_replenish(node_input: str) -> dict:
     """Replenish path: audit first, import any minted CSVs, then escalate shortages."""
     enqueued = []
@@ -223,7 +234,8 @@ root_agent = Workflow(
     edges=[
         ("START", dispatch),
         # routed by trigger kind
-        (dispatch, {"pulse": detect, "nightly": gather_day, "replenish": plan_replenish}),
+        (dispatch, {"pulse": detect, "nightly": gather_day, "replenish": plan_replenish,
+                    "health": health}),
         # pulse / eventarc fast path
         (detect, {"decide": strategist, "idle": execute}),  # idle still drains the queue
         (strategist, gate),

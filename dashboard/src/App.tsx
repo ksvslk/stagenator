@@ -205,6 +205,7 @@ function Dashboard() {
   const briefs = useCollection('stagenator_briefs', 'ts', 3);
   const playbook = useDoc('stagenator_playbook/current');
   const heartbeat = useDoc('stagenator_playbook/heartbeat');
+  const health = useDoc('stagenator_playbook/health');
 
   const taskBuckets = useMemo(() => {
     const b: Record<string, Doc[]> = { pending: [], running: [], done: [], dead: [] };
@@ -228,11 +229,15 @@ function Dashboard() {
           <span>last event {lastHeartbeat}</span>
           <span className="flex items-center gap-1.5">
             <span
-              className={`inline-block w-2 h-2 rounded-full ${
-                taskBuckets.dead.length ? 'bg-red-500' : 'bg-emerald-500'
-              } animate-pulse`}
+              className={`inline-block w-2 h-2 rounded-full animate-pulse ${
+                !health ? 'bg-zinc-500'
+                  : health.status === 'healthy' ? 'bg-emerald-500'
+                  : health.status === 'degraded' ? 'bg-amber-500' : 'bg-red-500'
+              }`}
             />
-            {taskBuckets.dead.length ? `${taskBuckets.dead.length} dead-lettered` : 'healthy'}
+            {health
+              ? `${String(health.status)}${Number(health.fail) ? ` · ${health.fail} down` : ''}`
+              : (taskBuckets.dead.length ? `${taskBuckets.dead.length} dead` : 'health pending')}
           </span>
         </div>
       </header>
@@ -303,6 +308,8 @@ function Dashboard() {
               ))}
             </div>
           </section>
+
+          <HealthOverview />
 
           <LevelsOverview ledger={ledger} tasks={tasks} />
 
@@ -502,6 +509,36 @@ function CodesOverview() {
           );
         })}
         {!summary && <Empty>updates on next pulse</Empty>}
+      </div>
+    </section>
+  );
+}
+
+function HealthOverview() {
+  const h = useDoc('stagenator_playbook/health');
+  if (!h) return null;
+  const checks = (h.checks ?? []) as { name: string; ok: boolean; warn: boolean; detail: string; ms: number }[];
+  const st = String(h.status);
+  const stColor = st === 'healthy' ? 'text-emerald-400' : st === 'degraded' ? 'text-amber-400' : 'text-red-400';
+  const dot = (c: { ok: boolean; warn: boolean }) => (c.ok && !c.warn ? 'bg-emerald-500' : c.warn ? 'bg-amber-400' : 'bg-red-500');
+  return (
+    <section>
+      <SectionTitle>Health <span className="text-zinc-600 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
+      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
+        <div className="flex justify-between items-baseline">
+          <span className={`font-bold uppercase tracking-wide ${stColor}`}>{st}</span>
+          <span className="text-zinc-500">{Number(h.ok ?? 0)} ok · {Number(h.warn ?? 0)} warn · <span className={Number(h.fail) ? 'text-red-400' : ''}>{Number(h.fail ?? 0)} down</span></span>
+        </div>
+        <div className="flex flex-col gap-0.5 max-h-60 overflow-y-auto">
+          {checks.map((c) => (
+            <div key={c.name} className="flex gap-2 items-baseline">
+              <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${dot(c)}`} />
+              <span className="text-zinc-400 truncate shrink-0">{c.name}</span>
+              <span className="text-zinc-600 ml-auto truncate text-right" title={c.detail}>{c.detail}</span>
+            </div>
+          ))}
+          {checks.length === 0 && <span className="text-zinc-600 italic">runs at deploy + daily</span>}
+        </div>
       </div>
     </section>
   );

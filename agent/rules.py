@@ -261,6 +261,64 @@ def refresh_codes_summary() -> None:
     )
 
 
+def refresh_audience_profile() -> None:
+    """Per-game audience VALUE profile from the GA4 BigQuery export (last 14d): engagement
+    time, country value tier, platform, lapsing counts. Lets the Strategist spend scarce
+    codes on higher-value lapsing segments rather than blanket. Degrades gracefully to
+    'awaiting GA4 export' when a game's export dataset isn't present yet."""
+    from google.cloud import bigquery
+
+    from agent import state
+
+    bq = bigquery.Client(project=config.HOME_PROJECT)
+    out: dict = {}
+    for game in config.ACTIVE_GAMES:
+        prop = config.GAMES[game]["ga_property"]
+        table = f"`{config.HOME_PROJECT}.analytics_{prop}.events_*`"
+        try:
+            q = f"""
+              WITH p AS (
+                SELECT user_pseudo_id AS u,
+                  ANY_VALUE(geo.country) AS country,
+                  ANY_VALUE(platform) AS platform,
+                  SUM((SELECT ep.value.int_value FROM UNNEST(event_params) ep
+                       WHERE ep.key='engagement_time_msec'))/1000 AS engage_sec,
+                  MAX(event_timestamp) AS last_ts
+                FROM {table}
+                WHERE _TABLE_SUFFIX >= FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY))
+                GROUP BY u )
+              SELECT country, platform, COUNT(*) AS players,
+                     ROUND(AVG(engage_sec), 0) AS avg_engage,
+                     COUNTIF(last_ts < UNIX_MICROS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY))) AS lapsing
+              FROM p GROUP BY country, platform
+            """
+            rows = list(bq.query(q).result())
+        except Exception as e:
+            log.warning("audience profile failed for %s: %s", game, e)
+            out[game] = {"status": "awaiting GA4 export"}
+            continue
+        tiers: dict = {}
+        total = 0
+        for r in rows:
+            t = config.country_tier(r["country"])
+            b = tiers.setdefault(t, {"players": 0, "lapsing": 0, "_eng": 0.0})
+            b["players"] += r["players"]
+            b["lapsing"] += r["lapsing"] or 0
+            b["_eng"] += (r["avg_engage"] or 0) * r["players"]
+            total += r["players"]
+        for b in tiers.values():
+            b["avg_engage_sec"] = round(b["_eng"] / b["players"], 0) if b["players"] else 0
+            del b["_eng"]
+        out[game] = {
+            "players_14d": total,
+            "by_tier": tiers,
+            "high_value_share": round(tiers.get("tier1", {}).get("players", 0) / total, 2) if total else 0,
+            "note": "players are pseudonymous in GA; set setUserId(uid) in-app to unlock 1:1 code targeting",
+        }
+    state.db().collection(config.COL_PLAYBOOK).document("audience").set(
+        {"games": out, "updated": state.now()})
+
+
 def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []

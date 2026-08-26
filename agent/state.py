@@ -231,6 +231,13 @@ def get_playbook() -> dict:
     return snap.to_dict()
 
 
+
+
+def audience_profile() -> dict:
+    """Cached per-game audience value profile (country tier, engagement, lapsing),
+    refreshed nightly from the GA4 export. Empty until the first nightly run."""
+    snap = db().collection(config.COL_PLAYBOOK).document("audience").get()
+    return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
 def update_playbook(new_doc: dict, reason: str) -> None:
     ref = db().collection(config.COL_PLAYBOOK).document("current")
     old = ref.get()

@@ -59,6 +59,7 @@ def detect(node_input: str) -> Event:
     context = {
         "signals": signals,
         "playbook": state.get_playbook(),
+        "audience": state.audience_profile(),  # per-segment value: country tier, engagement, lapsing
         "recent_actions": [
             {k: str(v) for k, v in e.items() if k in ("ts", "game", "action", "status", "reason")}
             for e in state.recent_ledger(hours=24, kind="action")
@@ -143,6 +144,10 @@ def gather_day(node_input: str) -> str:
     Bounded regardless of volume: actions aggregated to counts, outcomes kept in
     full (they're what learning needs), verbose fields (media URLs, prompts) and
     the Reflector's own past briefs dropped."""
+    try:
+        rules.refresh_audience_profile()  # nightly GA4 audience-value refresh
+    except Exception as e:
+        log.warning("audience refresh failed: %s", e)
     led = state.recent_ledger(hours=24)
     action_counts: dict[str, int] = {}
     rejections: list[str] = []

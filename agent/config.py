@@ -102,4 +102,26 @@ CLAIM_BASE_URL = os.getenv("CLAIM_BASE_URL", "https://proffer.codes")
 
 # --- Task pipeline ---
 MAX_TASK_ATTEMPTS = 3
+
+# Country value tiers — a coarse mobile-ARPU proxy so the agent can spend SCARCE
+# codes on higher-value lapsing players rather than blanket. Not exhaustive.
+TIER1_COUNTRIES = {
+    "United States", "United Kingdom", "Australia", "Canada", "Germany", "Japan",
+    "Norway", "Denmark", "Switzerland", "Sweden", "Netherlands", "South Korea",
+    "New Zealand", "Austria", "Finland", "Ireland", "Belgium", "France", "Singapore",
+    "Hong Kong", "Taiwan", "United Arab Emirates", "Luxembourg",
+}
+TIER2_COUNTRIES = {
+    "Italy", "Spain", "Poland", "Portugal", "Czechia", "Greece", "Israel", "Brazil",
+    "Mexico", "China", "Malaysia", "Turkey", "Saudi Arabia", "Chile", "Hungary",
+    "Romania", "South Africa", "Thailand", "Argentina", "Croatia", "Slovakia", "Estonia",
+}
+
+
+def country_tier(country: str | None) -> str:
+    if country in TIER1_COUNTRIES:
+        return "tier1"
+    if country in TIER2_COUNTRIES:
+        return "tier2"
+    return "tier3"
 GA_POLL_MINUTES = 10  # look-back window per pulse (2x overlap over 5-min cadence)

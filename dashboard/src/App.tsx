@@ -308,6 +308,8 @@ function Dashboard() {
 
           <CodesOverview />
 
+          <AudienceOverview />
+
           <CostOverview />
 
           <section>
@@ -500,6 +502,42 @@ function CodesOverview() {
           );
         })}
         {!summary && <Empty>updates on next pulse</Empty>}
+      </div>
+    </section>
+  );
+}
+
+function AudienceOverview() {
+  const a = useDoc('stagenator_playbook/audience');
+  const games = (a?.games ?? {}) as Record<string, {
+    players_14d?: number; high_value_share?: number;
+    by_tier?: Record<string, { players?: number; lapsing?: number; avg_engage_sec?: number }>;
+  }>;
+  if (!a) return null;
+  return (
+    <section>
+      <SectionTitle>Audience value <span className="text-zinc-600 normal-case">· GA4 · {ts(a.updated)}</span></SectionTitle>
+      <div className="flex flex-col gap-1.5">
+        {Object.entries(games).map(([g, d]) => (
+          <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2">
+            <div className="flex justify-between items-baseline">
+              <span className="text-zinc-200 font-bold">{g}</span>
+              <span className="text-zinc-500">
+                {d.players_14d ?? 0} players · <span className="text-emerald-400">{Math.round((d.high_value_share ?? 0) * 100)}% high-value</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-zinc-500">
+              {(['tier1', 'tier2', 'tier3'] as const).map((t) => d.by_tier?.[t] ? (
+                <span key={t}>
+                  <span className="text-zinc-400">{t}</span> {d.by_tier[t].players}p
+                  {d.by_tier[t].avg_engage_sec ? ` · ${d.by_tier[t].avg_engage_sec}s` : ''}
+                  {d.by_tier[t].lapsing ? ` · ${d.by_tier[t].lapsing} lapsing` : ''}
+                </span>
+              ) : null)}
+            </div>
+          </div>
+        ))}
+        {Object.keys(games).length === 0 && <Empty>refreshes on tonight's run</Empty>}
       </div>
     </section>
   );

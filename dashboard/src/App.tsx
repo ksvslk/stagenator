@@ -257,11 +257,11 @@ function Dashboard() {
       <ListenerErrorBanner />
       <ImpactStrip />
 
-      <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+      <div className="flex flex-col xl:flex-row gap-5 items-start">
         {/* Ledger feed */}
-        <section className="md:col-span-2 flex flex-col gap-2">
+        <section className="w-full xl:w-[38%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2">
           <SectionTitle>Decision ledger — live</SectionTitle>
-          <div className="flex flex-col gap-2 max-h-[72vh] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2 max-h-[60vh] xl:max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
             {ledger.map((e) => (
               <div
                 key={e.id}
@@ -288,8 +288,8 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* Right column */}
-        <div className="flex flex-col gap-6">
+        {/* Everything else — responsive masonry of cards */}
+        <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 2xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
           <section>
             <SectionTitle>Tasks</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">

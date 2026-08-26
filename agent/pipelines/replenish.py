@@ -157,9 +157,8 @@ def check_mint_inbox(task: dict) -> dict:
     schema, stamps promotion metadata, and archives the file.
     """
     import csv as csv_mod
+    import hashlib
     import io
-    import random
-    import string
     import time
 
     from google.cloud import storage
@@ -178,19 +177,32 @@ def check_mint_inbox(task: dict) -> dict:
         if not camp.get().exists:
             state.critical(f"mint inbox: unknown campaign {campaign_id}", blob=blob.name)
             continue
+
+        # CLAIM the file first (rename out of the .csv namespace) so a crash or an
+        # overlapping run can never re-import it and double-count the stock. A file
+        # left as .processing is a visible signal for manual recovery.
+        try:
+            blob = bucket.rename_blob(blob, blob.name + ".processing")
+        except Exception:
+            continue  # already claimed by another run
+
         rows = list(csv_mod.reader(io.StringIO(blob.download_as_text())))
         codes = [r[0].strip() for r in rows[1:] if r and r[0].strip()]
-        batch = tc.batch()
-        for code_str in codes:
-            cid = "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
-            batch.set(camp.collection("codes").document(cid),
-                      {"id": cid, "isTorn": False, "codeType": "one_time_code",
-                       "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
-                       **({"promotionEnd": promotion_end} if promotion_end else {})})
-            batch.set(camp.collection("secrets").document(cid), {"code": code_str})
-        batch.commit()
+        # Deterministic id per code → re-running is idempotent (overwrite, not duplicate).
+        # Chunk to stay under Firestore's 500-op batch cap (2 writes per code).
+        for i in range(0, len(codes), 200):
+            batch = tc.batch()
+            for code_str in codes[i:i + 200]:
+                cid = hashlib.sha1(f"{campaign_id}:{code_str}".encode()).hexdigest()[:16]
+                batch.set(camp.collection("codes").document(cid),
+                          {"id": cid, "isTorn": False, "codeType": "one_time_code",
+                           "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
+                           **({"promotionEnd": promotion_end} if promotion_end else {})})
+                batch.set(camp.collection("secrets").document(cid), {"code": code_str})
+            batch.commit()
         camp.update({"availableCodes": firestore.Increment(len(codes))})
-        bucket.rename_blob(blob, blob.name.replace("stagenator_mint_inbox/", "stagenator_mint_done/"))
+        bucket.rename_blob(blob, blob.name.replace("stagenator_mint_inbox/", "stagenator_mint_done/")
+                                          .replace(".processing", ""))
         imported[campaign_id] = len(codes)
         state.ledger("action", None, action="mint_import", status="done",
                      result={"campaign": campaign_id, "codes": len(codes)})

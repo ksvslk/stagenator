@@ -60,6 +60,7 @@ def detect(node_input: str) -> Event:
     context = {
         "signals": signals,
         "playbook": state.get_playbook(),
+        "health": state.health_status(),  # which dependencies are down — don't act on a broken one
         "audience": state.audience_profile(),  # per-segment value: country tier, engagement, lapsing
         "recent_actions": [
             {k: str(v) for k, v in e.items() if k in ("ts", "game", "action", "status", "reason")}

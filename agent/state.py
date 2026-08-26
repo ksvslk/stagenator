@@ -247,6 +247,22 @@ def audience_profile() -> dict:
     refreshed nightly from the GA4 export. Empty until the first nightly run."""
     snap = db().collection(config.COL_PLAYBOOK).document("audience").get()
     return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
+
+
+def health_status() -> dict:
+    """Compact dependency health for the decision layer: overall status plus which
+    dependencies are currently DOWN or degraded. Lets the Strategist avoid proposing
+    actions that depend on something that isn't working."""
+    snap = db().collection(config.COL_PLAYBOOK).document("health").get()
+    if not snap.exists:
+        return {}
+    h = snap.to_dict() or {}
+    checks = h.get("checks", [])
+    return {
+        "status": h.get("status"),
+        "down": [c["name"] for c in checks if not c.get("ok")],
+        "degraded": [c["name"] for c in checks if c.get("warn")],
+    }
 def update_playbook(new_doc: dict, reason: str) -> None:
     ref = db().collection(config.COL_PLAYBOOK).document("current")
     old = ref.get()

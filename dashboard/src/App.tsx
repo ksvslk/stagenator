@@ -510,30 +510,32 @@ function CodesOverview() {
 function AudienceOverview() {
   const a = useDoc('stagenator_playbook/audience');
   const games = (a?.games ?? {}) as Record<string, {
-    players_14d?: number; high_value_share?: number;
-    by_tier?: Record<string, { players?: number; lapsing?: number; avg_engage_sec?: number }>;
+    players_14d?: number;
+    top_countries?: { country: string; players: number; avg_engage_sec: number; ios: number; android: number; lapsing: number }[];
   }>;
   if (!a) return null;
   return (
     <section>
-      <SectionTitle>Audience value <span className="text-zinc-600 normal-case">· GA4 · {ts(a.updated)}</span></SectionTitle>
+      <SectionTitle>Audience <span className="text-zinc-600 normal-case">· GA4 · 14d · {ts(a.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).map(([g, d]) => (
           <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2">
-            <div className="flex justify-between items-baseline">
+            <div className="flex justify-between items-baseline mb-1">
               <span className="text-zinc-200 font-bold">{g}</span>
-              <span className="text-zinc-500">
-                {d.players_14d ?? 0} players · <span className="text-emerald-400">{Math.round((d.high_value_share ?? 0) * 100)}% high-value</span>
-              </span>
+              <span className="text-zinc-500">{d.players_14d ?? 0} players</span>
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-zinc-500">
-              {(['tier1', 'tier2', 'tier3'] as const).map((t) => d.by_tier?.[t] ? (
-                <span key={t}>
-                  <span className="text-zinc-400">{t}</span> {d.by_tier[t].players}p
-                  {d.by_tier[t].avg_engage_sec ? ` · ${d.by_tier[t].avg_engage_sec}s` : ''}
-                  {d.by_tier[t].lapsing ? ` · ${d.by_tier[t].lapsing} lapsing` : ''}
-                </span>
-              ) : null)}
+            <div className="flex flex-col gap-0.5">
+              {(d.top_countries ?? []).slice(0, 5).map((c) => (
+                <div key={c.country} className="flex justify-between text-zinc-500">
+                  <span className="text-zinc-400 truncate">{c.country}</span>
+                  <span className="tabular-nums">
+                    {c.players}p · {c.avg_engage_sec}s
+                    {c.ios ? ` · ${c.ios}iOS` : ''}{c.android ? ` · ${c.android}And` : ''}
+                    {c.lapsing ? <span className="text-amber-400"> · {c.lapsing} lapsing</span> : null}
+                  </span>
+                </div>
+              ))}
+              {(d.top_countries ?? []).length === 0 && <span className="text-zinc-600 italic">no activity yet</span>}
             </div>
           </div>
         ))}

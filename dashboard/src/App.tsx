@@ -315,8 +315,6 @@ function Dashboard() {
 
           <CodesOverview />
 
-          <AudienceOverview />
-
           <CostOverview />
 
           <section>
@@ -529,54 +527,18 @@ function HealthOverview() {
           <span className={`font-bold uppercase tracking-wide ${stColor}`}>{st}</span>
           <span className="text-zinc-500">{Number(h.ok ?? 0)} ok · {Number(h.warn ?? 0)} warn · <span className={Number(h.fail) ? 'text-red-400' : ''}>{Number(h.fail ?? 0)} down</span></span>
         </div>
-        <div className="flex flex-col gap-0.5 max-h-60 overflow-y-auto">
+        <div className="flex flex-col gap-1.5">
           {checks.map((c) => (
-            <div key={c.name} className="flex gap-2 items-baseline">
-              <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${dot(c)}`} />
-              <span className="text-zinc-400 truncate shrink-0">{c.name}</span>
-              <span className="text-zinc-600 ml-auto truncate text-right" title={c.detail}>{c.detail}</span>
+            <div key={c.name} className="grid grid-cols-[10px_1fr] gap-x-2 items-start">
+              <span className={`inline-block w-1.5 h-1.5 rounded-full mt-[5px] ${dot(c)}`} />
+              <div className="flex flex-wrap justify-between gap-x-3">
+                <span className="text-zinc-300">{c.name}</span>
+                <span className={c.ok && !c.warn ? 'text-zinc-500' : c.warn ? 'text-amber-400' : 'text-red-400 font-medium'}>{c.detail}</span>
+              </div>
             </div>
           ))}
           {checks.length === 0 && <span className="text-zinc-600 italic">runs at deploy + daily</span>}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function AudienceOverview() {
-  const a = useDoc('stagenator_playbook/audience');
-  const games = (a?.games ?? {}) as Record<string, {
-    players_14d?: number;
-    top_countries?: { country: string; players: number; avg_engage_sec: number; ios: number; android: number; lapsing: number }[];
-  }>;
-  if (!a) return null;
-  return (
-    <section>
-      <SectionTitle>Audience <span className="text-zinc-600 normal-case">· GA4 · 14d · {ts(a.updated)}</span></SectionTitle>
-      <div className="flex flex-col gap-1.5">
-        {Object.entries(games).map(([g, d]) => (
-          <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2">
-            <div className="flex justify-between items-baseline mb-1">
-              <span className="text-zinc-200 font-bold">{g}</span>
-              <span className="text-zinc-500">{d.players_14d ?? 0} players</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {(d.top_countries ?? []).slice(0, 5).map((c) => (
-                <div key={c.country} className="flex justify-between text-zinc-500">
-                  <span className="text-zinc-400 truncate">{c.country}</span>
-                  <span className="tabular-nums">
-                    {c.players}p · {c.avg_engage_sec}s
-                    {c.ios ? ` · ${c.ios}iOS` : ''}{c.android ? ` · ${c.android}And` : ''}
-                    {c.lapsing ? <span className="text-amber-400"> · {c.lapsing} lapsing</span> : null}
-                  </span>
-                </div>
-              ))}
-              {(d.top_countries ?? []).length === 0 && <span className="text-zinc-600 italic">no activity yet</span>}
-            </div>
-          </div>
-        ))}
-        {Object.keys(games).length === 0 && <Empty>refreshes on tonight's run</Empty>}
       </div>
     </section>
   );

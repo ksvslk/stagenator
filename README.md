@@ -6,9 +6,13 @@ brand-new game levels with AI and ships them straight into the games, can gift
 each player their own promo code, and learns from results every night.
 
 > All Things Agentic Hackathon · **Taskmaster** track — *a complete workflow, not a chatbot.*
->
-> **Live dashboard:** https://stagenator-mission.web.app
-> **How it works — 10 diagrams, plain language:** https://stagenator-mission.web.app/blueprints.html
+
+### 👉 Start here: **[How it works — 10 diagrams, plain language](https://stagenator-mission.web.app/blueprints.html)**
+
+The whole system in ten pictures, simplest first — five minutes to understand
+everything below. Then watch it live on the
+**[dashboard](https://stagenator-mission.web.app)**: every decision, action,
+and mistake, as it happens.
 
 Both games are on the stores: **Subliminal Words** (find the word
 hidden inside a photo) and **AI Movie Quiz** (guess the film from an 8-second
@@ -100,3 +104,8 @@ tests/           unit · resilience (emulator) · eval
 - Long AI generations self-pace across check-ins to stay inside Cloud Run's
   request deadline; two games needing levels in the same moment are served a
   few minutes apart.
+
+---
+
+Questions about any part? Every section above is one picture on the
+**[blueprints page](https://stagenator-mission.web.app/blueprints.html)**.

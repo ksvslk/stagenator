@@ -28,3 +28,7 @@ body {
 *::-webkit-scrollbar-thumb { background: rgb(161 161 170 / 0.45); border-radius: 9999px; }
 .dark *::-webkit-scrollbar-thumb { background: rgb(82 82 91 / 0.7); }
 *::-webkit-scrollbar-thumb:hover { background: rgb(113 113 122 / 0.7); }
+
+/* game brand colors for the history chart */
+:root { --sw-c: #db2777; --sw-t: #ffffff; }
+.dark  { --sw-c: #f472b6; --sw-t: #18181b; }

@@ -212,7 +212,11 @@ def refresh_daily_history() -> None:
             req = RunReportRequest(
                 property=f"properties/{prop}",
                 dimensions=[Dimension(name="date")],
-                metrics=[Metric(name="activeUsers"), Metric(name="totalRevenue")],
+                metrics=[
+                    Metric(name="activeUsers"),
+                    Metric(name="totalRevenue"),
+                    Metric(name="userEngagementDuration"),
+                ],
                 date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
             )
             for r in ga().run_report(req).rows:
@@ -220,8 +224,11 @@ def refresh_daily_history() -> None:
                 key = f"{d[:4]}-{d[4:6]}-{d[6:]}"
                 day = days.setdefault(key, {})
                 g = day.setdefault(game, {})
-                g["players"] = int(float(r.metric_values[0].value or 0))
+                players = int(float(r.metric_values[0].value or 0))
+                g["players"] = players
                 g["revenue_usd"] = round(float(r.metric_values[1].value or 0), 2)
+                secs = float(r.metric_values[2].value or 0)
+                g["engagement_min"] = round(secs / 60 / players, 1) if players else 0.0
         except Exception as e:
             log.warning("daily history GA failed for %s: %s", game, e)
 

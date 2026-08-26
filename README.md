@@ -14,9 +14,13 @@ everything below. Then watch it live on the
 **[dashboard](https://stagenator-mission.web.app)**: every decision, action,
 and mistake, as it happens.
 
-Both games are on the stores: **Subliminal Words** (find the word
-hidden inside a photo) and **AI Movie Quiz** (guess the film from an 8-second
-AI clip).
+These are **live games you can install right now** — the agent ships into apps
+with players on both stores:
+
+- **Subliminal Words** — find the word hidden inside a photo ·
+  [App Store](https://apps.apple.com/app/subliminal-words/id6468366578) · [Google Play](https://play.google.com/store/apps/details?id=com.indest.subliminalwords)
+- **AI Movie Quiz** — guess the film from an 8-second AI clip ·
+  [App Store](https://apps.apple.com/app/ai-movie-quiz/id6752119990) · [Google Play](https://play.google.com/store/apps/details?id=com.indest.aimoviequiz)
 
 ## What it does on its own
 

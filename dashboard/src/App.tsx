@@ -586,79 +586,144 @@ function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs:
 
 function HistoryOverview() {
   const hist = useDoc('stagenator_playbook/daily_history');
+  const [game, setGame] = useState('subliminal-words');
   if (!hist) return null;
-  const days = (hist.days ?? {}) as Record<string, Record<string, { players?: number; revenue_usd?: number; actions?: number; errors?: number }>>;
+  const days = (hist.days ?? {}) as Record<string, Record<string, { players?: number; revenue_usd?: number; engagement_min?: number; actions?: number; errors?: number }>>;
   const keys = Object.keys(days).sort().slice(-30);
   if (keys.length < 2) return null;
   const games = ['subliminal-words', 'ai-movie-quiz'];
-  const colors: Record<string, string> = { 'subliminal-words': '#0d9488', 'ai-movie-quiz': '#7c3aed' };
-  const W = 560, H = 120, PAD = 6;
-  const x = (i: number) => PAD + (i * (W - 2 * PAD)) / (keys.length - 1);
-  const playersMax = Math.max(1, ...keys.map((k) => Math.max(...games.map((g) => days[k]?.[g]?.players ?? 0))));
-  const revTotals = keys.map((k) => games.reduce((a, g) => a + (days[k]?.[g]?.revenue_usd ?? 0), 0));
-  const revMax = Math.max(0.01, ...revTotals);
-  const line = (g: string) =>
-    keys.map((k, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${(H - PAD - ((days[k]?.[g]?.players ?? 0) / playersMax) * (H - 2 * PAD)).toFixed(1)}`).join(' ');
-  const revSum = revTotals.reduce((a, b) => a + b, 0);
-  const playersSum = keys.reduce((a, k) => a + games.reduce((b, g) => b + (days[k]?.[g]?.players ?? 0), 0), 0);
-  const fmtD = (k: string) => `${k.slice(8, 10)}.${k.slice(5, 7)}`;
+  const colors: Record<string, string> = { 'subliminal-words': 'var(--sw-c)', 'ai-movie-quiz': '#d9a514' };
+  const color = colors[game];
+  const W = 580, PAD = 8;
+  const slot = (W - 2 * PAD) / keys.length;
+  const x0 = (i: number) => PAD + i * slot;
+  const xc = (i: number) => x0(i) + slot / 2 - 1;
+  const acted = keys.map((k) => ((days[k]?._agent?.actions ?? 0) > 0));
+  const failed = keys.map((k) => ((days[k]?._agent?.errors ?? 0) > 0));
+  // vertical eye-lines through a chart of height h, on agent days
+  const marks = (h: number) =>
+    keys.map((k, i) =>
+      acted[i] || failed[i] ? (
+        <line key={'m' + k} x1={xc(i)} y1={2} x2={xc(i)} y2={h} strokeDasharray="2 3"
+          stroke={failed[i] ? '#dc2626' : '#059669'} strokeWidth="1.4" opacity="0.6" />
+      ) : null,
+    );
+  const maxOf = (f: (g: { players?: number; revenue_usd?: number; engagement_min?: number }) => number) =>
+    Math.max(0.01, ...keys.map((k) => Math.max(...games.map((g) => f(days[k]?.[g] ?? {})))));
+  const pMax = Math.max(1, ...keys.map((k) => days[k]?.[game]?.players ?? 0));
+  const eMax = Math.max(0.01, ...keys.map((k) => days[k]?.[game]?.engagement_min ?? 0));
+  const rev = keys.map((k) => days[k]?.[game]?.revenue_usd ?? 0);
+  const revMax = Math.max(0.01, ...rev);
+  const revSum = rev.reduce((a, b) => a + b, 0);
+  const fmtD = (k: string) => `${k.slice(8, 10)}.${k.slice(5, 7)}.`;
   return (
     <section>
       <SectionTitle>
-        Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(hist.updated)}</span>
+        Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· a dashed line = a day the agent acted</span>
       </SectionTitle>
+      <div className="flex gap-1.5 mb-2 items-center flex-wrap">
+        {games.map((g) => (
+          <button key={g} onClick={() => setGame(g)}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+              game === g
+                ? 'border-transparent text-white'
+                : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+            }`}
+            style={game === g ? { background: colors[g], color: g === 'ai-movie-quiz' ? '#1c1917' : 'var(--sw-t)' } : undefined}
+          >
+            {g === 'subliminal-words' ? 'Subliminal Words' : 'AI Movie Quiz'}
+          </button>
+        ))}
+        <span className="text-[10.5px] text-zinc-500 dark:text-zinc-400 ml-auto">
+          live on{' '}
+          <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+            href={game === 'subliminal-words' ? 'https://apps.apple.com/app/subliminal-words/id6468366578' : 'https://apps.apple.com/app/ai-movie-quiz/id6752119990'}>App Store</a>
+          {' · '}
+          <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+            href={game === 'subliminal-words' ? 'https://play.google.com/store/apps/details?id=com.indest.subliminalwords' : 'https://play.google.com/store/apps/details?id=com.indest.aimoviequiz'}>Google Play</a>
+        </span>
+      </div>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-3 text-[11px]">
+
         <div>
           <div className="flex justify-between items-baseline mb-1">
-            <span className="text-zinc-700 dark:text-zinc-300">players / day</span>
-            <span className="text-zinc-500 dark:text-zinc-400">
-              {games.map((g) => (
-                <span key={g} className="ml-3"><span style={{ color: colors[g] }}>●</span> {g.split('-')[0]}</span>
-              ))}
-            </span>
+            <span className="text-zinc-700 dark:text-zinc-300 font-bold">1 · Agent acted</span>
+            <span className="text-zinc-500 dark:text-zinc-400"><span className="text-emerald-600 dark:text-emerald-400">■</span> acted · <span className="text-red-600 dark:text-red-400">■</span> failure</span>
           </div>
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
-            <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="currentColor" opacity="0.15" />
-            {games.map((g) => (
-              <path key={g} d={line(g)} fill="none" stroke={colors[g]} strokeWidth="2" strokeLinejoin="round" />
+          <svg viewBox={`0 0 ${W} 16`} className="w-full h-auto">
+            {keys.map((k, i) => (
+              <rect key={k} x={x0(i)} y={2} width={Math.max(3, slot - 2)} height={10} rx="2"
+                fill={failed[i] ? '#dc2626' : acted[i] ? '#059669' : 'currentColor'}
+                opacity={failed[i] || acted[i] ? 0.95 : 0.1} />
             ))}
+          </svg>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-zinc-700 dark:text-zinc-300 font-bold">2 · Players per day</span>
+            <span className="text-zinc-500 dark:text-zinc-400">peak {pMax}</span>
+          </div>
+          <svg viewBox={`0 0 ${W} 76`} className="w-full h-auto">
+            <line x1={PAD} y1={62} x2={W - PAD} y2={62} stroke="currentColor" opacity="0.15" />
+            {marks(62)}
             {keys.map((k, i) => {
-              const a = days[k]?._agent;
-              if (!a) return null;
+              const v = days[k]?.[game]?.players ?? 0;
+              if (!v) return null;
+              const bh = (v / pMax) * 54;
+              return <rect key={k} x={x0(i)} y={62 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" fill={color} />;
+            })}
+            {keys.map((k, i) =>
+              i % 7 === 0 || i === keys.length - 1 ? (
+                <text key={k} x={x0(i)} y={74} fontSize="9" fill="currentColor" opacity="0.45">{fmtD(k)}</text>
+              ) : null,
+            )}
+          </svg>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-zinc-700 dark:text-zinc-300 font-bold">3 · Minutes played, per player</span>
+            <span className="text-zinc-500 dark:text-zinc-400">peak {eMax.toFixed(0)} min</span>
+          </div>
+          <svg viewBox={`0 0 ${W} 66`} className="w-full h-auto">
+            <line x1={PAD} y1={56} x2={W - PAD} y2={56} stroke="currentColor" opacity="0.15" />
+            {marks(56)}
+            {keys.map((k, i) => {
+              const v = days[k]?.[game]?.engagement_min ?? 0;
+              if (!v) return null;
+              const bh = (v / eMax) * 46;
+              return <rect key={k} x={x0(i)} y={56 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" fill={color} opacity="0.85" />;
+            })}
+          </svg>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-zinc-700 dark:text-zinc-300 font-bold">4 · Earnings per day</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">${revSum.toFixed(2)} in 30 days</span>
+          </div>
+          <svg viewBox={`0 0 ${W} 62`} className="w-full h-auto">
+            <line x1={PAD} y1={50} x2={W - PAD} y2={50} stroke="currentColor" opacity="0.15" />
+            {marks(50)}
+            {keys.map((k, i) => {
+              const v = rev[i];
+              if (v <= 0) return null;
+              const bh = Math.max(4, (v / revMax) * 34);
               return (
                 <g key={k}>
-                  {(a.actions ?? 0) > 0 && <circle cx={x(i)} cy={H - PAD + 0.5} r="2.5" fill="#059669" />}
-                  {(a.errors ?? 0) > 0 && <circle cx={x(i)} cy={H - PAD + 0.5} r="2.5" fill="#dc2626" opacity="0.9" />}
+                  <rect x={x0(i)} y={50 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1"
+                    className="fill-emerald-500 dark:fill-emerald-400" />
+                  <text x={x0(i) + slot / 2} y={50 - bh - 3} fontSize="8.5" textAnchor="middle"
+                    className="fill-emerald-600 dark:fill-emerald-400">{v.toFixed(2)}</text>
                 </g>
               );
             })}
           </svg>
-          <div className="flex justify-between text-zinc-500 dark:text-zinc-400 text-[10px]">
-            <span>{fmtD(keys[0])}</span>
-            <span>peak {playersMax} · total {playersSum}</span>
-            <span>{fmtD(keys[keys.length - 1])}</span>
-          </div>
         </div>
-        <div>
-          <div className="flex justify-between items-baseline mb-1">
-            <span className="text-zinc-700 dark:text-zinc-300">earnings / day</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">${revSum.toFixed(2)} total</span>
-          </div>
-          <svg viewBox={`0 0 ${W} 70`} className="w-full h-auto">
-            <line x1={PAD} y1={64} x2={W - PAD} y2={64} stroke="currentColor" opacity="0.15" />
-            {keys.map((k, i) => {
-              const v = revTotals[i];
-              const h = (v / revMax) * 56;
-              return v > 0 ? (
-                <rect key={k} x={x(i) - 3} y={64 - h} width="6" height={h} rx="1.5"
-                  className="fill-emerald-500 dark:fill-emerald-400" />
-              ) : null;
-            })}
-          </svg>
-        </div>
+
         <div className="text-zinc-500 dark:text-zinc-400">
-          dots under the player chart: <span className="text-emerald-600 dark:text-emerald-400">●</span> agent acted ·{' '}
-          <span className="text-red-600 dark:text-red-400">●</span> something failed
+          If the agent works, bars to the <b>right</b> of dashed lines should grow — more players back, longer sessions, more earnings.
         </div>
       </div>
     </section>

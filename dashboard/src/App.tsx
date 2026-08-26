@@ -328,6 +328,8 @@ function Dashboard() {
             </div>
           </section>
 
+          <LearningOverview ledger={ledger} briefs={briefs} playbook={playbook} />
+
           <HealthOverview />
 
           <LevelsOverview ledger={ledger} tasks={tasks} />
@@ -526,6 +528,35 @@ function CodesOverview() {
           );
         })}
         {!summary && <Empty>updates on next pulse</Empty>}
+      </div>
+    </section>
+  );
+}
+
+function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs: Doc[]; playbook: Doc | null }) {
+  const outcomes = ledger.filter((e) => e.kind === 'outcome').length;
+  const lastChange = briefs.map((b) => String(b.changes ?? '')).find((c) => c && c.trim());
+  return (
+    <section>
+      <SectionTitle>Learning <span className="text-zinc-600 normal-case">· nightly loop</span></SectionTitle>
+      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
+        <div className="flex justify-between items-baseline">
+          <span className="text-zinc-300">Playbook <span className="text-zinc-500">v{String(playbook?.version ?? '—')}</span></span>
+          <span className="text-zinc-600">tuned {ts(playbook?.updated)}</span>
+        </div>
+        <div className="flex justify-between items-baseline">
+          <span className="text-zinc-400">outcomes learned from</span>
+          <span className={outcomes ? 'text-emerald-400 font-bold' : 'text-zinc-500'}>{outcomes}</span>
+        </div>
+        {outcomes === 0 ? (
+          <div className="text-zinc-500 leading-relaxed">
+            The loop runs every night — but with <span className="text-zinc-300">no claims or returns yet</span> there is nothing to learn from. It stays deliberately humble (won't overfit noise) and sharpens automatically as real outcomes accrue.
+          </div>
+        ) : (
+          <div className="text-zinc-500">
+            last change: <span className="text-violet-300">{lastChange ?? 'held steady (weak evidence)'}</span>
+          </div>
+        )}
       </div>
     </section>
   );

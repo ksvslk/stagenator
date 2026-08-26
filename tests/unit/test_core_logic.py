@@ -90,7 +90,7 @@ class TestCaps:
     def test_caps_are_sane(self):
         assert 0 < config.CAPS["codes_per_game_per_day"] <= 50
         assert 0 < config.CAPS["levels_per_game_per_day"] <= 10
-        assert config.CAPS["push_actions_per_game_per_4h"] == 1
+        assert 0 < config.CAPS["push_actions_per_game_per_4h"] <= 4
 
     def test_all_games_configured(self):
         for cfg in config.GAMES.values():

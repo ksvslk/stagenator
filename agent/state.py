@@ -211,13 +211,15 @@ def finish_task(task_id: str, lease: str | None, ok: bool,
 DEFAULT_PLAYBOOK: dict = {
     "version": 1,
     "philosophy": (
-        "Very few users right now: every single active player matters. React to any "
-        "activity. Prefer shipping fresh levels (free, always welcome) over codes "
-        "(scarce). Codes go to returning/lapsing players, not already-engaged ones."
+        "EARLY GROWTH PHASE — be generous. Every single active player matters, and a "
+        "promo code can convert a curious first-timer into a retained player, so send "
+        "codes READILY to active and returning players alike; don't hoard them. Fresh "
+        "levels are still free and always welcome. This aggressiveness deliberately "
+        "dials back as the base grows and codes become scarce relative to demand."
     ),
     "knobs": {
         "code_send_windows_utc": [{"start": 16, "end": 21}],  # learned over time; no nested arrays (Firestore)
-        "min_days_inactive_for_code": 3,
+        "min_days_inactive_for_code": 0,  # growth phase: active players get codes too
         "level_cadence_per_game_days": 2,
     },
     "segment_rules": [

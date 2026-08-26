@@ -23,9 +23,12 @@ AI clip).
 - **Checks in every 5 minutes.** Most check-ins find nothing and cost nothing —
   doing nothing on purpose is a normal outcome. The AI is only woken when
   someone is playing.
-- **Ships levels.** Designs a level, generates the art (image or video), has
-  the AI inspect its own output, then saves it with an all-or-nothing write and
-  re-verifies the result. Nothing ships without passing inspection.
+- **Ships levels — multimodal end to end.** Text becomes an image (a word
+  hidden in a photo, via ControlNet) or an 8-second film with sound (Veo 3.1).
+  Then the model switches roles and inspects its own output: Gemini **vision**
+  judges the picture (the word must be subtle — not printed, not invisible),
+  Gemini **video understanding** watches the clip (recognizable, no title text,
+  no actor likeness). Only then is it saved, all-or-nothing, and re-verified.
 - **Gifts promo codes.** Apple codes are minted via the App Store Connect API;
   Google Play (which has no minting API) runs through an email loop the agent
   drives from its own inbox. Every code that leaves the shelf is bound to

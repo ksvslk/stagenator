@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="80 174.5 835 835"
+   width="835"
+   height="835"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="stegosaurus.svg"
+   inkscape:version="1.3 (0e150ed, 2023-07-21)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.63046923"
+     inkscape:cx="567.83104"
+     inkscape:cy="413.18432"
+     inkscape:window-width="2032"
+     inkscape:window-height="1198"
+     inkscape:window-x="1538"
+     inkscape:window-y="121"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <defs
+     id="defs1">
+    <!-- Common styling with inline overrides for easy editing in vector software (Inkscape, Illustrator, Figma) -->
+    <style
+       id="style1">&#10;      .dino-stroke {&#10;        stroke: #2D3142;&#10;        stroke-width: 14px;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;      }&#10;    </style>
+  </defs>
+  <!-- Background Tint -->
+  <!-- Outer Framing Arc -->
+  <!-- Back Plates Group -->
+  <!-- Dinosaur Main Body Group -->
+  <!-- Eye Group -->
+  <g
+     id="g8"
+     transform="translate(5.614227,137.28444)">
+    <g
+       id="g1"
+       transform="translate(32.426494,57.530877)">
+      <path
+         id="plate-left"
+         style="fill:#ffccaa;stroke:#2d3142;stroke-width:14;stroke-linecap:round;stroke-linejoin:round"
+         d="m 285.10425,292.42065 -49.49354,-88.17766 29.9968,-86.30694 82.23037,39.90158 14.86651,132.78945 z"
+         sodipodi:nodetypes="cccccc" />
+      <path
+         id="plate-middle"
+         style="fill:#ffb380;stroke:#2d3142;stroke-width:14;stroke-linecap:round;stroke-linejoin:round"
+         d="M 375.7984,257.78585 401.21489,89.02862 485.71875,37.462183 546.69588,83.088817 509.36172,279.82763 Z" />
+      <path
+         id="plate-right"
+         style="fill:#ff9955;stroke:#2d3142;stroke-width:14;stroke-linecap:round;stroke-linejoin:round"
+         d="M 769.54622,105.33647 740.13781,226.82781 574.46804,411.14141 509.45278,313.45935 668.82415,96.388702 Z"
+         sodipodi:nodetypes="cccccc" />
+      <g
+         id="dinosaur-body"
+         transform="rotate(13.607381,481.94908,337.60135)">
+        <!-- Main Body Shape -->
+        <path
+           id="body-outline"
+           d="m 215,475 c -13.7239,9.64422 -36.17171,21.1504 -69.76992,39.64422 C 185.23008,539.64422 215,510 250,505 c 35,-5 45,10 45,65 h -40 v 70 h 70 V 530 c 65,-10 115,-15 155,-95 10,20 25,125 50,150 25,15 35,-10 30,-65 20,-65 60,-100 130,-115 80,-15 135,-55 155,-130 l -15,-30 c -20,40 -35,60 -55,25 l -5,60 c -65,55 -155,60 -190,20 -35,-50 -70,-90 -170,-90 -85,0 -145,55 -165,140 l -85.66892,34.51852 c -27.67789,28.01235 -31.75758,33.36813 -36.29742,50.69025 35,20 64.64423,-26.02471 91.96634,-25.20877 z"
+           fill="#c1dfd3"
+           stroke="#2d3142"
+           stroke-width="14"
+           stroke-linecap="round"
+           stroke-linejoin="round"
+           sodipodi:nodetypes="ccsccccccccccccccsccccc" />
+        <!-- Square Foot Cutout / Inner Detail -->
+        <path
+           id="foot-cutout"
+           style="fill:#fcfaf7;stroke:#2d3142;stroke-width:12;stroke-linejoin:round"
+           d="m 279,590 h 22 c 2.216,0 4,1.784 4,4 v 22 c 0,2.216 -1.784,4 -4,4 h -22 c -2.216,0 -4,-1.784 -4,-4 v -22 c 0,-2.216 1.784,-4 4,-4 z" />
+        <!-- Zig-Zag Chest Detail Path -->
+        <path
+           id="chest-zigzag"
+           d="m 275,445 25,-65 25,65 25,-65 25,65 25,-65 35,-45"
+           fill="none"
+           stroke="#2d3142"
+           stroke-width="14"
+           stroke-linecap="round"
+           stroke-linejoin="round" />
+      </g>
+      <g
+         id="dinosaur-eye"
+         transform="rotate(13.607381,405.25876,235.08401)">
+        <!-- Pupil -->
+        <path
+           id="eye-pupil"
+           style="fill:#2d3142"
+           d="m 215,425 a 10,10 0 0 1 -10,10 10,10 0 0 1 -10,-10 10,10 0 0 1 10,-10 10,10 0 0 1 10,10 z" />
+        <!-- Catchlight -->
+        <path
+           id="eye-catchlight"
+           style="fill:#ffffff"
+           d="m 211.5,421 a 3.5,3.5 0 0 1 -3.5,3.5 3.5,3.5 0 0 1 -3.5,-3.5 3.5,3.5 0 0 1 3.5,-3.5 3.5,3.5 0 0 1 3.5,3.5 z" />
+      </g>
+    </g>
+    <g
+       id="gpu-chip-foot"
+       transform="matrix(0.7967812,0.19640376,-0.19653882,0.79604973,353.44357,577.15109)"
+       style="stroke-width:1.21908">
+      <!-- Bottom Pins -->
+      <!-- Left Pins -->
+      <!-- Right Pins -->
+      <!-- Green Substrate / PCB Package -->
+      <!-- Central Silicon Die / Core (Deep Tech Green) -->
+      <!-- Pin-1 Gold Index Dot -->
+      <g
+         id="g7"
+         transform="matrix(0.58017405,-2.1223311e-4,-2.1216804e-4,0.57940922,-121.97774,36.544465)"
+         style="stroke-width:2.10262">
+        <path
+           id="line1"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 26,90 v 14" />
+        <path
+           id="line2"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 45,90 v 14" />
+        <path
+           id="line3"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 64,90 v 14" />
+        <path
+           id="line4"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="M 0,26 H -14" />
+        <path
+           id="line5"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="M 0,45 H -14" />
+        <path
+           id="line6"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="M 0,64 H -14" />
+        <path
+           id="line7"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 90,26 h 14" />
+        <path
+           id="line8"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 90,45 h 14" />
+        <path
+           id="line9"
+           style="stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-dasharray:none"
+           class="pin-stroke"
+           d="m 90,64 h 14" />
+        <path
+           id="rect9"
+           style="fill:#3d7e5a;stroke:#2d3142;stroke-width:10.5131;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+           class="main-stroke"
+           d="m 12,0 h 66 c 6.648,0 12,5.352 12,12 v 66 c 0,6.648 -5.352,12 -12,12 H 12 C 5.352,90 0,84.648 0,78 V 12 C 0,5.352 5.352,0 12,0 Z" />
+        <path
+           id="rect10"
+           style="fill:#24523b;stroke:#2d3142;stroke-width:10.5131;stroke-linejoin:round;stroke-dasharray:none"
+           d="m 28,22 h 34 c 3.324,0 6,2.676 6,6 v 34 c 0,3.324 -2.676,6 -6,6 H 28 c -3.324,0 -6,-2.676 -6,-6 V 28 c 0,-3.324 2.676,-6 6,-6 z" />
+        <path
+           id="circle10"
+           style="fill:#ffe599;stroke-width:2.10262"
+           d="M 17.5,14 A 3.5,3.5 0 0 1 14,17.5 3.5,3.5 0 0 1 10.5,14 3.5,3.5 0 0 1 14,10.5 3.5,3.5 0 0 1 17.5,14 Z" />
+      </g>
+    </g>
+  </g>
+</svg>

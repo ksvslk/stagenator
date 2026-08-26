@@ -23,12 +23,17 @@ def ms_ago(days: float) -> int:
 
 # ---------------------------------------------------------- expiry rules ----
 
+
 class TestExpiryJudgement:
     def test_promotion_end_future_is_valid(self):
-        assert _judge({"promotionEnd": "2027-01-20"}, "google", NOW_MS, TODAY) == "valid"
+        assert (
+            _judge({"promotionEnd": "2027-01-20"}, "google", NOW_MS, TODAY) == "valid"
+        )
 
     def test_promotion_end_past_is_expired(self):
-        assert _judge({"promotionEnd": "2026-02-10"}, "google", NOW_MS, TODAY) == "expired"
+        assert (
+            _judge({"promotionEnd": "2026-02-10"}, "google", NOW_MS, TODAY) == "expired"
+        )
 
     def test_promotion_end_today_is_valid(self):
         assert _judge({"promotionEnd": TODAY}, "google", NOW_MS, TODAY) == "valid"
@@ -37,7 +42,15 @@ class TestExpiryJudgement:
         assert _judge({"createdAt": ms_ago(27)}, "apple", NOW_MS, TODAY) == "valid"
 
     def test_apple_over_28_days_expired(self):
-        assert _judge({"createdAt": ms_ago(APPLE_CODE_LIFETIME_DAYS + 1)}, "apple", NOW_MS, TODAY) == "expired"
+        assert (
+            _judge(
+                {"createdAt": ms_ago(APPLE_CODE_LIFETIME_DAYS + 1)},
+                "apple",
+                NOW_MS,
+                TODAY,
+            )
+            == "expired"
+        )
 
     def test_apple_untraceable_expired(self):
         assert _judge({}, "apple", NOW_MS, TODAY) == "expired"
@@ -53,8 +66,15 @@ class TestExpiryJudgement:
 
     def test_promotion_end_beats_age(self):
         # metadata is authoritative even for ancient codes
-        assert _judge({"promotionEnd": "2099-01-01", "createdAt": ms_ago(400)},
-                      "google", NOW_MS, TODAY) == "valid"
+        assert (
+            _judge(
+                {"promotionEnd": "2099-01-01", "createdAt": ms_ago(400)},
+                "google",
+                NOW_MS,
+                TODAY,
+            )
+            == "valid"
+        )
 
 
 class TestSubliminalContract:
@@ -72,16 +92,18 @@ class TestSubliminalContract:
                 assert letter["fontWeightValue"] in (200, 400, 700)
 
     def test_svg_carries_answer_and_all_letters(self):
+        # canonical <path> format (matches the admin dashboard word_level_svg.js)
         layout = build_layout("FROST")
         svg = build_solution_svg(layout, "FROST")
-        assert 'font-family="Roboto' in svg and "data-x=" in svg
-        for i in range(len(layout)):
-            assert f'id="letter_{i+1}"' in svg
-        for ch in "FROST":
-            assert f">{ch}</text>" in svg
+        assert 'data-font="Roboto"' in svg and "data-x=" in svg
+        assert "<text" not in svg and "letter_" not in svg
+        assert svg.count("<path ") == len("FROST")
+        for lid in ("F", "R", "O", "S", "T"):
+            assert f'id="{lid}"' in svg
 
 
 # ---------------------------------------------------------------- config ----
+
 
 class TestCaps:
     def test_caps_are_sane(self):
@@ -97,6 +119,7 @@ class TestCaps:
 
 # --------------------------------------------------- memory / context bounds ----
 
+
 class TestMemoryDiscipline:
     def test_reflector_context_aggregates_not_raw(self):
         """gather_day must aggregate, never raw-dump verbose ledger entries."""
@@ -107,17 +130,80 @@ class TestMemoryDiscipline:
 
         # a noisy ledger with verbose action results (media/prompts)
         fake = [
-            {"kind": "action", "status": "done", "game": "ai-movie-quiz",
-             "action": "level_pipeline", "result": {"media": {"clip": "http://x/" + "a" * 500},
-                                                     "design": {"veo_prompt": "p" * 500}}}
+            {
+                "kind": "action",
+                "status": "done",
+                "game": "ai-movie-quiz",
+                "action": "level_pipeline",
+                "result": {
+                    "media": {"clip": "http://x/" + "a" * 500},
+                    "design": {"veo_prompt": "p" * 500},
+                },
+            }
             for _ in range(50)
         ] + [{"kind": "brief", "brief": "b" * 900} for _ in range(5)]
-        with patch.object(A.state, "recent_ledger", return_value=fake), \
-             patch.object(A.state, "get_playbook", return_value={"version": 1}), \
-             patch.object(A.state, "pending_directives", return_value=[]), \
-             patch.object(A.rules, "campaign_inventory", return_value={"campaigns": {}}):
+        with (
+            patch.object(A.state, "recent_ledger", return_value=fake),
+            patch.object(A.state, "get_playbook", return_value={"version": 1}),
+            patch.object(A.state, "pending_directives", return_value=[]),
+            patch.object(A.rules, "campaign_inventory", return_value={"campaigns": {}}),
+        ):
             ctx = json.loads(A.gather_day("nightly"))
         # 50 verbose actions collapse to a single count; no media/prompt leakage
         assert ctx["actions_taken"] == {"ai-movie-quiz:level_pipeline": 50}
-        assert "veo_prompt" not in A.gather_day.__doc__ and "http://x/" not in json.dumps(ctx)
+        assert (
+            "veo_prompt" not in A.gather_day.__doc__
+            and "http://x/" not in json.dumps(ctx)
+        )
         assert len(json.dumps(ctx)) < 2000  # bounded regardless of 50 noisy entries
+
+
+# ── AI Movie Quiz: only ship titles the in-game keyboard can actually spell ──
+
+
+def test_amq_title_playable_accepts_typeable_titles():
+    from agent.pipelines.moviequiz import _title_playable
+
+    for good in (
+        "Mission: Impossible",
+        "Spider-Man",
+        "Se7en",
+        "2001",
+        "The Good, the Bad and the Ugly",
+        "The Lord of the Rings: The Fellowship of the Ring",
+    ):
+        assert _title_playable(good), good
+
+
+def test_amq_title_playable_rejects_unsolvable_and_oversized():
+    from agent.pipelines.moviequiz import _title_playable
+
+    # chars the on-screen keyboard cannot produce -> unwinnable level
+    for bad in (
+        "Schindler's List",
+        "Fast & Furious",
+        "Amélie",
+        "Léon",
+        "WALL·E",
+        "",
+        "   ",
+    ):
+        assert not _title_playable(bad), bad
+    # absurdly long titles would overflow the box grid
+    assert not _title_playable("A" * 45)
+
+
+# ── Subliminal Words: solution SVG must be the dashboard's canonical <path> format ──
+
+
+def test_subliminal_solution_svg_is_canonical_path_format():
+    from agent.pipelines.subliminal import build_layout, build_solution_svg
+
+    word = "REEL"  # duplicate E exercises the A/A2 id scheme
+    svg = build_solution_svg(build_layout(word), word)
+    assert "<text" not in svg and "letter_" not in svg  # NOT the old wrong format
+    assert svg.count("<path ") == len(word)  # one outline path per letter
+    assert 'viewBox="0 0 1024 1024"' in svg
+    assert 'data-font="Roboto"' in svg and 'style="fill:#000000"' in svg
+    for lid in ('id="R"', 'id="E"', 'id="E2"', 'id="L"'):
+        assert lid in svg, lid

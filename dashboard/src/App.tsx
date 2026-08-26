@@ -1,6 +1,6 @@
 /**
- * Stagenator Mission Control — live observability over the agent's Firestore
- * state. Read-mostly; the one write surface is the CEO directive box.
+ * Stagenator dashboard — live view over the agent's Firestore state.
+ * Read-mostly; the one write surface is the "message the agent" box.
  * Locked to the owner's Google account (rules enforce it server-side too).
  */
 import { useEffect, useMemo, useState } from 'react';
@@ -16,6 +16,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { auth, db, gisSignIn, isOwner } from './firebase';
+import stegoLogo from './assets/stegosaurus.svg';
 
 type Doc = Record<string, unknown> & { id: string };
 
@@ -59,12 +60,20 @@ function ledgerLine(e: Doc): string {
   const parts: string[] = [];
   const push = (v: unknown) => v != null && v !== '' && parts.push(String(v));
   switch (String(e.kind)) {
-    case 'signal':
-      push(e.signal); push(e.detail);
+    case 'signal': {
+      push(e.signal);
+      if (e.count != null) push(`${e.count} active`);
+      const bd = (e.data as Record<string, unknown> | undefined)?.breakdown;
+      if (bd && typeof bd === 'object')
+        push(Object.entries(bd as Record<string, number>).map(([k, v]) => `${k}:${v}`).join(' · '));
+      else if (e.detail && e.detail !== e.signal) push(e.detail);
       break;
+    }
     case 'decision':
       if (e.action === 'strategist') push(`${e.enqueued ?? 0} enqueued · ${e.rejected ?? 0} rejected`);
-      push(String(e.notes ?? e.reason ?? e.product ?? '').slice(0, 130));
+      push(String(e.notes ?? e.reason ?? e.product ?? '').slice(0, 160));
+      if (Array.isArray(e.ruled_out) && e.ruled_out.length)
+        push(`— skipped: ${(e.ruled_out as string[]).join('; ').slice(0, 160)}`);
       break;
     case 'action': {
       push(e.action); push(e.status);
@@ -84,6 +93,10 @@ function ledgerLine(e: Doc): string {
     }
     case 'rejected':
       push(e.action); push(`✕ ${e.reason}`);
+      break;
+    case 'error':
+      push(e.message);
+      if (e.likely_cause) push(`· likely: ${e.likely_cause}`);
       break;
     case 'brief':
       push(String(e.brief ?? '').replace(/#+\s?/g, '').replace(/\n+/g, ' · ').slice(0, 140));
@@ -109,13 +122,13 @@ function fullEntry(e: Doc): Record<string, unknown> {
 }
 
 const KIND_COLORS: Record<string, string> = {
-  signal: 'text-sky-400 border-sky-800',
-  decision: 'text-violet-400 border-violet-800',
-  action: 'text-emerald-400 border-emerald-800',
-  rejected: 'text-amber-400 border-amber-800',
-  error: 'text-red-400 border-red-800',
-  brief: 'text-zinc-300 border-zinc-700',
-  outcome: 'text-teal-400 border-teal-800',
+  signal: 'text-sky-700 dark:text-sky-400 border-sky-400',
+  decision: 'text-violet-600 dark:text-violet-400 border-violet-400',
+  action: 'text-emerald-600 dark:text-emerald-400 border-emerald-400',
+  rejected: 'text-amber-600 dark:text-amber-400 border-amber-400',
+  error: 'text-red-600 dark:text-red-400 border-red-400',
+  brief: 'text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800',
+  outcome: 'text-teal-600 dark:text-teal-400 border-teal-400',
 };
 
 export function App() {
@@ -144,12 +157,13 @@ function SignIn({ denied }: { denied: boolean }) {
   return (
     <Center>
       <div className="flex flex-col items-center gap-4">
-        <div className="text-3xl">🎛️</div>
-        <div className="text-zinc-400 text-sm uppercase tracking-widest">
-          Stagenator Mission Control
+        <img src={stegoLogo} alt="Stagenator" className="h-24 w-auto" />
+        <div className="flex flex-col items-center gap-1">
+          <div className="font-display font-bold text-zinc-800 dark:text-zinc-200 text-sm uppercase tracking-widest">Stagenator</div>
+          <div className="text-zinc-500 dark:text-zinc-400 text-xs">Pulling the app portfolio out of stagnation</div>
         </div>
-        {denied && <div className="text-red-400 text-xs">this account has no access</div>}
-        {error && <div className="text-red-400 text-xs max-w-xs text-center">{error}</div>}
+        {denied && <div className="text-red-600 dark:text-red-400 text-xs">this account has no access</div>}
+        {error && <div className="text-red-600 dark:text-red-400 text-xs max-w-xs text-center">{error}</div>}
         <div ref={buttonRef} />
       </div>
     </Center>
@@ -165,48 +179,46 @@ function ListenerErrorBanner() {
   }, []);
   if (!err) return null;
   return (
-    <div className="bg-red-950/70 border border-red-800 text-red-200 rounded-lg px-4 py-2 text-xs flex items-center gap-2">
+    <div className="bg-red-50 dark:bg-red-950/40 border border-red-400 text-red-700 dark:text-red-300 rounded-lg px-4 py-2 text-xs flex items-center gap-2">
       <span className="font-bold uppercase tracking-wide">Data error</span>
-      <span className="text-red-300/90">{err.path}: {err.message}</span>
-      <span className="text-red-400/70 ml-auto">check App Check · rules · indexes</span>
+      <span className="text-red-600 dark:text-red-400">{err.path}: {err.message}</span>
+      <span className="text-red-500 dark:text-red-400 ml-auto">check App Check · rules · indexes</span>
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center text-zinc-300">{children}</div>
+    <div className="min-h-screen flex items-center justify-center text-zinc-700 dark:text-zinc-300">{children}</div>
   );
 }
 
-function ImpactStrip() {
-  const imp = useDoc('stagenator_playbook/impact');
-  const f = (imp?.functional ?? {}) as Record<string, number>;
-  const cells: [string, number | string][] = [
-    ['actions', f.actions_executed ?? 0],
-    ['decisions', f.decisions ?? 0],
-    ['codes minted', f.codes_minted ?? 0],
-    ['dead codes fixed', f.dead_codes_quarantined ?? 0],
-    ['guardrail blocks', f.guardrail_blocks ?? 0],
-    ['briefs', f.nightly_briefs ?? 0],
-  ];
+function ThemeToggle() {
+  const [dark, setDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try {
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+    } catch {
+      /* ignore */
+    }
+  };
   return (
-    <div className="bg-zinc-900/60 rounded-xl p-4 sm:p-5">
-      <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Impact · validated</div>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-4 gap-y-4">
-        {cells.map(([label, v]) => (
-          <div key={label} className="flex flex-col gap-1">
-            <span className="text-emerald-400 font-bold text-xl leading-none tabular-nums">{v}</span>
-            <span className="text-[10px] text-zinc-500 uppercase leading-tight">{label}</span>
-          </div>
-        ))}
-      </div>
-      {imp?.outcome_note ? (
-        <div className="text-[10px] text-zinc-600 mt-4 pt-3 border-t border-zinc-800/70">{String(imp.outcome_note)}</div>
-      ) : null}
-    </div>
+    <button
+      onClick={toggle}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={dark ? 'Light mode' : 'Dark mode'}
+      className="text-sm leading-none rounded-lg px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+    >
+      {dark ? '\u2600\ufe0f' : '\ud83c\udf19'}
+    </button>
   );
 }
+
 
 function Dashboard() {
   const ledger = useCollection('stagenator_ledger', 'ts', 60);
@@ -225,66 +237,73 @@ function Dashboard() {
     return b;
   }, [tasks]);
 
-  const lastHeartbeat = ledger[0] ? ts(ledger[0].ts) : '—';
 
   return (
-    <div className="min-h-screen text-zinc-200 max-w-7xl mx-auto flex flex-col gap-5 sm:gap-6 px-4 sm:px-6 pb-12">
-      <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3.5 bg-zinc-950/85 backdrop-blur-md border-b border-zinc-800/70 flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
+    <div className="min-h-screen text-zinc-800 dark:text-zinc-200 max-w-7xl mx-auto flex flex-col gap-5 sm:gap-6 px-4 sm:px-6 pb-12">
+      <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🎛️</span>
-          <h1 className="font-bold tracking-widest uppercase text-sm">Stagenator · Mission Control</h1>
+          <img src={stegoLogo} alt="Stagenator" className="h-11 w-auto shrink-0" />
+          <div className="flex flex-col leading-tight">
+            <h1 className="font-display font-bold tracking-widest uppercase text-sm text-zinc-900 dark:text-zinc-100">Stagenator</h1>
+            <span className="text-[10px] tracking-wide text-zinc-600 dark:text-zinc-400 normal-case">Pulling the app portfolio out of stagnation</span>
+          </div>
         </div>
-        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-          <span>
-            last pulse {heartbeat ? `${ts(heartbeat.at)} · ${String(heartbeat.kind)}` : '—'}
-          </span>
-          <span>last event {lastHeartbeat}</span>
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
+          <span>last run {heartbeat ? ts(heartbeat.at) : '—'}</span>
           <span className="flex items-center gap-1.5">
             <span
               className={`inline-block w-2 h-2 rounded-full animate-pulse ${
-                !health ? 'bg-zinc-500'
+                !health ? 'bg-zinc-400'
                   : health.status === 'healthy' ? 'bg-emerald-500'
                   : health.status === 'degraded' ? 'bg-amber-500' : 'bg-red-500'
               }`}
             />
             {health
               ? `${String(health.status)}${Number(health.fail) ? ` · ${health.fail} down` : ''}`
-              : (taskBuckets.dead.length ? `${taskBuckets.dead.length} dead` : 'health pending')}
+              : (taskBuckets.dead.length ? `${taskBuckets.dead.length} dead` : 'no health check yet')}
           </span>
+          <a
+            href="/blueprints.html"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            how it works
+          </a>
+          <ThemeToggle />
         </div>
       </header>
 
       <ListenerErrorBanner />
-      <ImpactStrip />
 
       <div className="flex flex-col xl:flex-row gap-5 items-start">
         {/* Ledger feed */}
         <section className="w-full xl:w-[38%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2">
-          <SectionTitle>Decision ledger — live</SectionTitle>
+          <SectionTitle>Activity — live</SectionTitle>
           <div className="flex flex-col gap-2 max-h-[60vh] xl:max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
             {ledger.map((e) => (
               <div
                 key={e.id}
                 onClick={() => toggleLog(e.id)}
-                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-zinc-900/60 rounded-r-lg transition-colors hover:bg-zinc-900 cursor-pointer ${
-                  KIND_COLORS[String(e.kind)] ?? 'text-zinc-400 border-zinc-700'
+                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-white dark:bg-zinc-900 rounded-r-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer ${
+                  KIND_COLORS[String(e.kind)] ?? 'text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
                 }`}
               >
                 <div className="flex gap-2 items-baseline flex-wrap">
-                  <span className="text-zinc-600">{openLog.has(e.id) ? '▾' : '▸'}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400">{openLog.has(e.id) ? '▾' : '▸'}</span>
                   <span className="uppercase font-bold">{String(e.kind)}</span>
-                  {e.game ? <span className="text-zinc-400">{String(e.game)}</span> : null}
-                  <span className="text-zinc-600 ml-auto">{ts(e.ts)}</span>
+                  {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
+                  <span className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{ts(e.ts)}</span>
                 </div>
-                <div className="text-zinc-400 mt-0.5 break-words">{ledgerLine(e)}</div>
+                <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
                 {openLog.has(e.id) && (
-                  <pre className="mt-2 text-[10.5px] leading-relaxed text-zinc-400 bg-zinc-950/60 border border-zinc-800 rounded-lg p-2.5 whitespace-pre-wrap break-words overflow-x-auto">
+                  <pre className="mt-2 font-mono text-[10.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 whitespace-pre-wrap break-words overflow-x-auto">
                     {JSON.stringify(fullEntry(e), null, 2)}
                   </pre>
                 )}
               </div>
             ))}
-            {ledger.length === 0 && <Empty>no events yet</Empty>}
+            {ledger.length === 0 && <Empty>Nothing yet</Empty>}
           </div>
         </section>
 
@@ -294,35 +313,35 @@ function Dashboard() {
             <SectionTitle>Tasks</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
               {(['pending', 'running', 'done', 'dead'] as const).map((s) => (
-                <div key={s} className="bg-zinc-900 rounded-lg py-2">
+                <div key={s} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg py-2">
                   <div
                     className={`text-lg font-bold ${
-                      s === 'dead' && taskBuckets[s].length ? 'text-red-400' : 'text-zinc-200'
+                      s === 'dead' && taskBuckets[s].length ? 'text-red-600 dark:text-red-400' : 'text-zinc-800 dark:text-zinc-200'
                     }`}
                   >
                     {taskBuckets[s]?.length ?? 0}
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">{s}</div>
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase">{s}</div>
                 </div>
               ))}
             </div>
             <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
               {tasks.slice(0, 8).map((t) => (
-                <div key={t.id} className="text-[11px] bg-zinc-900/60 rounded px-2.5 py-1.5 flex gap-2">
+                <div key={t.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded px-2.5 py-1.5 flex gap-2">
                   <span
                     className={
                       t.status === 'dead'
-                        ? 'text-red-400'
+                        ? 'text-red-600 dark:text-red-400'
                         : t.status === 'done'
-                          ? 'text-emerald-400'
-                          : 'text-amber-300'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                     }
                   >
                     ●
                   </span>
-                  <span className="text-zinc-300">{String(t.type)}</span>
-                  <span className="text-zinc-500">{String(t.game)}</span>
-                  <span className="text-zinc-600 ml-auto">{String(t.attempts)}×</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{String(t.type)}</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">{String(t.game)}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400 ml-auto">{String(t.attempts)}×</span>
                 </div>
               ))}
             </div>
@@ -342,40 +361,40 @@ function Dashboard() {
 
           <section>
             <SectionTitle>
-              Playbook{' '}
-              <span className="text-zinc-600 normal-case">
+              Plan{' '}
+              <span className="text-zinc-600 dark:text-zinc-400 normal-case">
                 v{String(playbook?.version ?? '—')} · {ts(playbook?.updated)}
               </span>
             </SectionTitle>
             {playbook ? (
-              <div className="text-[11px] bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 max-h-64 overflow-y-auto">
-                {playbook.philosophy ? <p className="text-zinc-300 italic">“{String(playbook.philosophy)}”</p> : null}
-                <pre className="text-zinc-500 whitespace-pre-wrap break-words overflow-x-auto">
+              <div className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {playbook.philosophy ? <p className="text-zinc-700 dark:text-zinc-300 italic">“{String(playbook.philosophy)}”</p> : null}
+                <pre className="text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-words overflow-x-auto">
                   {JSON.stringify(playbook.knobs, null, 1)}
                 </pre>
                 {(playbook.ceo_directives as string[] | undefined)?.map((d, i) => (
-                  <div key={i} className="text-violet-300 border-l-2 border-violet-700 pl-2">
-                    CEO: {typeof d === 'string' ? d : JSON.stringify(d)}
+                  <div key={i} className="text-violet-600 dark:text-violet-300 border-l-2 border-violet-700 pl-2">
+                    You: {typeof d === 'string' ? d : JSON.stringify(d)}
                   </div>
                 ))}
               </div>
             ) : (
-              <Empty>no playbook yet</Empty>
+              <Empty>No plan yet</Empty>
             )}
           </section>
 
           <Directives />
 
           <section>
-            <SectionTitle>Daily briefs</SectionTitle>
+            <SectionTitle>Daily summary</SectionTitle>
             <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
               {briefs.map((b) => (
-                <div key={b.id} className="text-[11px] bg-zinc-900/60 rounded-lg p-3">
-                  <div className="text-zinc-600 mb-1">{ts(b.ts)}</div>
-                  <div className="text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
+                <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
+                  <div className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
+                  <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
                 </div>
               ))}
-              {briefs.length === 0 && <Empty>first brief arrives after tonight's run</Empty>}
+              {briefs.length === 0 && <Empty>first summary arrives after tonight's run</Empty>}
             </div>
           </section>
         </div>
@@ -391,19 +410,19 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
   const skip = new Set(['media', 'design']);
   return (
     <div
-      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4"
+        className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-baseline gap-3">
-          <h3 className="text-lg font-bold text-zinc-100">
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             {String(r.movie ?? r.word ?? r.published ?? 'level')}
           </h3>
-          <span className="text-[11px] text-zinc-500">{String(event.game)} · {ts(event.ts)}</span>
-          <button onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200">✕</button>
+          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{String(event.game)} · {ts(event.ts)}</span>
+          <button onClick={onClose} className="ml-auto text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">✕</button>
         </div>
 
         {media.clip && (
@@ -413,30 +432,30 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
           {media.puzzle && (
             <figure>
               <img src={media.puzzle} className="rounded-xl w-full" alt="puzzle" />
-              <figcaption className="text-[10px] text-zinc-500 mt-1">puzzle (what players see)</figcaption>
+              <figcaption className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">puzzle (what players see)</figcaption>
             </figure>
           )}
           {(media.mask || media.solution_svg) && (
             <figure>
               <img src={media.solution_svg || media.mask} className="rounded-xl w-full bg-white" alt="solution" />
-              <figcaption className="text-[10px] text-zinc-500 mt-1">solution</figcaption>
+              <figcaption className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">solution</figcaption>
             </figure>
           )}
         </div>
 
-        <div className="text-[12px] text-zinc-300 flex flex-col gap-1">
+        <div className="text-[12px] text-zinc-700 dark:text-zinc-300 flex flex-col gap-1">
           {Object.entries(r)
             .filter(([k]) => !skip.has(k))
             .map(([k, v]) => (
               <div key={k} className="flex gap-2">
-                <span className="text-zinc-500 w-28 shrink-0">{k}</span>
+                <span className="text-zinc-500 dark:text-zinc-400 w-28 shrink-0">{k}</span>
                 <span className="break-words">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
               </div>
             ))}
           {Object.entries(design).map(([k, v]) => (
             <div key={k} className="flex gap-2">
-              <span className="text-violet-400/70 w-28 shrink-0">{k}</span>
-              <span className="break-words text-zinc-400">{String(v)}</span>
+              <span className="text-violet-600/70 dark:text-violet-400/70 w-28 shrink-0">{k}</span>
+              <span className="break-words text-zinc-600 dark:text-zinc-400">{String(v)}</span>
             </div>
           ))}
         </div>
@@ -465,16 +484,16 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
 
   return (
     <section>
-      <SectionTitle>Levels created</SectionTitle>
+      <SectionTitle>Stages created</SectionTitle>
       <div className="flex flex-col gap-3">
         {GAMES.map((g) => {
           const events = levelEvents.filter((e) => e.game === g);
           const pending = pendingByGame(g);
           return (
-            <div key={g} className="bg-zinc-900/60 rounded-lg p-3">
+            <div key={g} className="bg-white dark:bg-zinc-900 rounded-lg p-3">
               <div className="flex items-baseline gap-2 text-[11px] mb-1">
-                <span className="text-zinc-200 font-bold">{g}</span>
-                <span className="text-zinc-600 ml-auto">
+                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+                <span className="text-zinc-600 dark:text-zinc-400 ml-auto">
                   {events.length} created{pending ? ` · ${pending} pending` : ''}
                 </span>
               </div>
@@ -485,16 +504,16 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
                   <div
                     key={e.id}
                     onClick={() => setSelected(e)}
-                    className="text-[11px] flex gap-2 items-baseline py-0.5 cursor-pointer hover:bg-zinc-800/60 rounded px-1 -mx-1"
+                    className="text-[11px] flex gap-2 items-baseline py-0.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded px-1 -mx-1"
                   >
-                    <span className={e.status === 'preview' ? 'text-amber-400' : 'text-emerald-400'}>
+                    <span className={e.status === 'preview' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
                       {e.status === 'preview' ? '◔ preview' : '✓ live'}
                     </span>
-                    <span className="text-zinc-300 font-bold">{title(r)}</span>
-                    {r.qa ? <span className="text-zinc-500">qa:{String(r.qa)}</span> : null}
-                    {r.levelId ? <span className="text-zinc-500">#{String(r.levelId)}</span> : null}
-                    {r.level ? <span className="text-zinc-500">#{String(r.level)}</span> : null}
-                    <span className="text-zinc-600 ml-auto">{ts(e.ts)}</span>
+                    <span className="text-zinc-700 dark:text-zinc-300 font-bold">{title(r)}</span>
+                    {r.qa ? <span className="text-zinc-500 dark:text-zinc-400">qa:{String(r.qa)}</span> : null}
+                    {r.levelId ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.levelId)}</span> : null}
+                    {r.level ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.level)}</span> : null}
+                    <span className="text-zinc-600 dark:text-zinc-400 ml-auto">{ts(e.ts)}</span>
                   </div>
                 );
               })}
@@ -512,24 +531,24 @@ function CodesOverview() {
   const games = (summary?.games ?? {}) as Record<string, Record<string, unknown>>;
   return (
     <section>
-      <SectionTitle>Codes & claims <span className="text-zinc-600 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
+      <SectionTitle>Codes & claims <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).map(([g, d]) => {
           const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
           const claims = (d.claims ?? { links: 0, codes_backing: 0, teared: 0 }) as Record<string, number>;
           return (
-            <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2 flex gap-3 items-baseline flex-wrap">
-              <span className="text-zinc-200 font-bold">{g}</span>
-              <span className="text-zinc-500">
-                stock {Object.entries(stock).map(([p, s]) => `${p}:${s.available ?? '?'}`).join(' · ')}
+            <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2 flex gap-3 items-baseline flex-wrap">
+              <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+              <span className="text-zinc-500 dark:text-zinc-400">
+                stock {(stock && typeof stock === 'object' ? Object.entries(stock) : []).map(([p, s]) => `${p}:${(s as { available?: number })?.available ?? '?'}`).join(' · ') || '—'}
               </span>
-              <span className="text-emerald-400 ml-auto">
+              <span className="text-emerald-600 dark:text-emerald-400 ml-auto">
                 {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
               </span>
             </div>
           );
         })}
-        {!summary && <Empty>updates on next pulse</Empty>}
+        {!summary && <Empty>Updates on the next run</Empty>}
       </div>
     </section>
   );
@@ -540,23 +559,23 @@ function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs:
   const lastChange = briefs.map((b) => String(b.changes ?? '')).find((c) => c && c.trim());
   return (
     <section>
-      <SectionTitle>Learning <span className="text-zinc-600 normal-case">· nightly loop</span></SectionTitle>
-      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
+      <SectionTitle>Learning <span className="text-zinc-600 dark:text-zinc-400 normal-case">· nightly</span></SectionTitle>
+      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
         <div className="flex justify-between items-baseline">
-          <span className="text-zinc-300">Playbook <span className="text-zinc-500">v{String(playbook?.version ?? '—')}</span></span>
-          <span className="text-zinc-600">tuned {ts(playbook?.updated)}</span>
+          <span className="text-zinc-700 dark:text-zinc-300">Plan <span className="text-zinc-500 dark:text-zinc-400">v{String(playbook?.version ?? '—')}</span></span>
+          <span className="text-zinc-600 dark:text-zinc-400">updated {ts(playbook?.updated)}</span>
         </div>
         <div className="flex justify-between items-baseline">
-          <span className="text-zinc-400">outcomes learned from</span>
-          <span className={outcomes ? 'text-emerald-400 font-bold' : 'text-zinc-500'}>{outcomes}</span>
+          <span className="text-zinc-600 dark:text-zinc-400">results so far</span>
+          <span className={outcomes ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-zinc-500 dark:text-zinc-400'}>{outcomes}</span>
         </div>
         {outcomes === 0 ? (
-          <div className="text-zinc-500 leading-relaxed">
-            The loop runs every night — but with <span className="text-zinc-300">no claims or returns yet</span> there is nothing to learn from. It stays deliberately humble (won't overfit noise) and sharpens automatically as real outcomes accrue.
+          <div className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            It checks results every night. So far no one has claimed a code or come back, so there is <span className="text-zinc-700 dark:text-zinc-300">nothing to go on yet</span> — it keeps the current plan rather than reacting to thin data, and starts adjusting once real numbers come in.
           </div>
         ) : (
-          <div className="text-zinc-500">
-            last change: <span className="text-violet-300">{lastChange ?? 'held steady (weak evidence)'}</span>
+          <div className="text-zinc-500 dark:text-zinc-400">
+            last change: <span className="text-violet-600 dark:text-violet-300">{lastChange ?? 'kept the plan the same (not enough data yet)'}</span>
           </div>
         )}
       </div>
@@ -569,27 +588,27 @@ function HealthOverview() {
   if (!h) return null;
   const checks = (h.checks ?? []) as { name: string; ok: boolean; warn: boolean; detail: string; ms: number }[];
   const st = String(h.status);
-  const stColor = st === 'healthy' ? 'text-emerald-400' : st === 'degraded' ? 'text-amber-400' : 'text-red-400';
+  const stColor = st === 'healthy' ? 'text-emerald-600 dark:text-emerald-400' : st === 'degraded' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
   const dot = (c: { ok: boolean; warn: boolean }) => (c.ok && !c.warn ? 'bg-emerald-500' : c.warn ? 'bg-amber-400' : 'bg-red-500');
   return (
     <section>
-      <SectionTitle>Health <span className="text-zinc-600 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
-      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
+      <SectionTitle>Health <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
+      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
         <div className="flex justify-between items-baseline">
           <span className={`font-bold uppercase tracking-wide ${stColor}`}>{st}</span>
-          <span className="text-zinc-500">{Number(h.ok ?? 0)} ok · {Number(h.warn ?? 0)} warn · <span className={Number(h.fail) ? 'text-red-400' : ''}>{Number(h.fail ?? 0)} down</span></span>
+          <span className="text-zinc-500 dark:text-zinc-400">{Number(h.ok ?? 0)} ok · {Number(h.warn ?? 0)} warn · <span className={Number(h.fail) ? 'text-red-600 dark:text-red-400' : ''}>{Number(h.fail ?? 0)} down</span></span>
         </div>
         <div className="flex flex-col gap-1.5">
           {checks.map((c) => (
             <div key={c.name} className="grid grid-cols-[10px_1fr] gap-x-2 items-start">
               <span className={`inline-block w-1.5 h-1.5 rounded-full mt-[5px] ${dot(c)}`} />
               <div className="flex flex-wrap justify-between gap-x-3">
-                <span className="text-zinc-300">{c.name}</span>
-                <span className={c.ok && !c.warn ? 'text-zinc-500' : c.warn ? 'text-amber-400' : 'text-red-400 font-medium'}>{c.detail}</span>
+                <span className="text-zinc-700 dark:text-zinc-300">{c.name}</span>
+                <span className={c.ok && !c.warn ? 'text-zinc-500 dark:text-zinc-400' : c.warn ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400 font-medium'}>{c.detail}</span>
               </div>
             </div>
           ))}
-          {checks.length === 0 && <span className="text-zinc-600 italic">runs at deploy + daily</span>}
+          {checks.length === 0 && <span className="text-zinc-600 dark:text-zinc-400 italic">runs at deploy + daily</span>}
         </div>
       </div>
     </section>
@@ -602,26 +621,26 @@ function EarningsOverview() {
   const games = (e.games ?? {}) as Record<string, { yesterday_usd?: number; d7_usd?: number; d30_usd?: number; yesterday_arpu?: number; arpu_30d?: number; status?: string }>;
   return (
     <section>
-      <SectionTitle>Earnings <span className="text-zinc-600 normal-case">· GA4 · 30d · {ts(e.updated)}</span></SectionTitle>
+      <SectionTitle>Earnings <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 30 days · {ts(e.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).map(([g, d]) => {
           const live = (d.d30_usd ?? 0) > 0;
           return (
-            <div key={g} className="text-[11px] bg-zinc-900/60 rounded-lg px-3 py-2">
+            <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
               <div className="flex justify-between items-baseline">
-                <span className="text-zinc-200 font-bold">{g}</span>
-                <span className={live ? 'text-emerald-400 font-bold text-sm' : 'text-zinc-500'}>
-                  ${Number(d.yesterday_usd ?? 0).toFixed(2)} <span className="text-zinc-600 font-normal">yesterday</span>
+                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+                <span className={live ? 'text-emerald-600 dark:text-emerald-400 font-bold text-sm' : 'text-zinc-500 dark:text-zinc-400'}>
+                  ${Number(d.yesterday_usd ?? 0).toFixed(2)} <span className="text-zinc-600 dark:text-zinc-400 font-normal">yesterday</span>
                 </span>
               </div>
               {live ? (
-                <div className="text-zinc-500 mt-0.5 flex flex-wrap gap-x-3">
+                <div className="text-zinc-500 dark:text-zinc-400 mt-0.5 flex flex-wrap gap-x-3">
                   <span>7d ${Number(d.d7_usd ?? 0).toFixed(2)}</span>
                   <span>30d ${Number(d.d30_usd ?? 0).toFixed(2)}</span>
-                  <span>ARPU ${Number(d.arpu_30d ?? 0).toFixed(3)}</span>
+                  <span>per user ${Number(d.arpu_30d ?? 0).toFixed(3)}</span>
                 </div>
               ) : (
-                <div className="text-zinc-600 mt-0.5">{String(d.status ?? '')}</div>
+                <div className="text-zinc-600 dark:text-zinc-400 mt-0.5">{String(d.status ?? '')}</div>
               )}
             </div>
           );
@@ -635,76 +654,26 @@ function EarningsOverview() {
 function CostOverview() {
   const cost = useDoc('stagenator_playbook/cost_summary');
   if (!cost) return null;
-  const pct = Number(cost.budget_pct ?? 0);
-  const services = (cost.services ?? []) as { service: string; usd: number }[];
-  const byProject = (cost.by_project ?? []) as { project: string; month_usd: number; today_usd: number }[];
+  const bal = cost.runpod_balance_usd;
   return (
     <section>
       <SectionTitle>
-        Spend <span className="text-zinc-600 normal-case">· real (GCP billing) · {ts(cost.updated)}</span>
+        Spend <span className="text-zinc-600 dark:text-zinc-400 normal-case">· Runpod balance · {ts(cost.updated)}</span>
       </SectionTitle>
-      <div className="bg-zinc-900/60 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
-        {cost.status !== 'live' ? (
-          <div className="text-zinc-500">
-            {String(cost.status)}
-            <div className="text-zinc-600 mt-1">
-              Enable Billing → BigQuery export; real spend appears once it populates.
-            </div>
-            {cost.runpod_balance_usd != null && (
-              <div className="flex justify-between items-baseline mt-2 pt-2 border-t border-zinc-800">
-                <span className="text-zinc-400">Runpod balance</span>
-                <span className={`font-bold text-sm ${Number(cost.runpod_balance_usd) < 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  ${Number(cost.runpod_balance_usd).toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-baseline">
-              <span className="text-zinc-400">today</span>
-              <span className="text-emerald-400 font-bold text-sm">${Number(cost.today_usd ?? 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <span className="text-zinc-400">
-                month · ${Number(cost.month_usd ?? 0).toFixed(2)} / ${Number(cost.budget_usd ?? 0).toFixed(0)}
-              </span>
-              <span className="text-zinc-500">{pct.toFixed(1)}%</span>
-            </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${pct > 90 ? 'bg-red-500' : pct > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                style={{ width: `${Math.min(100, pct)}%` }}
-              />
-            </div>
-            {byProject.length > 0 && (
-              <div className="flex flex-col gap-0.5 pt-1 border-t border-zinc-800">
-                <div className="text-zinc-600 uppercase tracking-wide text-[10px]">by project · month</div>
-                {byProject.map((p) => (
-                  <div key={p.project} className="flex justify-between text-zinc-400">
-                    <span className="truncate">{p.project}</span>
-                    <span>${Number(p.month_usd ?? 0).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="text-zinc-600 uppercase tracking-wide text-[10px] pt-1">by service · month</div>
-            {services.map((s) => (
-              <div key={s.service} className="flex justify-between text-zinc-500">
-                <span className="truncate">{s.service}</span>
-                <span>${Number(s.usd ?? 0).toFixed(2)}</span>
-              </div>
-            ))}
-          </>
-        )}
-        <div className="flex justify-between items-baseline pt-1 border-t border-zinc-800 text-zinc-500">
-          <span>Runpod balance <span className="text-zinc-600">· prepaid, not in GCP billing</span></span>
-          {cost.runpod_balance_usd != null && (
-            <span className={Number(cost.runpod_balance_usd) < 5 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
-              ${Number(cost.runpod_balance_usd).toFixed(2)}
+      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-1.5 text-[11px]">
+        <div className="flex justify-between items-baseline">
+          <span className="text-zinc-700 dark:text-zinc-300">generation balance</span>
+          {bal != null ? (
+            <span className={`font-bold text-sm ${Number(bal) < 1 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              ${Number(bal).toFixed(2)}
             </span>
+          ) : (
+            <span className="text-zinc-500 dark:text-zinc-400">unreadable</span>
           )}
         </div>
+        {bal != null && Number(bal) < 1 && (
+          <div className="text-amber-600 dark:text-amber-400">low — top up to keep levels generating</div>
+        )}
       </div>
     </section>
   );
@@ -730,31 +699,31 @@ function Directives() {
 
   return (
     <section>
-      <SectionTitle>CEO channel</SectionTitle>
+      <SectionTitle>Message the agent</SectionTitle>
       <div className="flex gap-2">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder="guide the agent… (picked up next run)"
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+          placeholder="leave a note — it reads this on the next run"
+          className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-600 dark:placeholder:text-zinc-400 focus:outline-none focus:border-zinc-300 dark:focus:border-zinc-700"
         />
         <button
           onClick={send}
-          className="border border-zinc-600 rounded-lg px-4 py-2 text-xs hover:bg-zinc-800 shrink-0"
+          className="border border-zinc-300 dark:border-zinc-700 rounded-lg px-4 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 shrink-0"
         >
           {sent ? '✓' : 'send'}
         </button>
       </div>
       <div className="flex flex-col gap-1 mt-2">
         {directives.map((d) => (
-          <div key={d.id} className="text-[11px] text-zinc-400 flex gap-2">
-            <span className={d.status === 'new' ? 'text-amber-400' : 'text-emerald-500'}>
+          <div key={d.id} className="text-[11px] text-zinc-600 dark:text-zinc-400 flex gap-2">
+            <span className={d.status === 'new' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
               {d.status === 'new' ? '◔' : '✓'}
             </span>
             <span>{String(d.text)}</span>
             {typeof d.response === 'string' && d.response && (
-              <span className="text-zinc-600">→ {d.response.slice(0, 80)}</span>
+              <span className="text-zinc-600 dark:text-zinc-400">→ {d.response.slice(0, 80)}</span>
             )}
           </div>
         ))}
@@ -765,10 +734,10 @@ function Directives() {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[11px] uppercase tracking-widest text-zinc-500 mb-2">{children}</h2>
+    <h2 className="font-display font-semibold text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 mb-2">{children}</h2>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="text-[11px] text-zinc-600 italic">{children}</div>;
+  return <div className="text-[11px] text-zinc-600 dark:text-zinc-400 italic">{children}</div>;
 }

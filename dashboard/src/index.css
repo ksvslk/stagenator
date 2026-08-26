@@ -1,5 +1,21 @@
 @import 'tailwindcss';
 
+/* manual (class-based) dark mode — toggled by adding `.dark` to <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', ui-sans-serif, sans-serif;
+}
+
 body {
-  font-family: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-color: #f4f4f5; /* zinc-100 (light) */
+}
+.dark body {
+  background-color: #09090b; /* zinc-950 (dark) */
 }

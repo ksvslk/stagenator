@@ -8,7 +8,9 @@ observability. It runs two live games (Subliminal Words and AI Movie Quiz),
 shipping real AI-generated content into apps that real players download.
 
 > All Things Agentic Hackathon · **Taskmaster** track — *a complete workflow,
-> not a chatbot.* Live Mission Control: https://stagenator-mission.web.app
+> not a chatbot.*
+> **Live dashboard:** https://stagenator-mission.web.app ·
+> **How it works (10 diagrams, plain language):** https://stagenator-mission.web.app/blueprints.html
 
 ---
 
@@ -94,7 +96,7 @@ agent (dead-letter, retry-recovery, idempotency, guardrail rejection).
 ## Google Cloud stack
 
 Cloud Run · Cloud Scheduler · Eventarc · Firestore · BigQuery (GA export +
-billing export) · Vertex AI (Gemini + Veo) · Firebase Hosting/Auth/FCM · Secret
+GA4 export) · Vertex AI (Gemini + Veo) · Firebase Hosting/Auth/FCM · Secret
 Manager · Cloud Monitoring. Framework: **ADK**. Model: **Gemini 3.7 Flash**.
 
 See [SETUP.md](SETUP.md) for full spin-up.
@@ -105,7 +107,7 @@ See [SETUP.md](SETUP.md) for full spin-up.
 uv sync
 agents-cli run "pulse"      # one decision cycle, locally (DRY_RUN)
 agents-cli eval run         # graded behavior
-uv run pytest tests/unit    # deterministic core (24 tests)
+uv run pytest tests/unit    # deterministic core (19 unit + 24 resilience tests)
 ```
 
 Deploy: `agents-cli deploy` (Cloud Run) + three Cloud Scheduler triggers +

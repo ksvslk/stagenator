@@ -11,7 +11,9 @@ set -euo pipefail
 PROJECT=operation-sunrise
 REGION=us-central1
 SA=stagenator@operation-sunrise.iam.gserviceaccount.com
-SECRETS="ASC_KEY_CONTENT=stagenator-asc-key:latest,GMAIL_APP_PASSWORD=stagenator-gmail-app-password:latest,RUNPOD_API_KEY=stagenator-runpod-key:latest"
+# RUNPOD_API_KEY (latest=v3): run-capable, endpoint-scoped. RUNPOD_BALANCE_KEY (v2):
+# account-read key used ONLY for balance/cost tracking — the two scopes need two keys.
+SECRETS="ASC_KEY_CONTENT=stagenator-asc-key:latest,GMAIL_APP_PASSWORD=stagenator-gmail-app-password:latest,RUNPOD_API_KEY=stagenator-runpod-key:latest,RUNPOD_BALANCE_KEY=stagenator-runpod-key:2"
 
 echo "→ deploying agent…"
 agents-cli deploy --project "$PROJECT" --region "$REGION" \

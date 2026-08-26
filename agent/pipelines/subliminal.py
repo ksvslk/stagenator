@@ -39,20 +39,23 @@ PACK_ID = "fresh-drops"  # the agent's own pack (auto-created on first level)
 
 # ------------------------------------------------------------------ design ----
 
+
 def design_level(existing_words: set[str], culture: str | None = None) -> dict | None:
     """Gemini proposes word + scene prompt; code builds the letter layout.
     `culture` is an OPTIONAL soft nod (e.g. where active players are) — never a mandate."""
     culture_line = (
         f"OPTIONAL: many active players are in {culture} right now — you MAY choose a word/"
         f"scene that quietly resonates there, but ONLY if it stays a strong universal level; "
-        f"never force it.\n" if culture else ""
+        f"never force it.\n"
+        if culture
+        else ""
     )
     reply = genai_client.generate_json(
         "You design levels for 'Subliminal Words' — a puzzle game where a word is hidden "
         "inside a photorealistic image; players stare until the word pops out.\n"
-        f"Words already used (do NOT repeat): {sorted(existing_words)[:200]}\n"
-        + culture_line +
-        "Propose ONE new level: a short, punchy English word (3-7 letters, uppercase, "
+        f"Words already used (do NOT repeat): {random.sample(sorted(existing_words), min(200, len(existing_words)))}\n"
+        + culture_line
+        + "Propose ONE new level: a short, punchy English word (3-8 letters, uppercase, "
         "concrete noun or vivid concept) and a photorealistic scene prompt that thematically "
         "hints at the word without depicting it literally as text.\n"
         "The scene must contain NO people, faces, or human figures — use landscapes, objects, "
@@ -62,8 +65,14 @@ def design_level(existing_words: set[str], culture: str | None = None) -> dict |
     )
     if not reply or not reply.get("word") or not reply.get("prompt"):
         return None
+    if not isinstance(reply.get("word"), str):
+        return None
     word = reply["word"].strip().upper()
-    if not (3 <= len(word) <= 8) or word.lower() in existing_words:
+    # letters-only (A-Z): the solution SVG renders one Roboto glyph per letter, so
+    # digits/accents/punctuation/spaces would break rendering and the letter tiles.
+    if not (word.isascii() and word.isalpha() and 3 <= len(word) <= 8):
+        return None
+    if word.lower() in existing_words:
         return None
     return {"word": word, "prompt": reply["prompt"], "theme": reply.get("theme", "")}
 
@@ -82,51 +91,151 @@ def build_layout(word: str) -> list[dict]:
     for i, ch in enumerate(word):
         x = margin + (i + 0.5) * (1 - 2 * margin) / n
         y = 0.5 + random.uniform(-0.14, 0.14)
-        letters.append({
-            "letter": ch,
-            "x": round(min(max(x, 0.02), 0.98), 4),
-            "y": round(min(max(y, 0.02), 0.98), 4),
-            "fontSize": font_size,
-            "rotationDegrees": round(random.uniform(-18, 18), 2),
-            "scaleX": round(random.uniform(0.85, 1.25), 3),
-            "scaleY": round(random.uniform(1.05, 1.5), 3),
-            "skewXDegrees": round(random.uniform(-10, 10), 2),
-            "skewYDegrees": 0.0,
-            "opacity": 1.0,
-            "fontWeightValue": random.choice([400, 700, 700]),
-        })
+        letters.append(
+            {
+                "letter": ch,
+                "x": round(min(max(x, 0.02), 0.98), 4),
+                "y": round(min(max(y, 0.02), 0.98), 4),
+                "fontSize": font_size,
+                "rotationDegrees": round(random.uniform(-18, 18), 2),
+                "scaleX": round(random.uniform(0.85, 1.25), 3),
+                "scaleY": round(random.uniform(1.05, 1.5), 3),
+                "skewXDegrees": round(random.uniform(-10, 10), 2),
+                "skewYDegrees": 0.0,
+                "opacity": 1.0,
+                "fontWeightValue": random.choice([400, 700, 700]),
+            }
+        )
     return letters
 
 
 # --------------------------------------------------------------- rendering ----
 
+
+def _glyph_table() -> dict:
+    """Roboto-Black glyph outlines captured from the SAME opentype.js the admin
+    dashboard uses (agent/assets/roboto_black_glyphs.json). Commands are stored at
+    a reference size and scaled linearly by fontSize, so the emitted <path> matches
+    word_level_svg.js buildCanonicalWordSolutionSvg without needing opentype/Node
+    or a font renderer at runtime."""
+    global _GLYPHS
+    try:
+        return _GLYPHS
+    except NameError:
+        _GLYPHS = json.loads(
+            (
+                Path(__file__).resolve().parent.parent
+                / "assets"
+                / "roboto_black_glyphs.json"
+            ).read_text()
+        )
+        return _GLYPHS
+
+
+def _mat_mul(m1, m2):
+    return [
+        m1[0] * m2[0] + m1[2] * m2[1],
+        m1[1] * m2[0] + m1[3] * m2[1],
+        m1[0] * m2[2] + m1[2] * m2[3],
+        m1[1] * m2[2] + m1[3] * m2[3],
+        m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+        m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+    ]
+
+
+def _letter_path_d(char: str, L: dict, actual_x: float, actual_y: float) -> str:
+    """Baked outline path data for one letter — EXACT port of word_level_svg.js
+    textToPath + applyTransformToPathData (matrix order: center -> skew -> scale
+    -> rotate -> translate; commands serialized at 3 decimals)."""
+    tbl = _glyph_table()
+    g = tbl["glyphs"].get(char)
+    if g is None:
+        raise ValueError(f"no Roboto glyph for {char!r}")
+    k = float(L["fontSize"]) / tbl["ref"]
+    bb = g["bbox"]
+    off_x = (bb["x1"] + bb["x2"]) / 2 * k
+    off_y = (bb["y1"] + bb["y2"]) / 2 * k
+    m = [1, 0, 0, 1, -off_x, -off_y]
+    m = _mat_mul(
+        [
+            1,
+            math.tan(math.radians(L["skewYDegrees"])),
+            math.tan(math.radians(L["skewXDegrees"])),
+            1,
+            0,
+            0,
+        ],
+        m,
+    )
+    m = _mat_mul([L["scaleX"], 0, 0, L["scaleY"], 0, 0], m)
+    rad = math.radians(L["rotationDegrees"])
+    cos, sin = math.cos(rad), math.sin(rad)
+    m = _mat_mul([cos, sin, -sin, cos, 0, 0], m)
+    m = _mat_mul([1, 0, 0, 1, actual_x, actual_y], m)
+
+    def ap(px, py):
+        return (m[0] * px + m[2] * py + m[4], m[1] * px + m[3] * py + m[5])
+
+    out = []
+    for c in g["commands"]:
+        t = c["t"]
+        if t == "Z":
+            out.append("Z")
+        elif t == "M":
+            x, y = ap(c["x"] * k, c["y"] * k)
+            out.append(f"M{x:.3f} {y:.3f}")
+        elif t == "L":
+            x, y = ap(c["x"] * k, c["y"] * k)
+            out.append(f"L{x:.3f} {y:.3f}")
+        elif t == "Q":
+            x1, y1 = ap(c["x1"] * k, c["y1"] * k)
+            x, y = ap(c["x"] * k, c["y"] * k)
+            out.append(f"Q{x1:.3f} {y1:.3f} {x:.3f} {y:.3f}")
+        elif t == "C":
+            x1, y1 = ap(c["x1"] * k, c["y1"] * k)
+            x2, y2 = ap(c["x2"] * k, c["y2"] * k)
+            x, y = ap(c["x"] * k, c["y"] * k)
+            out.append(f"C{x1:.3f} {y1:.3f} {x2:.3f} {y2:.3f} {x:.3f} {y:.3f}")
+    return "".join(out)
+
+
 def build_solution_svg(layout: list[dict], word: str) -> str:
-    """EXACT port of buildCanonicalWordSolutionSvg (operation_hermes word_level_svg.js)."""
+    """Canonical port of buildCanonicalWordSolutionSvg (word_level_svg.js): one
+    Roboto-Black outline <path> per letter with the transform baked into the
+    coordinates (no live transform attr), id = uppercase letter with a duplicate
+    count suffix (A, A2, ...). Byte-for-byte aligned with the admin dashboard."""
     lines = [
         '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
         f'<svg width="{CANVAS}" height="{CANVAS}" viewBox="0 0 {CANVAS} {CANVAS}" '
         f'xmlns="http://www.w3.org/2000/svg">',
     ]
-    for i, L in enumerate(layout):
-        x = L["x"] * CANVAS
-        y = L["y"] * CANVAS
-        ch = (L["letter"].replace("&", "&amp;").replace("<", "&lt;")
-              .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;"))
+    counts: dict[str, int] = {}
+    for L in layout:
+        base = str(L["letter"]).strip().upper()
+        counts[base] = counts.get(base, 0) + 1
+        lid = base if counts[base] == 1 else f"{base}{counts[base]}"
+        ax = L["x"] * CANVAS
+        ay = L["y"] * CANVAS
+        d = _letter_path_d(base, L, ax, ay)
+        esc = (
+            base.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&apos;")
+        )
         lines.append(
-            f'<text id="letter_{i + 1}" aria-label="{ch}" x="0" y="0" '
-            f'font-size="{L["fontSize"]:.2f}" font-weight="{L["fontWeightValue"]}" '
-            f'font-family="Roboto, Arial, sans-serif" '
-            f'text-anchor="middle" dominant-baseline="middle" fill="#000000" '
-            f'fill-opacity="{L["opacity"]:.3f}" '
-            f'transform="translate({x:.2f} {y:.2f}) rotate({L["rotationDegrees"]:.2f}) '
-            f'skewX({L["skewXDegrees"]:.2f}) skewY({L["skewYDegrees"]:.2f}) '
-            f'scale({L["scaleX"]:.3f} {L["scaleY"]:.3f})" '
-            f'data-x="{x:.2f}" data-y="{y:.2f}" data-font-size="{L["fontSize"]:.2f}" '
+            f'<path d="{d}" id="{lid}" style="fill:#000000" aria-label="{esc}" '
+            f'data-x="{ax:.2f}" data-y="{ay:.2f}" '
+            f'data-font-size="{L["fontSize"]:.2f}" '
             f'data-font-weight="{L["fontWeightValue"]}" '
             f'data-rotation="{L["rotationDegrees"]:.2f}" '
-            f'data-scale-x="{L["scaleX"]:.3f}" data-scale-y="{L["scaleY"]:.3f}" '
-            f'data-skew-x="{L["skewXDegrees"]:.2f}" data-skew-y="{L["skewYDegrees"]:.2f}" '
-            f'data-opacity="{L["opacity"]:.3f}">{ch}</text>'
+            f'data-scale-x="{L["scaleX"]:.3f}" '
+            f'data-scale-y="{L["scaleY"]:.3f}" '
+            f'data-skew-x="{L["skewXDegrees"]:.2f}" '
+            f'data-skew-y="{L["skewYDegrees"]:.2f}" '
+            f'data-opacity="{L["opacity"]:.3f}" '
+            f'data-font="Roboto" />'
         )
     lines.append("</svg>")
     return "\n".join(lines)
@@ -135,24 +244,34 @@ def build_solution_svg(layout: list[dict], word: str) -> str:
 BASE_FONT_SIZE = 150  # kept for eval import compatibility
 
 
-def render_mask(layout: list[dict], solution_svg: str | None = None, paint: bool = False) -> bytes:
-    """ControlNet mask = the canonical solution SVG rasterized to 1024x1024
-    (black letters on white). Rasterizing the SAME svg guarantees the hidden
-    word lands exactly where the solution highlights it. Uses PIL with the same
-    transform math (translate->rotate->skew->scale, anchor middle/middle)."""
+def render_mask(
+    layout: list[dict], solution_svg: str | None = None, paint: bool = False
+) -> bytes:
+    """ControlNet mask: the letter layout rasterized to 1024x1024 (black letters on
+    white) with the same transform math as the solution SVG (translate->rotate->
+    skew->scale, centered), so the hidden word lands where the solution highlights.
+    NOTE: rendered from `layout` with PIL fonts, not by rasterizing the SVG — small
+    weight differences vs the Roboto-Black solution glyphs are acceptable for a mask."""
     from PIL import Image, ImageDraw, ImageFont
 
     img = Image.new("L", (CANVAS, CANVAS), 255)
     for L in layout:
         size = int(L["fontSize"])
-        font = ImageFont.truetype(str(ROBOTO[L["fontWeightValue"]]), size)
+        font = ImageFont.truetype(
+            str(ROBOTO.get(L["fontWeightValue"], ROBOTO[400])), size
+        )
         # render glyph centered on its own tile
         pad = size * 3
         tile = Image.new("L", (pad, pad), 0)
         d = ImageDraw.Draw(tile)
         bbox = d.textbbox((0, 0), L["letter"], font=font)
         gw, gh = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        d.text(((pad - gw) / 2 - bbox[0], (pad - gh) / 2 - bbox[1]), L["letter"], font=font, fill=255)
+        d.text(
+            ((pad - gw) / 2 - bbox[0], (pad - gh) / 2 - bbox[1]),
+            L["letter"],
+            font=font,
+            fill=255,
+        )
         # apply skewX + non-uniform scale via affine, then rotate
         sx, sy = L["scaleX"], L["scaleY"]
         skew = math.tan(math.radians(L["skewXDegrees"]))
@@ -165,8 +284,12 @@ def render_mask(layout: list[dict], solution_svg: str | None = None, paint: bool
         ic, ie = -c * inv_det, a * inv_det
         tx = cx - (ia * cx + ib * cy)
         ty = cy - (ic * cx + ie * cy)
-        tile = tile.transform((pad, pad), Image.AFFINE, (ia, ib, tx, ic, ie, ty), resample=Image.BICUBIC)
-        tile = tile.rotate(-L["rotationDegrees"], resample=Image.BICUBIC, center=(cx, cy))
+        tile = tile.transform(
+            (pad, pad), Image.AFFINE, (ia, ib, tx, ic, ie, ty), resample=Image.BICUBIC
+        )
+        tile = tile.rotate(
+            -L["rotationDegrees"], resample=Image.BICUBIC, center=(cx, cy)
+        )
         px, py = int(L["x"] * CANVAS), int(L["y"] * CANVAS)
         img.paste(0, (px - pad // 2, py - pad // 2), mask=tile)
     if paint:
@@ -188,16 +311,19 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
     x0, x1 = min(xs), max(xs)
     ymid = (sum(L["y"] for L in layout) / len(layout)) * CANVAS
     for _ in range(n if n is not None else random.randint(2, 4)):
-        width = random.randint(8, 34)                  # brush size (admin range 1-50)
+        width = random.randint(8, 34)  # brush size (admin range 1-50)
         sx = random.uniform(x0 - 80, x0 + 120)
         ex = random.uniform(x1 - 120, x1 + 80)
         steps = random.randint(4, 7)
-        pts = [(sx + (ex - sx) * (i / (steps - 1)), ymid + random.uniform(-140, 140))
-               for i in range(steps)]
+        pts = [
+            (sx + (ex - sx) * (i / (steps - 1)), ymid + random.uniform(-140, 140))
+            for i in range(steps)
+        ]
         d.line(pts, fill=0, width=width, joint="curve")
 
 
 # ---------------------------------------------------------------- QA + dedup ----
+
 
 def existing_words() -> set[str]:
     """All level names in all packs (level name == the hidden word, per dashboard)."""
@@ -225,10 +351,13 @@ def qa_puzzle(puzzle_png: bytes, word: str) -> dict:
 
 # ------------------------------------------------------------------ submit ----
 
+
 def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) -> dict:
     """Replicates LevelFormPage.jsx: Storage uploads + packs transaction."""
     gdb = state.game_db("subliminal-words")
-    bucket = storage.Client(project="subliminal-words").bucket("subliminal-words.firebasestorage.app")
+    bucket = storage.Client(project="subliminal-words").bucket(
+        "subliminal-words.firebasestorage.app"
+    )
     ts = int(time.time() * 1000)
 
     pack_ref = gdb.collection("packs").document(PACK_ID)
@@ -261,7 +390,9 @@ def submit_level(word: str, puzzle_png: bytes, solution_svg: str, meta: dict) ->
     bucket.blob(svg_path).upload_from_string(solution_svg, content_type="image/svg+xml")
 
     level_ref = pack_ref.collection("levels").document(level_id)
-    category_ref = gdb.collection("categories").document(pack.to_dict().get("categoryId", "words"))
+    category_ref = gdb.collection("categories").document(
+        pack.to_dict().get("categoryId", "words")
+    )
 
     transaction = gdb.transaction()
 
@@ -311,26 +442,35 @@ def _upload_webp(bucket, path: str, png_bytes: bytes, size: int | None = None) -
 
 # ------------------------------------------------------------------- runner ----
 
+
 def _self_validate(level_id: str, word: str, svg: str) -> None:
     """Post-publish check: the delivered solution SVG must be canonical and have
-    exactly one positioned <text> per letter. On failure, disable the level and
+    exactly one positioned <path> per letter. On failure, disable the level and
     raise (so the task retries -> re-ships a good one)."""
     problems = []
-    if 'font-family="Roboto' not in svg or "data-x=" not in svg:
+    if 'data-font="Roboto"' not in svg or "data-x=" not in svg:
         problems.append("solution SVG not in canonical format")
-    n_text = svg.count("</text>")
-    if n_text != len(word):
-        problems.append(f"solution has {n_text} letters, word has {len(word)}")
-    for i in range(len(word)):
-        if f'id="letter_{i+1}"' not in svg:
-            problems.append(f"missing letter_{i+1}")
-            break
+    n_path = svg.count("<path ")
+    if n_path != len(word):
+        problems.append(f"solution has {n_path} letters, word has {len(word)}")
+    # id of the first letter is its uppercase character (dup letters get A2, A3 ...)
+    if word and f'id="{word[0].upper()}"' not in svg:
+        problems.append(f"missing id {word[0].upper()}")
     if problems:
+        from google.cloud import firestore as _fs
+
         gdb = state.game_db("subliminal-words")
-        gdb.collection("packs").document(PACK_ID).collection("levels").document(str(level_id)).update(
-            {"isEnabled": False, "selfHealReason": "; ".join(problems)})
-        state.critical(f"Subliminal level {level_id} ({word}) failed self-validation, "
-                       f"disabled: {problems}")
+        pack_ref = gdb.collection("packs").document(PACK_ID)
+        pack_ref.collection("levels").document(str(level_id)).update(
+            {"isEnabled": False, "selfHealReason": "; ".join(problems)}
+        )
+        # keep the counter consistent with live levels (B4): the disabled level no longer counts
+        pack_ref.update({"totalLevels": _fs.Increment(-1)})
+        state.critical(
+            f"Subliminal level {level_id} ({word}) failed self-validation, "
+            f"disabled: {problems}",
+            game="subliminal-words",
+        )
         raise RuntimeError(f"self-validation failed: {problems}")
 
 
@@ -359,26 +499,49 @@ def run(task: dict) -> dict:
     difficulty = round(1.0 + random.uniform(-0.10, 0.10), 3)
 
     if config.DRY_RUN:
-        return {"dry_run": True, "word": design["word"], "prompt": design["prompt"],
-                "difficulty": difficulty, "mode": "paint" if paint else "standard",
-                "culture": culture, "mask_bytes": len(mask_png)}
+        return {
+            "dry_run": True,
+            "word": design["word"],
+            "prompt": design["prompt"],
+            "difficulty": difficulty,
+            "mode": "paint" if paint else "standard",
+            "mask_bytes": len(mask_png),
+        }
 
-    puzzle_png = runpod.generate_puzzle(
-        design["prompt"], difficulty, base64.b64encode(mask_png).decode()
-    )
-    qa = qa_puzzle(puzzle_png, design["word"])
-    if not qa.get("pass"):
-        raise RuntimeError(f"QA rejected puzzle for {design['word']}: {json.dumps(qa)[:200]}")
+    def _ship():
+        puzzle_png = runpod.generate_puzzle(
+            design["prompt"], difficulty, base64.b64encode(mask_png).decode()
+        )
+        qa = qa_puzzle(puzzle_png, design["word"])
+        if not qa.get("pass"):
+            raise RuntimeError(
+                f"QA rejected puzzle for {design['word']}: {json.dumps(qa)[:200]}"
+            )
 
-    result = submit_level(design["word"], puzzle_png, svg, meta=design | {"qa": qa})
-    _self_validate(result["level"], design["word"], svg)
+        result = submit_level(design["word"], puzzle_png, svg, meta=design | {"qa": qa})
+        _self_validate(result["level"], design["word"], svg)
 
-    from agent.tools import preview
+        from agent.tools import preview
 
-    media = {
-        "puzzle": preview.upload(puzzle_png, f"{design['word']}_puzzle.png", "image/png"),
-        "mask": preview.upload(mask_png, f"{design['word']}_mask.png", "image/png"),
-        "solution_svg": preview.upload(svg.encode(), f"{design['word']}_solution.svg", "image/svg+xml"),
-    }
-    return {**result, "qa": qa.get("visibility"), "media": media,
-            "design": {"prompt": design["prompt"], "theme": design.get("theme"), "difficulty": difficulty}}
+        media = {
+            "puzzle": preview.upload(
+                puzzle_png, f"{design['word']}_puzzle.png", "image/png"
+            ),
+            "mask": preview.upload(mask_png, f"{design['word']}_mask.png", "image/png"),
+            "solution_svg": preview.upload(
+                svg.encode(), f"{design['word']}_solution.svg", "image/svg+xml"
+            ),
+        }
+        return {
+            **result,
+            "qa": qa.get("visibility"),
+            "media": media,
+            "design": {
+                "prompt": design["prompt"],
+                "theme": design.get("theme"),
+                "difficulty": difficulty,
+            },
+        }
+
+    # once(): a crash after publish must not re-generate (Runpod cost) and re-ship a 2nd level.
+    return state.once(task.get("id"), "ship", _ship)

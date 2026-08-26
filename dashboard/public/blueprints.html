@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" type="image/svg+xml" href="/stegosaurus.svg">
+<title>Stagenator Blueprints</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f4f5; --card:#ffffff; --ink:#18181b; --body:#3f3f46; --muted:#71717a; --hair:#e4e4e7;
+    --accent:#059669; --accent2:#7c3aed;
+    --edge:#8a8a93; --edge-hi:#059669; --label:#3f3f46; --label-hi:#047857;
+    --sig-f:#f0f9ff; --sig-s:#0284c7;  --dec-f:#f5f3ff; --dec-s:#7c3aed;
+    --act-f:#ecfdf5; --act-s:#059669;  --grd-f:#fffbeb; --grd-s:#d97706;
+    --sto-f:#f0fdfa; --sto-s:#0d9488;  --ext-f:#fafafa; --ext-s:#a1a1aa;
+    --plain-f:#fafafa; --plain-s:#d4d4d8; --node-t:#18181b; --node-s:#3f3f46;
+    --zone-f:#fafaf9; --zone-s:#d6d3d1;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#09090b; --card:#18181b; --ink:#fafafa; --body:#d4d4d8; --muted:#a1a1aa; --hair:#27272a;
+      --accent:#34d399; --accent2:#a78bfa;
+      --edge:#6b6b76; --edge-hi:#34d399; --label:#d4d4d8; --label-hi:#6ee7b7;
+      --sig-f:#0c2436; --sig-s:#38bdf8;  --dec-f:#241a3d; --dec-s:#a78bfa;
+      --act-f:#0b2f24; --act-s:#34d399;  --grd-f:#33260f; --grd-s:#fbbf24;
+      --sto-f:#0c2e2b; --sto-s:#2dd4bf;  --ext-f:#1f1f23; --ext-s:#71717a;
+      --plain-f:#1c1c21; --plain-s:#3f3f46; --node-t:#fafafa; --node-s:#d4d4d8;
+      --zone-f:#111114; --zone-s:#3f3f46;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#09090b; --card:#18181b; --ink:#fafafa; --body:#d4d4d8; --muted:#a1a1aa; --hair:#27272a;
+    --accent:#34d399; --accent2:#a78bfa;
+    --edge:#6b6b76; --edge-hi:#34d399; --label:#d4d4d8; --label-hi:#6ee7b7;
+    --sig-f:#0c2436; --sig-s:#38bdf8;  --dec-f:#241a3d; --dec-s:#a78bfa;
+    --act-f:#0b2f24; --act-s:#34d399;  --grd-f:#33260f; --grd-s:#fbbf24;
+    --sto-f:#0c2e2b; --sto-s:#2dd4bf;  --ext-f:#1f1f23; --ext-s:#71717a;
+    --plain-f:#1c1c21; --plain-s:#3f3f46; --node-t:#fafafa; --node-s:#d4d4d8;
+    --zone-f:#111114; --zone-s:#3f3f46;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+  body{margin:0; background:var(--bg); color:var(--body);
+    font-family:"Hanken Grotesk",system-ui,sans-serif; line-height:1.55; font-size:16px;
+    font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px; margin:0 auto; padding:clamp(20px,5vw,56px) clamp(16px,4vw,32px) 72px}
+  header{border-bottom:1px solid var(--hair); padding-bottom:28px; margin-bottom:8px}
+  .kicker{font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace; font-size:12px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  h1{font-family:"Bricolage Grotesque",sans-serif; font-weight:800; letter-spacing:-.02em;
+    font-size:clamp(2.4rem,7vw,4rem); line-height:.98; margin:0; color:var(--ink); text-wrap:balance}
+  .lede{max-width:62ch; color:var(--body); font-size:1.05rem; margin:18px 0 0}
+  .lede b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:22px}
+  .lg{display:inline-flex; align-items:center; gap:7px; font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace;
+    font-size:11.5px; color:var(--muted)}
+  .sw{width:13px; height:13px; border-radius:4px; border:1.5px solid; flex:none}
+  .sw.signal{border-color:var(--sig-s); background:var(--sig-f)}
+  .sw.decision{border-color:var(--dec-s); background:var(--dec-f)}
+  .sw.action{border-color:var(--act-s); background:var(--act-f)}
+  .sw.guard{border-color:var(--grd-s); background:var(--grd-f)}
+  .sw.store{border-color:var(--sto-s); background:var(--sto-f)}
+  .sw.ext{border-color:var(--ext-s); background:var(--ext-f)}
+  .fig{margin-top:52px}
+  .tag{font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--accent2)}
+  .tag .lvl{color:var(--muted)}
+  h2{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; letter-spacing:-.015em;
+    font-size:clamp(1.3rem,4vw,1.6rem); margin:6px 0 6px; color:var(--ink); text-wrap:balance}
+  .desc{color:var(--body); margin:0; max-width:64ch; font-size:.97rem}
+  figure{margin:16px 0 0}
+  .sheet.has-port + .scrollhint{display:none !important} .scrollhint{display:none; font-size:11px; color:var(--muted); margin:6px 2px 0; font-family:"JetBrains Mono",monospace}
+  @media (max-width:760px){ .scrollhint{display:block} body{font-size:15px} }
+  .sheet{background:var(--card); border:1px solid var(--hair); border-radius:14px;
+    padding:22px 20px; overflow-x:auto; -webkit-overflow-scrolling:touch}
+  .sheet svg.land{display:block; width:100%; height:auto; min-width:700px}
+  .sheet svg.port{display:none; width:100%; height:auto; max-width:420px; margin:0 auto}
+  @media (max-width:760px){
+    .sheet svg.land.has-port{display:none}
+    .sheet svg.port{display:block}
+    .sheet.has-port{overflow-x:visible}
+  }
+  figcaption{font-size:13.5px; color:var(--body); margin-top:12px; max-width:70ch}
+  figcaption b{color:var(--ink); font-weight:600}
+  /* schematic language */
+  .node rect{rx:9; stroke-width:1.6}
+  svg .t{font-family:"Hanken Grotesk",system-ui,sans-serif; font-size:14px; font-weight:600; fill:var(--node-t)}
+  svg .s{font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace; font-size:11px; font-weight:500; fill:var(--node-s)}
+  .n-signal rect{fill:var(--sig-f); stroke:var(--sig-s)}
+  .n-decision rect{fill:var(--dec-f); stroke:var(--dec-s)}
+  .n-action rect{fill:var(--act-f); stroke:var(--act-s)}
+  .n-guard rect{fill:var(--grd-f); stroke:var(--grd-s)}
+  .n-store rect{fill:var(--sto-f); stroke:var(--sto-s)}
+  .n-ext rect{fill:var(--ext-f); stroke:var(--ext-s)}
+  .n-plain rect{fill:var(--plain-f); stroke:var(--plain-s)}
+  .n-idle rect{fill:var(--plain-f); stroke:var(--plain-s); stroke-dasharray:4 3}
+  .edge{stroke:var(--edge); stroke-width:1.7; fill:none}
+  .edge.accent{stroke:var(--edge-hi); stroke-width:2.1}
+  .edge.dash{stroke-dasharray:5 4}
+  .el{font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace; font-size:12px; font-weight:500; fill:var(--label)}
+  .el.hi{fill:var(--label-hi)}
+  .lane{font-family:"JetBrains Mono","SFMono-Regular","Menlo","Consolas","Liberation Mono",monospace; font-size:11.5px; font-weight:500; letter-spacing:.08em; fill:var(--label)}
+  .lifeline{stroke:var(--hair)}
+  footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--hair);
+    color:var(--muted); font-size:.85rem; font-family:"JetBrains Mono",monospace}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--edge)"/></marker>
+    <marker id="ahA" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--edge-hi)"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header>
+  <p class="kicker">Autonomous engagement &amp; retention agent · diagram deck</p>
+  <h1>Stagenator</h1>
+  <p class="lede">A fully automatic caretaker for two live mobile games. No human presses any buttons: it watches <b>who is playing right now</b>, decides what would help, <b>creates brand-new game levels with AI</b> and ships them straight into the games, can gift each player their own promo code, and <b>learns from results every night</b>. Ten pictures, simplest first.</p>
+  <div class="legend" aria-label="colour legend">
+    <span class="lg"><span class="sw signal"></span>input / who's playing</span>
+    <span class="lg"><span class="sw decision"></span>AI — decides or creates</span>
+    <span class="lg"><span class="sw action"></span>plain code doing work</span>
+    <span class="lg"><span class="sw guard"></span>safety limit</span>
+    <span class="lg"><span class="sw store"></span>saved data</span>
+    <span class="lg"><span class="sw ext"></span>outside service</span>
+  </div>
+</header>
+
+<!-- 1 THE LOOP -->
+<section class="fig" id="d1">
+  <div class="meta">
+    <span class="tag">Flow · <span class="lvl">overview</span></span>
+    <h2>1 · The whole thing in one loop</h2>
+    <p class="desc">Players play; the analytics show it; Stagenator responds with fresh levels and gifts; those give players a reason to come back. That circle, running by itself, is the entire product.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 220" role="img" aria-label="A closed loop: players produce play data, Stagenator decides and ships levels and codes, which bring players back.">
+        <g class="node n-signal"><rect x="24" y="70" width="150" height="60"/>
+          <text class="t" x="99" y="95" text-anchor="middle">Players</text>
+          <text class="s" x="99" y="114" text-anchor="middle">2 live games</text></g>
+        <g class="node n-signal"><rect x="234" y="70" width="150" height="60"/>
+          <text class="t" x="309" y="95" text-anchor="middle">Analytics</text>
+          <text class="s" x="309" y="114" text-anchor="middle">who is playing now</text></g>
+        <g class="node n-decision"><rect x="444" y="70" width="150" height="60"/>
+          <text class="t" x="519" y="95" text-anchor="middle">Stagenator</text>
+          <text class="s" x="519" y="114" text-anchor="middle">decides + acts</text></g>
+        <g class="node n-action"><rect x="654" y="70" width="150" height="60"/>
+          <text class="t" x="729" y="92" text-anchor="middle">Levels + codes</text>
+          <text class="s" x="729" y="111" text-anchor="middle">appear in the games</text></g>
+        <line class="edge" x1="174" y1="100" x2="228" y2="100" marker-end="url(#ah)"/>
+        <line class="edge" x1="384" y1="100" x2="438" y2="100" marker-end="url(#ah)"/>
+        <line class="edge accent" x1="594" y1="100" x2="648" y2="100" marker-end="url(#ahA)"/>
+        <text class="el" x="201" y="92" text-anchor="middle">plays</text>
+        <text class="el" x="411" y="92" text-anchor="middle">tells it</text>
+        <text class="el hi" x="621" y="92" text-anchor="middle">ships</text>
+        <path class="edge accent" d="M729 130 L729 180 L99 180 L99 136" marker-end="url(#ahA)"/>
+        <text class="el hi" x="414" y="174" text-anchor="middle">new reasons to come back</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 358" role="img" aria-label="Same loop, drawn vertically for phones."><g class="node n-signal"><rect x="40" y="16" width="280" height="56"/><text class="t" x="180" y="40" text-anchor="middle">Players</text><text class="s" x="180" y="58" text-anchor="middle">2 live games</text></g><line class="edge" x1="180" y1="72" x2="180" y2="102" marker-end="url(#ah)"/><text class="el" x="190" y="93">plays</text><g class="node n-signal"><rect x="40" y="106" width="280" height="56"/><text class="t" x="180" y="130" text-anchor="middle">Analytics</text><text class="s" x="180" y="148" text-anchor="middle">who is playing now</text></g><line class="edge" x1="180" y1="162" x2="180" y2="192" marker-end="url(#ah)"/><text class="el" x="190" y="183">tells it</text><g class="node n-decision"><rect x="40" y="196" width="280" height="56"/><text class="t" x="180" y="220" text-anchor="middle">Stagenator</text><text class="s" x="180" y="238" text-anchor="middle">decides + acts</text></g><line class="edge accent" x1="180" y1="252" x2="180" y2="282" marker-end="url(#ahA)"/><text class="el hi" x="190" y="273">ships</text><g class="node n-action"><rect x="40" y="286" width="280" height="56"/><text class="t" x="180" y="310" text-anchor="middle">Levels + codes</text><text class="s" x="180" y="328" text-anchor="middle">appear in the games</text></g><path class="edge accent" d="M320 314 L352 314 L352 44 L324 44" marker-end="url(#ahA)"/><text class="el hi" x="368" y="186" transform="rotate(90 368 186)" text-anchor="middle">new reasons to come back</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> take away the middle box and all you have is a dashboard. The value is what Stagenator does between "someone is playing" and "here is something new for them".</figcaption>
+  </figure>
+</section>
+
+<!-- 2 PULSE -->
+<section class="fig" id="d2">
+  <div class="meta">
+    <span class="tag">Flow · <span class="lvl">the heartbeat</span></span>
+    <h2>2 · It checks in every five minutes</h2>
+    <p class="desc">Most check-ins find nothing worth doing and cost nothing — doing nothing on purpose is a normal, good outcome. The AI is only woken up when there is a reason.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 300" role="img" aria-label="A timer triggers a check; if nobody is playing, it idles for free; if someone is, the AI proposes actions, safety limits check them, then they run. Every step is written to a public log.">
+        <g class="node n-ext"><rect x="20" y="24" width="140" height="54"/>
+          <text class="t" x="90" y="47" text-anchor="middle">Timer</text>
+          <text class="s" x="90" y="65" text-anchor="middle">every 5 min</text></g>
+        <g class="node n-action"><rect x="210" y="24" width="140" height="54"/>
+          <text class="t" x="280" y="47" text-anchor="middle">Look around</text>
+          <text class="s" x="280" y="65" text-anchor="middle">plain code, no AI</text></g>
+        <g><polygon points="470,51 545,21 620,51 545,81" fill="var(--grd-f)" stroke="var(--grd-s)" stroke-width="1.6"/>
+          <text class="t" x="545" y="49" text-anchor="middle" style="font-size:13px">anyone playing?</text></g>
+        <g class="node n-idle"><rect x="670" y="24" width="130" height="54"/>
+          <text class="t" x="735" y="47" text-anchor="middle">Do nothing</text>
+          <text class="s" x="735" y="65" text-anchor="middle">costs $0</text></g>
+        <g class="node n-decision"><rect x="210" y="150" width="140" height="58"/>
+          <text class="t" x="280" y="173" text-anchor="middle">AI decides</text>
+          <text class="s" x="280" y="191" text-anchor="middle">what would help</text></g>
+        <g class="node n-guard"><rect x="400" y="150" width="140" height="58"/>
+          <text class="t" x="470" y="173" text-anchor="middle">Safety limits</text>
+          <text class="s" x="470" y="191" text-anchor="middle">1 level · 1 code /day</text></g>
+        <g class="node n-action"><rect x="590" y="150" width="150" height="58"/>
+          <text class="t" x="665" y="173" text-anchor="middle">Do it</text>
+          <text class="s" x="665" y="191" text-anchor="middle">levels · codes · push</text></g>
+        <g class="node n-store"><rect x="330" y="248" width="220" height="46"/>
+          <text class="t" x="440" y="276" text-anchor="middle">Diary — every step logged</text></g>
+        <line class="edge" x1="160" y1="51" x2="206" y2="51" marker-end="url(#ah)"/>
+        <line class="edge" x1="350" y1="51" x2="466" y2="51" marker-end="url(#ah)"/>
+        <line class="edge dash" x1="620" y1="51" x2="666" y2="51" marker-end="url(#ah)"/>
+        <text class="el" x="643" y="43" text-anchor="middle">no</text>
+        <path class="edge accent" d="M545 81 L545 120 L280 120 L280 146" marker-end="url(#ahA)"/>
+        <text class="el hi" x="418" y="113" text-anchor="middle">yes</text>
+        <line class="edge accent" x1="350" y1="179" x2="396" y2="179" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="540" y1="179" x2="586" y2="179" marker-end="url(#ahA)"/>
+        <path class="edge" d="M665 208 L665 271 L554 271" marker-end="url(#ah)"/>
+        <path class="edge" d="M280 208 L280 271 L326 271" marker-end="url(#ah)"/>
+      </svg>
+      <svg class="port" viewBox="0 0 420 560" role="img" aria-label="The five-minute check drawn vertically.">
+        <g class="node n-ext"><rect x="24" y="16" width="240" height="56"/><text class="t" x="144" y="40" text-anchor="middle">Timer</text><text class="s" x="144" y="58" text-anchor="middle">every 5 min</text></g>
+        <line class="edge" x1="144" y1="72" x2="144" y2="96" marker-end="url(#ah)"/>
+        <g class="node n-action"><rect x="24" y="100" width="240" height="56"/><text class="t" x="144" y="124" text-anchor="middle">Look around</text><text class="s" x="144" y="142" text-anchor="middle">plain code, no AI</text></g>
+        <line class="edge" x1="144" y1="156" x2="144" y2="180" marker-end="url(#ah)"/>
+        <polygon points="144,184 258,214 144,244 30,214" fill="var(--grd-f)" stroke="var(--grd-s)" stroke-width="1.6"/>
+        <text class="t" x="144" y="219" text-anchor="middle" style="font-size:13px">anyone playing?</text>
+        <path class="edge dash" d="M258 214 L336 214 L336 238" marker-end="url(#ah)"/>
+        <text class="el" x="292" y="206" text-anchor="middle">no</text>
+        <g class="node n-idle"><rect x="276" y="242" width="120" height="50"/><text class="t" x="336" y="263" text-anchor="middle" style="font-size:12.5px">Do nothing</text><text class="s" x="336" y="281" text-anchor="middle">costs $0</text></g>
+        <line class="edge accent" x1="144" y1="244" x2="144" y2="268" marker-end="url(#ahA)"/>
+        <text class="el hi" x="156" y="260">yes</text>
+        <g class="node n-decision"><rect x="24" y="272" width="240" height="56"/><text class="t" x="144" y="296" text-anchor="middle">AI decides</text><text class="s" x="144" y="314" text-anchor="middle">what would help</text></g>
+        <line class="edge accent" x1="144" y1="328" x2="144" y2="352" marker-end="url(#ahA)"/>
+        <g class="node n-guard"><rect x="24" y="356" width="240" height="56"/><text class="t" x="144" y="380" text-anchor="middle">Safety limits</text><text class="s" x="144" y="398" text-anchor="middle">1 level · 1 code /day</text></g>
+        <line class="edge accent" x1="144" y1="412" x2="144" y2="436" marker-end="url(#ahA)"/>
+        <g class="node n-action"><rect x="24" y="440" width="240" height="56"/><text class="t" x="144" y="464" text-anchor="middle">Do it</text><text class="s" x="144" y="482" text-anchor="middle">levels · codes · push</text></g>
+        <line class="edge" x1="144" y1="496" x2="144" y2="516" marker-end="url(#ah)"/>
+        <g class="node n-store"><rect x="24" y="520" width="300" height="34"/><text class="t" x="174" y="542" text-anchor="middle" style="font-size:12.5px">Diary — every step logged</text></g>
+      <path class="edge dash" d="M24 300 L10 300 L10 537 L20 537" marker-end="url(#ah)"/></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> the AI can only be reached through a signal, and nothing it proposes happens until the hard limits agree (at most 1 new level and 1 code gift per game per day, 2 notifications per 4 hours). Every decision — including "do nothing" — lands in the diary you can read on the dashboard.</figcaption>
+  </figure>
+</section>
+
+<!-- 3 CODE VS MODEL -->
+<section class="fig" id="d3">
+  <div class="meta">
+    <span class="tag">Idea · <span class="lvl">the core principle</span></span>
+    <h2>3 · Code does the doing, AI does the thinking — and the creating</h2>
+    <p class="desc">Everywhere money moves or the games change, it is ordinary, testable code. AI shows up in two roles: two <b>decision</b> calls (what to do now, what to learn tonight) — and as the <b>creator</b> inside the pipelines, where it designs levels, paints images, films clips and inspects its own work. Code always starts, checks and limits it.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 320" role="img" aria-label="Left: what plain code handles. Right: the two AI judgment calls. A dashed line separates them.">
+        <text class="lane" x="30" y="30">PLAIN CODE — PREDICTABLE · TESTED</text>
+        <text class="lane" x="565" y="30" style="fill:var(--accent2)">AI — DECIDES · CREATES</text>
+        <line x1="520" y1="14" x2="520" y2="306" stroke="var(--hair)" stroke-dasharray="4 5"/>
+        <g class="node n-action"><rect x="30" y="46" width="210" height="46"/><text class="t" x="135" y="74" text-anchor="middle">Crash-proof to-do list</text></g>
+        <g class="node n-guard"><rect x="30" y="102" width="210" height="46"/><text class="t" x="135" y="130" text-anchor="middle">Hard daily limits</text></g>
+        <g class="node n-action"><rect x="30" y="158" width="210" height="46"/><text class="t" x="135" y="186" text-anchor="middle">Handing out promo codes</text></g>
+        <g class="node n-store"><rect x="30" y="214" width="210" height="46"/><text class="t" x="135" y="242" text-anchor="middle">All-or-nothing saves</text></g>
+        <g class="node n-action"><rect x="270" y="124" width="210" height="52"/><text class="t" x="375" y="146" text-anchor="middle">Level pipelines</text><text class="s" x="375" y="164" text-anchor="middle">AI creates inside, code drives</text></g>
+        <g class="node n-ext"><rect x="270" y="214" width="210" height="46"/><text class="t" x="375" y="237" text-anchor="middle">Minting · push · email</text>
+          <text class="s" x="375" y="253" text-anchor="middle">Apple · notify · Gmail</text></g>
+        <g class="node n-decision"><rect x="565" y="86" width="220" height="64"/>
+          <text class="t" x="675" y="112" text-anchor="middle">Strategist</text>
+          <text class="s" x="675" y="132" text-anchor="middle">what to do right now</text></g>
+        <g class="node n-decision"><rect x="565" y="196" width="220" height="64"/>
+          <text class="t" x="675" y="222" text-anchor="middle">Reflector</text>
+          <text class="s" x="675" y="242" text-anchor="middle">what to learn, overnight</text></g>
+        <text class="el" x="675" y="278" text-anchor="middle">2 decision calls — answer a fixed form,</text>
+        <text class="el" x="675" y="294" text-anchor="middle">always checked by the safety limits</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 614" role="img" aria-label="Code responsibilities stacked above the two AI calls."><text class="lane" x="20" y="26">PLAIN CODE — PREDICTABLE · TESTED</text><g class="node n-action"><rect x="40" y="38" width="280" height="44"/><text class="t" x="180" y="66" text-anchor="middle">Crash-proof to-do list</text></g><g class="node n-guard"><rect x="40" y="94" width="280" height="44"/><text class="t" x="180" y="122" text-anchor="middle">Hard daily limits</text></g><g class="node n-action"><rect x="40" y="150" width="280" height="56"/><text class="t" x="180" y="174" text-anchor="middle">Level pipelines</text><text class="s" x="180" y="192" text-anchor="middle">AI creates inside, code drives</text></g><g class="node n-action"><rect x="40" y="218" width="280" height="44"/><text class="t" x="180" y="246" text-anchor="middle">Handing out promo codes</text></g><g class="node n-store"><rect x="40" y="274" width="280" height="44"/><text class="t" x="180" y="302" text-anchor="middle">All-or-nothing saves</text></g><g class="node n-ext"><rect x="40" y="330" width="280" height="56"/><text class="t" x="180" y="354" text-anchor="middle">Minting · push · email</text><text class="s" x="180" y="372" text-anchor="middle">Apple · notify · Gmail</text></g><line x1="30" y1="412" x2="350" y2="412" stroke="var(--hair)" stroke-dasharray="4 5"/><text class="lane" x="20" y="436" style="fill:var(--accent2)">AI — DECIDES · CREATES</text><g class="node n-decision"><rect x="40" y="448" width="280" height="56"/><text class="t" x="180" y="472" text-anchor="middle">Strategist</text><text class="s" x="180" y="490" text-anchor="middle">what to do right now</text></g><g class="node n-decision"><rect x="40" y="516" width="280" height="56"/><text class="t" x="180" y="540" text-anchor="middle">Reflector</text><text class="s" x="180" y="558" text-anchor="middle">what to learn, overnight</text></g><text class="el" x="190" y="596" text-anchor="middle">2 decision calls — always checked by the limits</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> the AI never touches money or the games directly. When it decides, it fills in a form and tested code carries it out; when it creates, it works inside a pipeline that code starts, quality-checks and can throw away. Either way, the safety limits have the last word.</figcaption>
+  </figure>
+</section>
+
+<!-- 4 FIVE DOORS -->
+<section class="fig" id="d4">
+  <div class="meta">
+    <span class="tag">Map · <span class="lvl">how it wakes up</span></span>
+    <h2>4 · One brain, five doors in</h2>
+    <p class="desc">The same program serves five different wake-up calls. A router reads which one arrived and sends it down the right path.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 360" role="img" aria-label="A router sends each wake-up to one of five paths: the 5-minute check, the nightly review, the daily code restock, the daily health check, or an instant event which joins the 5-minute path.">
+        <g class="node n-plain"><rect x="30" y="150" width="120" height="54"/><text class="t" x="90" y="182" text-anchor="middle">Router</text></g>
+        <g class="node n-action"><rect x="230" y="20" width="200" height="50"/><text class="t" x="330" y="41" text-anchor="middle">5-minute check</text><text class="s" x="330" y="58" text-anchor="middle">look → decide → act</text></g>
+        <g class="node n-decision"><rect x="230" y="90" width="200" height="50"/><text class="t" x="330" y="111" text-anchor="middle">Nightly review</text><text class="s" x="330" y="128" text-anchor="middle">learn from the day</text></g>
+        <g class="node n-store"><rect x="230" y="160" width="200" height="50"/><text class="t" x="330" y="181" text-anchor="middle">Daily restock</text><text class="s" x="330" y="198" text-anchor="middle">top up promo codes</text></g>
+        <g class="node n-guard"><rect x="230" y="230" width="200" height="50"/><text class="t" x="330" y="251" text-anchor="middle">Daily health check</text><text class="s" x="330" y="268" text-anchor="middle">tests every connection</text></g>
+        <g class="node n-signal"><rect x="230" y="300" width="200" height="50"/><text class="t" x="330" y="321" text-anchor="middle">Instant event</text><text class="s" x="330" y="338" text-anchor="middle">something just happened</text></g>
+        <line class="edge" x1="150" y1="164" x2="226" y2="46" marker-end="url(#ah)"/>
+        <line class="edge" x1="150" y1="170" x2="226" y2="115" marker-end="url(#ah)"/>
+        <line class="edge" x1="150" y1="177" x2="226" y2="185" marker-end="url(#ah)"/>
+        <line class="edge" x1="150" y1="184" x2="226" y2="255" marker-end="url(#ah)"/>
+        <line class="edge" x1="150" y1="190" x2="226" y2="322" marker-end="url(#ah)"/>
+        <path class="edge dash" d="M430 322 L490 322 L490 45 L434 45" marker-end="url(#ah)"/>
+        <text class="el" x="506" y="185" text-anchor="middle" transform="rotate(90 506 185)">treated like a 5-minute check</text>
+
+      </svg>
+      <svg class="port" viewBox="0 0 380 444" role="img" aria-label="The router picks one of five doors; an instant event rides the 5-minute path."><g class="node n-plain"><rect x="24" y="16" width="130" height="44"/><text class="t" x="89" y="44" text-anchor="middle">Router</text></g><text class="el" x="180" y="40">picks ONE door each time</text><line class="edge" x1="46" y1="60" x2="46" y2="88"/><g class="node n-action"><rect x="70" y="88" width="260" height="52"/><text class="t" x="200" y="110" text-anchor="middle">5-minute check</text><text class="s" x="200" y="128" text-anchor="middle">look → decide → act</text></g><line class="edge" x1="46" y1="114" x2="66" y2="114" marker-end="url(#ah)"/><g class="node n-decision"><rect x="70" y="158" width="260" height="52"/><text class="t" x="200" y="180" text-anchor="middle">Nightly review</text><text class="s" x="200" y="198" text-anchor="middle">learn from the day</text></g><line class="edge" x1="46" y1="184" x2="66" y2="184" marker-end="url(#ah)"/><g class="node n-store"><rect x="70" y="228" width="260" height="52"/><text class="t" x="200" y="250" text-anchor="middle">Daily restock</text><text class="s" x="200" y="268" text-anchor="middle">top up promo codes</text></g><line class="edge" x1="46" y1="254" x2="66" y2="254" marker-end="url(#ah)"/><g class="node n-guard"><rect x="70" y="298" width="260" height="52"/><text class="t" x="200" y="320" text-anchor="middle">Daily health check</text><text class="s" x="200" y="338" text-anchor="middle">tests every connection</text></g><line class="edge" x1="46" y1="324" x2="66" y2="324" marker-end="url(#ah)"/><g class="node n-signal"><rect x="70" y="368" width="260" height="52"/><text class="t" x="200" y="390" text-anchor="middle">Instant event</text><text class="s" x="200" y="408" text-anchor="middle">something just happened</text></g><line class="edge" x1="46" y1="394" x2="66" y2="394" marker-end="url(#ah)"/><line class="edge" x1="46" y1="88" x2="46" y2="394"/><path class="edge dash" d="M330 394 L350 394 L350 114 L334 114" marker-end="url(#ah)"/><text class="el" x="368" y="258" transform="rotate(90 368 258)" text-anchor="middle">treated like a 5-minute check</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> once a day (and after every deploy) the health check calls every service the agent depends on and emails the owner if anything changed for the worse. Each run also stops itself well before the platform’s 9-minute cut-off — leftover work simply waits for the next check.</figcaption>
+  </figure>
+</section>
+
+<!-- 5 SEQUENCE -->
+<section class="fig" id="d5">
+  <div class="meta">
+    <span class="tag">Timeline · <span class="lvl">step by step</span></span>
+    <h2>5 · From "someone is playing" to a new level on their phone</h2>
+    <p class="desc">The full chain when a check-in finds a player and decides to act — read top to bottom.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 840 430" role="img" aria-label="Timeline across the timer, the agent, analytics and AI, safety limits, the AI art services, the game database and the player's phone.">
+        <g font-family='JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace' font-size="11.5" font-weight="500" fill="var(--label)">
+          <text x="70" y="24" text-anchor="middle">Timer</text>
+          <text x="196" y="24" text-anchor="middle">Agent</text>
+          <text x="322" y="24" text-anchor="middle">Analytics + AI</text>
+          <text x="448" y="24" text-anchor="middle">Safety limits</text>
+          <text x="574" y="24" text-anchor="middle">AI art / video</text>
+          <text x="700" y="24" text-anchor="middle">Game DB</text>
+          <text x="792" y="24" text-anchor="middle">Player</text>
+        </g>
+        <g class="lifeline" stroke-width="1">
+          <line x1="70" y1="32" x2="70" y2="404"/><line x1="196" y1="32" x2="196" y2="404"/>
+          <line x1="322" y1="32" x2="322" y2="404"/><line x1="448" y1="32" x2="448" y2="404"/>
+          <line x1="574" y1="32" x2="574" y2="404"/><line x1="700" y1="32" x2="700" y2="404"/>
+          <line x1="792" y1="32" x2="792" y2="404"/>
+        </g>
+        <line class="edge" x1="70" y1="56" x2="196" y2="56" marker-end="url(#ah)"/>
+        <text class="el" x="133" y="50" text-anchor="middle">check in</text>
+        <line class="edge" x1="196" y1="88" x2="322" y2="88" marker-end="url(#ah)"/>
+        <text class="el" x="259" y="82" text-anchor="middle">who's playing?</text>
+        <line class="edge" x1="322" y1="116" x2="196" y2="116" marker-end="url(#ah)"/>
+        <text class="el" x="259" y="110" text-anchor="middle">1 player · iOS · US</text>
+        <line class="edge" x1="196" y1="148" x2="322" y2="148" marker-end="url(#ah)"/>
+        <text class="el" x="259" y="142" text-anchor="middle">AI: what should we do?</text>
+        <line class="edge" x1="322" y1="176" x2="448" y2="176" marker-end="url(#ah)"/>
+        <text class="el" x="385" y="170" text-anchor="middle">"ship a welcome level"</text>
+        <line class="edge accent" x1="448" y1="204" x2="196" y2="204" marker-end="url(#ahA)"/>
+        <text class="el hi" x="322" y="198" text-anchor="middle">within limits → put on the to-do list</text>
+        <line class="edge" x1="196" y1="236" x2="574" y2="236" marker-end="url(#ah)"/>
+        <text class="el" x="385" y="230" text-anchor="middle">make the level art / video</text>
+        <line class="edge" x1="574" y1="272" x2="196" y2="272" marker-end="url(#ah)"/>
+        <text class="el" x="385" y="266" text-anchor="middle">result → AI double-checks it looks right</text>
+        <line class="edge accent" x1="196" y1="304" x2="700" y2="304" marker-end="url(#ahA)"/>
+        <text class="el hi" x="448" y="298" text-anchor="middle">save to the game — all-or-nothing, then re-verified</text>
+        <line class="edge accent" x1="700" y1="340" x2="792" y2="340" marker-end="url(#ahA)"/>
+        <text class="el hi" x="746" y="334" text-anchor="middle">new level</text>
+        <line class="edge dash" x1="196" y1="372" x2="792" y2="372" marker-end="url(#ah)"/>
+        <text class="el" x="470" y="366" text-anchor="middle">sometimes: a separate code-gift decision too (picture 8)</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 776" role="img" aria-label="The same timeline as a numbered vertical list."><g class="node n-ext"><rect x="44" y="16" width="300" height="56"/><text class="t" x="194" y="39" text-anchor="middle">Timer checks in</text><text class="s" x="194" y="56" text-anchor="middle">every 5 minutes</text></g><text class="el" x="24" y="48" text-anchor="middle">1</text><line class="edge" x1="194" y1="72" x2="194" y2="94" marker-end="url(#ah)"/><g class="node n-action"><rect x="44" y="94" width="300" height="56"/><text class="t" x="194" y="117" text-anchor="middle">Agent asks analytics</text><text class="s" x="194" y="134" text-anchor="middle">who is playing right now?</text></g><text class="el" x="24" y="126" text-anchor="middle">2</text><line class="edge" x1="194" y1="150" x2="194" y2="172" marker-end="url(#ah)"/><g class="node n-signal"><rect x="44" y="172" width="300" height="56"/><text class="t" x="194" y="195" text-anchor="middle">Answer comes back</text><text class="s" x="194" y="212" text-anchor="middle">1 player · iOS · US</text></g><text class="el" x="24" y="204" text-anchor="middle">3</text><line class="edge" x1="194" y1="228" x2="194" y2="250" marker-end="url(#ah)"/><g class="node n-decision"><rect x="44" y="250" width="300" height="56"/><text class="t" x="194" y="273" text-anchor="middle">AI decides</text><text class="s" x="194" y="290" text-anchor="middle">&#8220;ship a welcome level&#8221;</text></g><text class="el" x="24" y="282" text-anchor="middle">4</text><line class="edge" x1="194" y1="306" x2="194" y2="328" marker-end="url(#ah)"/><g class="node n-guard"><rect x="44" y="328" width="300" height="56"/><text class="t" x="194" y="351" text-anchor="middle">Safety limits agree</text><text class="s" x="194" y="368" text-anchor="middle">within today&#8217;s budget</text></g><text class="el" x="24" y="360" text-anchor="middle">5</text><line class="edge accent" x1="194" y1="384" x2="194" y2="406" marker-end="url(#ahA)"/><g class="node n-ext"><rect x="44" y="406" width="300" height="56"/><text class="t" x="194" y="429" text-anchor="middle">Make the level</text><text class="s" x="194" y="446" text-anchor="middle">AI art / video</text></g><text class="el" x="24" y="438" text-anchor="middle">6</text><line class="edge" x1="194" y1="462" x2="194" y2="484" marker-end="url(#ah)"/><g class="node n-decision"><rect x="44" y="484" width="300" height="56"/><text class="t" x="194" y="507" text-anchor="middle">AI inspects its own work</text><text class="s" x="194" y="524" text-anchor="middle">looks right?</text></g><text class="el" x="24" y="516" text-anchor="middle">7</text><line class="edge" x1="194" y1="540" x2="194" y2="562" marker-end="url(#ah)"/><g class="node n-action"><rect x="44" y="562" width="300" height="56"/><text class="t" x="194" y="585" text-anchor="middle">Save to the game</text><text class="s" x="194" y="602" text-anchor="middle">all-or-nothing, re-verified</text></g><text class="el" x="24" y="594" text-anchor="middle">8</text><line class="edge accent" x1="194" y1="618" x2="194" y2="640" marker-end="url(#ahA)"/><g class="node n-signal"><rect x="44" y="640" width="300" height="44"/><text class="t" x="194" y="667.0" text-anchor="middle">New level on their phone</text></g><text class="el" x="24" y="666" text-anchor="middle">9</text><line class="edge dash" x1="194" y1="684" x2="194" y2="706" marker-end="url(#ah)"/><g class="node n-idle"><rect x="44" y="710" width="300" height="44"/><text class="t" x="194" y="733" text-anchor="middle" style="font-size:12.5px">sometimes: a code gift too</text><text class="s" x="194" y="750" text-anchor="middle">its own decision · picture 8</text></g></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> the quality check happens <b>before</b> anything is saved — a level only reaches the game after the AI has looked at its own output and approved it, and the save is verified again afterwards. A code gift is its own separate decision with its own daily limit — it may accompany a level, or not happen at all.</figcaption>
+  </figure>
+</section>
+
+<!-- 6 TASK LIFECYCLE -->
+<section class="fig" id="d6">
+  <div class="meta">
+    <span class="tag">States · <span class="lvl">what failure looks like</span></span>
+    <h2>6 · What happens to one job</h2>
+    <p class="desc">Every action is a job on a crash-proof to-do list. Failure is expected and contained: try again a few times, then give up loudly — never loop forever, never lose the job.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 270" role="img" aria-label="Job states: waiting, claimed, running, done. A failure retries up to three times, then the agent gives up and emails the owner. A postponed job goes back to waiting without counting as a failure.">
+        <g class="node n-plain"><rect x="24" y="104" width="120" height="50"/><text class="t" x="84" y="134" text-anchor="middle">waiting</text></g>
+        <g class="node n-signal"><rect x="196" y="104" width="120" height="50"/><text class="t" x="256" y="134" text-anchor="middle">claimed</text></g>
+        <g class="node n-decision"><rect x="368" y="104" width="120" height="50"/><text class="t" x="428" y="134" text-anchor="middle">running</text></g>
+        <g class="node n-action"><rect x="668" y="30" width="128" height="50"/><text class="t" x="732" y="60" text-anchor="middle">done</text></g>
+        <g class="node n-guard"><rect x="540" y="104" width="120" height="50"/><text class="t" x="600" y="134" text-anchor="middle">failed</text></g>
+        <g class="node n-ext"><rect x="668" y="176" width="128" height="56"/><text class="t" x="732" y="198" text-anchor="middle">gave up</text><text class="s" x="732" y="215" text-anchor="middle">emails the owner</text><text class="s" x="732" y="227" text-anchor="middle">with a diagnosis</text></g>
+        <g class="node n-idle"><rect x="196" y="196" width="150" height="46"/><text class="t" x="271" y="224" text-anchor="middle">postponed</text></g>
+        <line class="edge" x1="144" y1="129" x2="192" y2="129" marker-end="url(#ah)"/>
+        <line class="edge" x1="316" y1="129" x2="364" y2="129" marker-end="url(#ah)"/>
+        <line class="edge accent" x1="488" y1="120" x2="664" y2="55" marker-end="url(#ahA)"/>
+        <text class="el hi" x="576" y="76" text-anchor="middle">worked</text>
+        <line class="edge" x1="488" y1="138" x2="536" y2="138" marker-end="url(#ah)"/>
+        <path class="edge" d="M600 104 L600 66 L92 66 L92 100" marker-end="url(#ah)"/>
+        <text class="el" x="350" y="60" text-anchor="middle">under 3 tries — back in the queue</text>
+        <line class="edge" x1="640" y1="154" x2="672" y2="180" marker-end="url(#ah)"/>
+        <text class="el" x="638" y="172" text-anchor="middle">3rd</text>
+        <path class="edge dash" d="M84 154 L84 219 L192 219" marker-end="url(#ah)"/>
+        <path class="edge dash" d="M271 196 L271 176 L84 176" marker-end="url(#ah)"/>
+        <text class="el" x="150" y="192" text-anchor="middle">not due yet / out of time</text>
+      </svg>
+      <svg class="port" viewBox="0 0 420 306" role="img" aria-label="Job states drawn compactly for phones."><g class="node n-plain"><rect x="120" y="16" width="150" height="44"/><text class="t" x="195" y="43.0" text-anchor="middle">waiting</text></g><line class="edge" x1="195" y1="60" x2="195" y2="84" marker-end="url(#ah)"/><text class="el" x="207" y="76">claim</text><g class="node n-signal"><rect x="120" y="88" width="150" height="44"/><text class="t" x="195" y="115.0" text-anchor="middle">claimed</text></g><line class="edge" x1="195" y1="132" x2="195" y2="156" marker-end="url(#ah)"/><g class="node n-decision"><rect x="120" y="160" width="150" height="44"/><text class="t" x="195" y="187.0" text-anchor="middle">running</text></g><line class="edge accent" x1="195" y1="204" x2="195" y2="228" marker-end="url(#ahA)"/><text class="el hi" x="207" y="220">worked</text><g class="node n-action"><rect x="120" y="232" width="150" height="44"/><text class="t" x="195" y="259.0" text-anchor="middle">done</text></g><line class="edge" x1="270" y1="182" x2="298" y2="182" marker-end="url(#ah)"/><g class="node n-guard"><rect x="302" y="160" width="96" height="44"/><text class="t" x="350" y="187.0" text-anchor="middle">failed</text></g><path class="edge" d="M350 160 L350 38 L274 38" marker-end="url(#ah)"/><text class="el" x="358" y="104" transform="rotate(90 358 104)" text-anchor="middle">under 3 tries</text><line class="edge" x1="350" y1="204" x2="350" y2="228" marker-end="url(#ah)"/><text class="el" x="330" y="222">3rd</text><g class="node n-ext"><rect x="286" y="232" width="130" height="56"/><text class="t" x="351" y="255" text-anchor="middle" style="font-size:13px">gave up</text><text class="s" x="351" y="272" text-anchor="middle" style="font-size:10px">emails the owner</text></g><path class="edge dash" d="M120 38 L52 38 L52 78" marker-end="url(#ah)"/><g class="node n-idle"><rect x="8" y="82" width="110" height="50"/><text class="t" x="63" y="105" text-anchor="middle" style="font-size:12px">postponed</text><text class="s" x="63" y="122" text-anchor="middle" style="font-size:10px">not due yet</text></g><path class="edge dash" d="M52 132 L52 170 L92 170 L92 44 L116 44" marker-end="url(#ah)"/></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> three things keep this honest — a crash mid-job never counts as a failure (the job is simply picked up again); a job the agent <b>gave up on</b> does not use up the day's budget (the player got nothing, so the agent may try again); and giving up is loud: an email lands in the owner's inbox within minutes, with the agent's own guess at the cause.</figcaption>
+  </figure>
+</section>
+
+<!-- 7 LEVEL GENERATION -->
+<section class="fig" id="d7">
+  <div class="meta">
+    <span class="tag">Flow · <span class="lvl">two games, one recipe</span></span>
+    <h2>7 · How a level is actually made</h2>
+    <p class="desc">Two different games, two different AI engines — but one identical recipe: design it, generate it, have the AI inspect its own work, then save it safely. Nothing ships without passing inspection.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 310" role="img" aria-label="Top row: Subliminal Words — design a word and scene, hide the word in an image, AI inspects, save. Bottom row: AI Movie Quiz — pick a film, generate an 8-second clip, AI inspects, save with undo. Failed inspection loops back to a fresh design.">
+        <text class="lane" x="24" y="30">SUBLIMINAL WORDS — a word hidden inside a picture</text>
+        <g class="node n-decision"><rect x="24" y="44" width="132" height="52"/><text class="t" x="90" y="66" text-anchor="middle">Design</text><text class="s" x="90" y="83" text-anchor="middle">word + scene</text></g>
+        <g class="node n-plain"><rect x="182" y="44" width="132" height="52"/><text class="t" x="248" y="66" text-anchor="middle">Hide the word</text><text class="s" x="248" y="83" text-anchor="middle">letters in the art</text></g>
+        <g class="node n-ext"><rect x="340" y="44" width="120" height="52"/><text class="t" x="400" y="66" text-anchor="middle">Paint it</text><text class="s" x="400" y="83" text-anchor="middle">AI image gen</text></g>
+        <g class="node n-decision"><rect x="486" y="44" width="120" height="52"/><text class="t" x="546" y="66" text-anchor="middle">Inspect</text><text class="s" x="546" y="83" text-anchor="middle">AI looks at it</text></g>
+        <g class="node n-action"><rect x="632" y="44" width="160" height="52"/><text class="t" x="712" y="66" text-anchor="middle">Save to game</text><text class="s" x="712" y="83" text-anchor="middle">then re-verified</text></g>
+        <line class="edge" x1="156" y1="70" x2="178" y2="70" marker-end="url(#ah)"/>
+        <line class="edge" x1="314" y1="70" x2="336" y2="70" marker-end="url(#ah)"/>
+        <line class="edge" x1="460" y1="70" x2="482" y2="70" marker-end="url(#ah)"/>
+        <line class="edge accent" x1="606" y1="70" x2="628" y2="70" marker-end="url(#ahA)"/>
+        <text class="lane" x="24" y="182">AI MOVIE QUIZ — guess the film from an 8-second AI clip</text>
+        <g class="node n-decision"><rect x="24" y="196" width="132" height="52"/><text class="t" x="90" y="218" text-anchor="middle">Pick a film</text><text class="s" x="90" y="235" text-anchor="middle">+ write the scene</text></g>
+        <g class="node n-ext"><rect x="182" y="196" width="132" height="52"/><text class="t" x="248" y="218" text-anchor="middle">Film it</text><text class="s" x="248" y="235" text-anchor="middle">AI video gen</text></g>
+        <g class="node n-plain"><rect x="340" y="196" width="120" height="52"/><text class="t" x="400" y="218" text-anchor="middle">Prepare</text><text class="s" x="400" y="235" text-anchor="middle">for the game</text></g>
+        <g class="node n-decision"><rect x="486" y="196" width="120" height="52"/><text class="t" x="546" y="218" text-anchor="middle">Inspect</text><text class="s" x="546" y="235" text-anchor="middle">recognisable?</text></g>
+        <g class="node n-action"><rect x="632" y="196" width="160" height="52"/><text class="t" x="712" y="218" text-anchor="middle">Save to game</text><text class="s" x="712" y="235" text-anchor="middle">with an undo</text></g>
+        <line class="edge" x1="156" y1="222" x2="178" y2="222" marker-end="url(#ah)"/>
+        <line class="edge" x1="314" y1="222" x2="336" y2="222" marker-end="url(#ah)"/>
+        <line class="edge" x1="460" y1="222" x2="482" y2="222" marker-end="url(#ah)"/>
+        <line class="edge accent" x1="606" y1="222" x2="628" y2="222" marker-end="url(#ahA)"/>
+        <path class="edge dash" d="M546 96 L546 134 L90 134 L90 100" marker-end="url(#ah)"/>
+        <text class="el" x="300" y="128" text-anchor="middle">fails inspection → throw it away, design something new</text>
+        <path class="edge dash" d="M546 248 L546 278 L90 278 L90 252" marker-end="url(#ah)"/>
+        <text class="el" x="300" y="272" text-anchor="middle">fails → undo the save, try a fresh film</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 894" role="img" aria-label="Both level pipelines drawn vertically."><text class="lane" x="20" y="26">SUBLIMINAL WORDS</text><g class="node n-decision"><rect x="40" y="38" width="280" height="56"/><text class="t" x="180" y="62" text-anchor="middle">Design</text><text class="s" x="180" y="80" text-anchor="middle">word + scene</text></g><line class="edge" x1="180" y1="94" x2="180" y2="116" marker-end="url(#ah)"/><g class="node n-plain"><rect x="40" y="120" width="280" height="56"/><text class="t" x="180" y="144" text-anchor="middle">Hide the word</text><text class="s" x="180" y="162" text-anchor="middle">letters in the art</text></g><line class="edge" x1="180" y1="176" x2="180" y2="198" marker-end="url(#ah)"/><g class="node n-ext"><rect x="40" y="202" width="280" height="56"/><text class="t" x="180" y="226" text-anchor="middle">Paint it</text><text class="s" x="180" y="244" text-anchor="middle">AI image gen</text></g><line class="edge" x1="180" y1="258" x2="180" y2="280" marker-end="url(#ah)"/><g class="node n-decision"><rect x="40" y="284" width="280" height="56"/><text class="t" x="180" y="308" text-anchor="middle">Inspect</text><text class="s" x="180" y="326" text-anchor="middle">AI looks at it</text></g><line class="edge accent" x1="180" y1="340" x2="180" y2="362" marker-end="url(#ahA)"/><g class="node n-action"><rect x="40" y="366" width="280" height="56"/><text class="t" x="180" y="390" text-anchor="middle">Save to game</text><text class="s" x="180" y="408" text-anchor="middle">then re-verified</text></g><text class="lane" x="20" y="462">AI MOVIE QUIZ</text><g class="node n-decision"><rect x="40" y="474" width="280" height="56"/><text class="t" x="180" y="498" text-anchor="middle">Pick a film</text><text class="s" x="180" y="516" text-anchor="middle">+ write the scene</text></g><line class="edge" x1="180" y1="530" x2="180" y2="552" marker-end="url(#ah)"/><g class="node n-ext"><rect x="40" y="556" width="280" height="56"/><text class="t" x="180" y="580" text-anchor="middle">Film it</text><text class="s" x="180" y="598" text-anchor="middle">AI video gen</text></g><line class="edge" x1="180" y1="612" x2="180" y2="634" marker-end="url(#ah)"/><g class="node n-plain"><rect x="40" y="638" width="280" height="56"/><text class="t" x="180" y="662" text-anchor="middle">Prepare</text><text class="s" x="180" y="680" text-anchor="middle">for the game</text></g><line class="edge" x1="180" y1="694" x2="180" y2="716" marker-end="url(#ah)"/><g class="node n-decision"><rect x="40" y="720" width="280" height="56"/><text class="t" x="180" y="744" text-anchor="middle">Inspect</text><text class="s" x="180" y="762" text-anchor="middle">recognisable?</text></g><line class="edge accent" x1="180" y1="776" x2="180" y2="798" marker-end="url(#ahA)"/><g class="node n-action"><rect x="40" y="802" width="280" height="56"/><text class="t" x="180" y="826" text-anchor="middle">Save to game</text><text class="s" x="180" y="844" text-anchor="middle">with an undo</text></g><path class="edge dash" d="M40 312 L26 312 L26 66 L36 66" marker-end="url(#ah)"/><text class="el" x="10" y="190" transform="rotate(-90 10 190)" text-anchor="middle">fails → design fresh</text><path class="edge dash" d="M40 748 L26 748 L26 502 L36 502" marker-end="url(#ah)"/><text class="el" x="10" y="626" transform="rotate(-90 10 626)" text-anchor="middle">fails → undo, retry</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> titles are guarded as well — Movie Quiz only picks film titles the in-game keyboard can actually type, and Subliminal Words only uses clean 3–8 letter words, so a level can never ship that is impossible to solve.</figcaption>
+  </figure>
+</section>
+
+<!-- 8 CODES -->
+<section class="fig" id="d8">
+  <div class="meta">
+    <span class="tag">Flow · <span class="lvl">the gift promise</span></span>
+    <h2>8 · A gift code that is yours and yours only</h2>
+    <p class="desc">Two ways to deliver, one promise: every code that leaves the shelf is tied to exactly one person. There is no link where two people could grab the same code.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 300" role="img" aria-label="Top: where the game knows each device, every person gets a personal link with a code reserved for them. Bottom: where it doesn't, one shared link hands each visitor their own distinct code for the right app store.">
+        <text class="lane" x="24" y="30">SUBLIMINAL WORDS — personal delivery (the game knows its devices)</text>
+        <g class="node n-store"><rect x="24" y="44" width="150" height="52"/><text class="t" x="99" y="66" text-anchor="middle">Devices</text><text class="s" x="99" y="83" text-anchor="middle">known per player</text></g>
+        <g class="node n-action"><rect x="210" y="44" width="170" height="52"/><text class="t" x="295" y="66" text-anchor="middle">Reserve 1 each</text><text class="s" x="295" y="83" text-anchor="middle">one-time link</text></g>
+        <g class="node n-ext"><rect x="416" y="44" width="150" height="52"/><text class="t" x="491" y="66" text-anchor="middle">Notify them</text></g>
+        <g class="node n-action"><rect x="602" y="44" width="190" height="52"/><text class="t" x="697" y="66" text-anchor="middle">They claim it</text><text class="s" x="697" y="83" text-anchor="middle">reserved for them alone</text></g>
+        <line class="edge accent" x1="174" y1="70" x2="206" y2="70" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="380" y1="70" x2="412" y2="70" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="566" y1="70" x2="598" y2="70" marker-end="url(#ahA)"/>
+        <text class="lane" x="24" y="176">AI MOVIE QUIZ — shared drop (first come, first served)</text>
+        <g class="node n-store"><rect x="24" y="190" width="150" height="52"/><text class="t" x="99" y="212" text-anchor="middle">Two shelves</text><text class="s" x="99" y="229" text-anchor="middle">Apple · Google</text></g>
+        <g class="node n-action"><rect x="210" y="190" width="150" height="52"/><text class="t" x="285" y="212" text-anchor="middle">One drop link</text><text class="s" x="285" y="229" text-anchor="middle">notify everyone</text></g>
+        <g class="node n-signal"><rect x="396" y="190" width="160" height="52"/><text class="t" x="476" y="212" text-anchor="middle">Which phone?</text><text class="s" x="476" y="229" text-anchor="middle">iPhone · Android</text></g>
+        <g class="node n-action"><rect x="592" y="190" width="200" height="52"/><text class="t" x="692" y="212" text-anchor="middle">Take one code</text><text class="s" x="692" y="229" text-anchor="middle">distinct · right store</text></g>
+        <line class="edge accent" x1="174" y1="216" x2="206" y2="216" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="360" y1="216" x2="392" y2="216" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="556" y1="216" x2="588" y2="216" marker-end="url(#ahA)"/>
+        <text class="el" x="440" y="268" text-anchor="middle">iPhone gets an App Store code · Android gets a Google Play code · each visitor can take one</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 738" role="img" aria-label="Both code delivery paths drawn vertically."><text class="lane" x="20" y="26">SUBLIMINAL WORDS — personal</text><g class="node n-store"><rect x="40" y="38" width="280" height="56"/><text class="t" x="180" y="62" text-anchor="middle">Devices</text><text class="s" x="180" y="80" text-anchor="middle">known per player</text></g><line class="edge" x1="180" y1="94" x2="180" y2="116" marker-end="url(#ah)"/><g class="node n-action"><rect x="40" y="120" width="280" height="56"/><text class="t" x="180" y="144" text-anchor="middle">Reserve 1 each</text><text class="s" x="180" y="162" text-anchor="middle">one-time link</text></g><line class="edge" x1="180" y1="176" x2="180" y2="198" marker-end="url(#ah)"/><g class="node n-ext"><rect x="40" y="202" width="280" height="44"/><text class="t" x="180" y="230" text-anchor="middle">Notify them</text></g><line class="edge accent" x1="180" y1="246" x2="180" y2="268" marker-end="url(#ahA)"/><g class="node n-action"><rect x="40" y="272" width="280" height="56"/><text class="t" x="180" y="296" text-anchor="middle">They claim it</text><text class="s" x="180" y="314" text-anchor="middle">reserved for them alone</text></g><text class="lane" x="20" y="368">AI MOVIE QUIZ — shared drop</text><g class="node n-store"><rect x="40" y="380" width="280" height="56"/><text class="t" x="180" y="404" text-anchor="middle">Two shelves</text><text class="s" x="180" y="422" text-anchor="middle">Apple · Google</text></g><line class="edge" x1="180" y1="436" x2="180" y2="458" marker-end="url(#ah)"/><g class="node n-action"><rect x="40" y="462" width="280" height="56"/><text class="t" x="180" y="486" text-anchor="middle">One drop link</text><text class="s" x="180" y="504" text-anchor="middle">notify everyone</text></g><line class="edge" x1="180" y1="518" x2="180" y2="540" marker-end="url(#ah)"/><g class="node n-signal"><rect x="40" y="544" width="280" height="56"/><text class="t" x="180" y="568" text-anchor="middle">Which phone?</text><text class="s" x="180" y="586" text-anchor="middle">iPhone · Android</text></g><line class="edge accent" x1="180" y1="600" x2="180" y2="622" marker-end="url(#ahA)"/><g class="node n-action"><rect x="40" y="626" width="280" height="56"/><text class="t" x="180" y="650" text-anchor="middle">Take one code</text><text class="s" x="180" y="668" text-anchor="middle">distinct · right store</text></g><text class="el" x="190" y="706" text-anchor="middle">iPhone → App Store code · Android → Play code</text><text class="el" x="190" y="724" text-anchor="middle">each visitor can take one</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> taking a code is an all-or-nothing database step — two people clicking the last code at the same instant cannot both get it. And leftover reservations that nobody ever claimed are automatically returned to the shelf by a daily clean-up.</figcaption>
+  </figure>
+</section>
+
+<!-- 9 NIGHTLY -->
+<section class="fig" id="d9">
+  <div class="meta">
+    <span class="tag">Loop · <span class="lvl">it improves itself</span></span>
+    <h2>9 · It learns while everyone sleeps</h2>
+    <p class="desc">Once a night, the AI reads what the day's actions actually achieved — codes claimed, notifications opened or ignored, money earned — and rewrites its own playbook. Tomorrow's decisions start from tonight's lessons.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 820 220" role="img" aria-label="A nightly summary of the day feeds the Reflector AI, which rewrites a small playbook that tomorrow's Strategist reads on every check-in.">
+        <g class="node n-store"><rect x="30" y="82" width="170" height="58"/><text class="t" x="115" y="106" text-anchor="middle">The day, summed up</text><text class="s" x="115" y="124" text-anchor="middle">results, not raw dumps</text></g>
+        <g class="node n-decision"><rect x="256" y="82" width="170" height="58"/><text class="t" x="341" y="106" text-anchor="middle">Reflector</text><text class="s" x="341" y="124" text-anchor="middle">what worked?</text></g>
+        <g class="node n-store"><rect x="482" y="82" width="170" height="58"/><text class="t" x="567" y="106" text-anchor="middle">Playbook</text><text class="s" x="567" y="124" text-anchor="middle">rewritten · size-capped</text></g>
+        <g class="node n-decision"><rect x="668" y="82" width="130" height="58"/><text class="t" x="733" y="106" text-anchor="middle">Strategist</text><text class="s" x="733" y="124" text-anchor="middle">tomorrow</text></g>
+        <line class="edge" x1="200" y1="111" x2="252" y2="111" marker-end="url(#ah)"/>
+        <line class="edge accent" x1="426" y1="111" x2="478" y2="111" marker-end="url(#ahA)"/>
+        <line class="edge" x1="652" y1="111" x2="664" y2="111" marker-end="url(#ah)"/>
+        <text class="el hi" x="452" y="103" text-anchor="middle">rewrite</text>
+        <path class="edge dash" d="M733 82 L733 40 L115 40 L115 78" marker-end="url(#ah)"/>
+        <text class="el" x="420" y="34" text-anchor="middle">read on every check-in — the loop closes</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 346" role="img" aria-label="Nightly learning drawn vertically."><g class="node n-store"><rect x="40" y="16" width="280" height="56"/><text class="t" x="180" y="40" text-anchor="middle">The day, summed up</text><text class="s" x="180" y="58" text-anchor="middle">results, not raw dumps</text></g><line class="edge" x1="180" y1="72" x2="180" y2="98" marker-end="url(#ah)"/><g class="node n-decision"><rect x="40" y="102" width="280" height="56"/><text class="t" x="180" y="126" text-anchor="middle">Reflector</text><text class="s" x="180" y="144" text-anchor="middle">what worked?</text></g><line class="edge" x1="180" y1="158" x2="180" y2="184" marker-end="url(#ah)"/><g class="node n-store"><rect x="40" y="188" width="280" height="56"/><text class="t" x="180" y="212" text-anchor="middle">Playbook</text><text class="s" x="180" y="230" text-anchor="middle">rewritten · size-capped</text></g><line class="edge accent" x1="180" y1="244" x2="180" y2="270" marker-end="url(#ahA)"/><text class="el hi" x="190" y="263">rewrite</text><g class="node n-decision"><rect x="40" y="274" width="280" height="56"/><text class="t" x="180" y="298" text-anchor="middle">Strategist</text><text class="s" x="180" y="316" text-anchor="middle">tomorrow</text></g><path class="edge dash" d="M320 276 L352 276 L352 40 L324 40" marker-end="url(#ah)"/><text class="el" x="368" y="173" transform="rotate(90 368 173)" text-anchor="middle">read on every check-in</text></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> two safeguards keep this sane — with too little data the Reflector deliberately changes nothing (no over-reacting to one player), and the playbook has a hard size cap, so months of learning can never bloat the AI's memory or its costs.</figcaption>
+  </figure>
+</section>
+
+<!-- 10 TOPOLOGY -->
+<section class="fig" id="d10">
+  <div class="meta">
+    <span class="tag">Map · <span class="lvl">where it all runs</span></span>
+    <h2>10 · Where it all lives</h2>
+    <p class="desc">One small cloud service at the centre — asleep and free whenever there is nothing to do. Timers wake it; Google's data services are its memory and eyes; a handful of outside services are its hands.</p>
+  </div>
+  <figure>
+    <div class="sheet has-port">
+      <svg class="land has-port" viewBox="0 0 840 404" role="img" aria-label="Inside Google Cloud: timers wake the agent, which reads and writes Firestore, analytics, the analytics history and its secret keys. Outside: it drives AI text and video, AI images, Apple promo codes, phone notifications, Gmail, and the separate promo-code website.">
+        <rect x="12" y="52" width="488" height="252" rx="14" fill="var(--zone-f)" stroke="var(--zone-s)" stroke-dasharray="6 5"/>
+        <text class="lane" x="30" y="76">GOOGLE CLOUD — the agent's home</text>
+
+        <g class="node n-ext"><rect x="40" y="88" width="130" height="50"/>
+          <text class="t" x="105" y="109" text-anchor="middle">Timers</text>
+          <text class="s" x="105" y="126" text-anchor="middle">three schedules</text></g>
+        <g class="node n-decision"><rect x="200" y="156" width="150" height="76"/>
+          <text class="t" x="275" y="186" text-anchor="middle">The agent</text>
+          <text class="s" x="275" y="204" text-anchor="middle">one Cloud Run service</text>
+          <text class="s" x="275" y="219" text-anchor="middle">sleeps for free</text></g>
+
+        <g class="node n-store"><rect x="380" y="88" width="104" height="46"/>
+          <text class="t" x="432" y="107" text-anchor="middle" style="font-size:12px">Firestore</text>
+          <text class="s" x="432" y="123" text-anchor="middle">its memory</text></g>
+        <g class="node n-signal"><rect x="380" y="142" width="104" height="46"/>
+          <text class="t" x="432" y="161" text-anchor="middle" style="font-size:12px">Analytics</text>
+          <text class="s" x="432" y="177" text-anchor="middle">who plays now</text></g>
+        <g class="node n-store"><rect x="380" y="196" width="104" height="46"/>
+          <text class="t" x="432" y="215" text-anchor="middle" style="font-size:12px">History</text>
+          <text class="s" x="432" y="231" text-anchor="middle">play + earnings</text></g>
+        <g class="node n-guard"><rect x="380" y="250" width="104" height="46"/>
+          <text class="t" x="432" y="269" text-anchor="middle" style="font-size:12px">Secret keys</text>
+          <text class="s" x="432" y="285" text-anchor="middle">never in code</text></g>
+
+        <path class="edge" d="M170 113 L275 113 L275 152" marker-end="url(#ah)"/>
+        <text class="el" x="222" y="105" text-anchor="middle">wakes it</text>
+
+        <!-- internal bus: one trunk, no crossings -->
+        <line class="edge" x1="350" y1="194" x2="364" y2="194"/>
+        <line class="edge" x1="364" y1="111" x2="364" y2="273"/>
+        <line class="edge" x1="364" y1="111" x2="376" y2="111" marker-end="url(#ah)"/>
+        <line class="edge" x1="364" y1="165" x2="376" y2="165" marker-end="url(#ah)"/>
+        <line class="edge" x1="364" y1="219" x2="376" y2="219" marker-end="url(#ah)"/>
+        <line class="edge" x1="364" y1="273" x2="376" y2="273" marker-end="url(#ah)"/>
+        <text class="el" x="298" y="150" text-anchor="middle">reads + writes</text>
+
+        <text class="lane" x="560" y="44">OUTSIDE — its hands</text>
+        <g class="node n-ext"><rect x="608" y="56" width="184" height="44"/>
+          <text class="t" x="700" y="74" text-anchor="middle" style="font-size:12px">AI text + video</text>
+          <text class="s" x="700" y="90" text-anchor="middle">designs levels, makes clips</text></g>
+        <g class="node n-ext"><rect x="608" y="108" width="184" height="44"/>
+          <text class="t" x="700" y="126" text-anchor="middle" style="font-size:12px">AI images</text>
+          <text class="s" x="700" y="142" text-anchor="middle">paints the puzzles</text></g>
+        <g class="node n-ext"><rect x="608" y="160" width="184" height="44"/>
+          <text class="t" x="700" y="178" text-anchor="middle" style="font-size:12px">Apple promo codes</text>
+          <text class="s" x="700" y="194" text-anchor="middle">minted over an API</text></g>
+        <g class="node n-ext"><rect x="608" y="212" width="184" height="44"/>
+          <text class="t" x="700" y="230" text-anchor="middle" style="font-size:12px">Phone notifications</text>
+          <text class="s" x="700" y="246" text-anchor="middle">reaches the players</text></g>
+        <g class="node n-ext"><rect x="608" y="264" width="184" height="44"/>
+          <text class="t" x="700" y="282" text-anchor="middle" style="font-size:12px">Gmail</text>
+          <text class="s" x="700" y="298" text-anchor="middle">Google Play restocks</text></g>
+        <g class="node n-store"><rect x="596" y="322" width="196" height="52"/>
+          <text class="t" x="694" y="343" text-anchor="middle">Promo-code site</text>
+          <text class="s" x="694" y="360" text-anchor="middle">where gifts are claimed</text></g>
+
+        <!-- external bus: corridor under everything, one trunk up the right side -->
+        <path class="edge accent" d="M275 232 L275 388 L576 388"/>
+        <line class="edge accent" x1="576" y1="388" x2="576" y2="78"/>
+        <line class="edge accent" x1="576" y1="78" x2="604" y2="78" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="576" y1="130" x2="604" y2="130" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="576" y1="182" x2="604" y2="182" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="576" y1="234" x2="604" y2="234" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="576" y1="286" x2="604" y2="286" marker-end="url(#ahA)"/>
+        <line class="edge accent" x1="576" y1="348" x2="592" y2="348" marker-end="url(#ahA)"/>
+        <text class="el hi" x="425" y="402" text-anchor="middle">acts: generate · mint · notify · email</text>
+      </svg>
+      <svg class="port" viewBox="0 0 380 570" role="img" aria-label="The agent lives inside Google Cloud with its timers and data; from there it acts on outside services."><rect x="10" y="10" width="360" height="310" rx="12" fill="var(--zone-f)" stroke="var(--zone-s)" stroke-dasharray="6 5"/><text class="lane" x="24" y="32">GOOGLE CLOUD</text><g class="node n-ext"><rect x="100" y="44" width="190" height="50"/><text class="t" x="195" y="66" text-anchor="middle">Timers</text><text class="s" x="195" y="83" text-anchor="middle">5-min · nightly · daily</text></g><line class="edge" x1="195" y1="94" x2="195" y2="118" marker-end="url(#ah)"/><text class="el" x="206" y="112">wakes it</text><g class="node n-decision"><rect x="100" y="122" width="190" height="56"/><text class="t" x="195" y="144" text-anchor="middle">The agent</text><text class="s" x="195" y="161" text-anchor="middle">Cloud Run · sleeps free</text></g><line class="edge" x1="195" y1="178" x2="195" y2="202" marker-end="url(#ah)"/><text class="el" x="206" y="196">reads + writes</text><g class="node n-store"><rect x="54" y="206" width="152" height="44"/><text class="t" x="130" y="228" text-anchor="middle" style="font-size:12.5px">Firestore</text><text class="s" x="130" y="245" text-anchor="middle" style="font-size:9.5px">its memory</text></g><g class="node n-signal"><rect x="218" y="206" width="152" height="44"/><text class="t" x="294" y="228" text-anchor="middle" style="font-size:12.5px">Analytics</text><text class="s" x="294" y="245" text-anchor="middle" style="font-size:9.5px">who plays now</text></g><g class="node n-store"><rect x="54" y="256" width="152" height="44"/><text class="t" x="130" y="278" text-anchor="middle" style="font-size:12.5px">History</text><text class="s" x="130" y="295" text-anchor="middle" style="font-size:9.5px">play + earnings</text></g><g class="node n-guard"><rect x="218" y="256" width="152" height="44"/><text class="t" x="294" y="278" text-anchor="middle" style="font-size:12.5px">Secret keys</text><text class="s" x="294" y="295" text-anchor="middle" style="font-size:9.5px">never in code</text></g><path class="edge accent" d="M100 150 L32 150 L32 348" marker-end="url(#ahA)"/><text class="el hi" x="14" y="250" transform="rotate(-90 14 250)" text-anchor="middle">the agent acts</text><rect x="10" y="352" width="360" height="204" rx="12" fill="var(--zone-f)" stroke="var(--zone-s)" stroke-dasharray="6 5"/><text class="lane" x="24" y="374">OUTSIDE — its hands</text><g class="node n-ext"><rect x="54" y="384" width="152" height="46"/><text class="t" x="130" y="406" text-anchor="middle" style="font-size:12px">AI text + video</text><text class="s" x="130" y="423" text-anchor="middle" style="font-size:9.5px">designs · films</text></g><g class="node n-ext"><rect x="218" y="384" width="152" height="46"/><text class="t" x="294" y="406" text-anchor="middle" style="font-size:12px">AI images</text><text class="s" x="294" y="423" text-anchor="middle" style="font-size:9.5px">paints puzzles</text></g><g class="node n-ext"><rect x="54" y="438" width="152" height="46"/><text class="t" x="130" y="460" text-anchor="middle" style="font-size:12px">Apple codes</text><text class="s" x="130" y="477" text-anchor="middle" style="font-size:9.5px">minted via API</text></g><g class="node n-ext"><rect x="218" y="438" width="152" height="46"/><text class="t" x="294" y="460" text-anchor="middle" style="font-size:12px">Notifications</text><text class="s" x="294" y="477" text-anchor="middle" style="font-size:9.5px">reach players</text></g><g class="node n-ext"><rect x="54" y="492" width="152" height="46"/><text class="t" x="130" y="514" text-anchor="middle" style="font-size:12px">Gmail</text><text class="s" x="130" y="531" text-anchor="middle" style="font-size:9.5px">Play restocks</text></g><g class="node n-store"><rect x="218" y="492" width="152" height="46"/><text class="t" x="294" y="514" text-anchor="middle" style="font-size:12px">Promo-code site</text><text class="s" x="294" y="531" text-anchor="middle" style="font-size:9.5px">gifts claimed</text></g></svg>
+    </div>
+    <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
+    <figcaption><b>How to read it:</b> the running cost is pennies — the service sleeps when idle, and the only spend of note is a small prepaid balance for AI image/video generation, which the agent itself watches and emails about if it runs low. Apple codes are minted automatically; Google Play has no such API, so the agent emails the owner precise instructions and imports the reply — the one human touchpoint, by Google's design, not ours.</figcaption>
+  </figure>
+</section>
+
+<footer>
+  Stagenator · fully autonomous engagement &amp; retention agent · All Things Agentic — Taskmaster track ·
+  Live dashboard: stagenator-mission.web.app
+</footer>
+<script>
+(function(){
+  function apply(){
+    document.querySelectorAll('.sheet.has-port').forEach(function(sh){
+      var narrow = sh.clientWidth < 560;
+      var land = sh.querySelector('svg.land'), port = sh.querySelector('svg.port');
+      if (land) land.style.display = narrow ? 'none' : 'block';
+      if (port) port.style.display = narrow ? 'block' : 'none';
+    });
+  }
+  try{
+    var ro = new ResizeObserver(apply);
+    document.querySelectorAll('.sheet.has-port').forEach(function(sh){ ro.observe(sh); });
+  }catch(e){}
+  window.addEventListener('resize', apply);
+  document.addEventListener('DOMContentLoaded', apply);
+  apply();
+})();
+</script>
+</div>
+
+</body>
+</html>

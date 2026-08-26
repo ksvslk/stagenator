@@ -22,19 +22,31 @@ def _tc() -> firestore.Client:
 
 
 def _reserve_codes(campaign_id: str, n: int) -> list[str]:
-    """Reserve n untorn, unreserved codes (marks reservedBy=stagenator)."""
+    """Reserve n untorn, unreserved codes. Each grab is a transaction CONDITIONAL on
+    the code still being free, so two concurrent reservations (or a retried task) can
+    never stamp the same code into two claim tokens."""
     tc = _tc()
     col = tc.collection("campaigns").document(campaign_id).collection("codes")
-    q = col.where(filter=firestore.FieldFilter("isTorn", "==", False)).limit(n * 3)
+    q = col.where(filter=firestore.FieldFilter("isTorn", "==", False)).limit(n * 4)
     reserved: list[str] = []
     for snap in q.stream():
         if len(reserved) >= n:
             break
-        d = snap.to_dict()
-        if d.get("reservedBy") or d.get("expired"):
-            continue
-        snap.reference.update({"reservedBy": "stagenator", "reservedAt": state.now()})
-        reserved.append(snap.id)
+        ref = snap.reference
+
+        @firestore.transactional
+        def _grab(tx: firestore.Transaction, ref=ref):
+            cur = ref.get(transaction=tx).to_dict() or {}
+            if cur.get("reservedBy") or cur.get("expired") or cur.get("isTorn"):
+                return False  # taken between the query and now — skip it
+            tx.update(ref, {"reservedBy": "stagenator", "reservedAt": state.now()})
+            return True
+
+        try:
+            if _grab(tc.transaction()):
+                reserved.append(snap.id)
+        except Exception as e:  # a lost race is fine — just try the next code
+            log.warning("reserve race on %s: %s", snap.id, e)
     if len(reserved) < n:
         state.critical(
             f"Only {len(reserved)}/{n} codes reservable in campaign {campaign_id}",
@@ -61,17 +73,25 @@ def run_personal_codes(task: dict) -> dict:
     """Each registered device gets its OWN reserved, single-use code, pushed only
     to that device. Guarantees the code is ready for that user and only them."""
     game, payload = task["game"], task["payload"]
-    gift_game = payload.get("gift_game") or game  # cross-promo: gift another game's code
-    inv_campaign = payload.get("campaign_id") or _find_campaign(gift_game, payload.get("platform"))
+    gift_game = (
+        payload.get("gift_game") or game
+    )  # cross-promo: gift another game's code
+    inv_campaign = payload.get("campaign_id") or _find_campaign(
+        gift_game, payload.get("platform")
+    )
     cap = min(payload.get("n_codes") or 10, config.CAPS["codes_per_game_per_day"])
 
     # collect registered devices (uid -> token) across android/ios
     gdb = state.game_db(game)
     devices: list[tuple[str, str]] = []  # (uid, token)
+    seen_uids: set[str] = set()  # a user on both android+ios must get ONE code, not two
     for col in config.GAMES[game]["fcm_token_collections"]:
         for snap in gdb.collection(col).limit(cap * 2).stream():
+            if snap.id in seen_uids:
+                continue
             tok = (snap.to_dict() or {}).get("token")
             if tok:
+                seen_uids.add(snap.id)
                 devices.append((snap.id, tok))
             if len(devices) >= cap:
                 break
@@ -79,41 +99,84 @@ def run_personal_codes(task: dict) -> dict:
         return {"sent": 0, "note": "no registered devices"}
 
     if config.DRY_RUN:
-        return {"dry_run": True, "would_send_personal": len(devices), "campaign": inv_campaign}
+        return {
+            "dry_run": True,
+            "would_send_personal": len(devices),
+            "campaign": inv_campaign,
+        }
 
-    sent = []
-    for uid, token in devices[:cap]:
-        code_ids = _reserve_codes(inv_campaign, 1)
-        if not code_ids:
-            state.critical(f"{game}: out of codes mid personal-send", campaign=inv_campaign)
-            break
-        tok = secrets.token_urlsafe(16)
-        _tc().collection("claimTokens").document(tok).set({
-            "kind": "single", "campaignId": inv_campaign, "codeIds": code_ids,
-            "claimed": [], "game": gift_game, "targetUser": uid, "createdBy": "stagenator",
-            "createdAt": state.now(),
-            "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
-        })
-        url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
-        try:
-            _msg = payload.get("message")
-            if gift_game != game:  # cross-promo: pitch the OTHER game
-                _gn = config.GAMES[gift_game]["display"]
-                _b = (f"{_msg} " if _msg else "") + f"A free {_gn} gift, reserved just for you — tap to claim."
-                _title = "🎁 A gift for you"
-            else:
-                _b = (f"{_msg} Your code is reserved just for you — tap to claim."
-                      if _msg else "You've earned a reward, reserved just for you — tap to claim.")
-                _title = "🎁 A gift for you"
-            fcm.send_to_token(game, token, title=_title, body=_b, data={"claimUrl": url})
-            sent.append(uid)
-        except Exception as e:  # one bad token never blocks the rest
-            _tc().collection("campaigns").document(inv_campaign).collection("codes") \
-                .document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
-            _tc().collection("claimTokens").document(tok).delete()
-            log.warning("push to %s failed, code released: %s", uid, e)
-    return {"sent": len(sent), "personal": True, "each_reserved_single_use": True,
-            **({"cross_promo": f"{game}->{gift_game}"} if gift_game != game else {})}
+    def _do():
+        sent = []
+        import datetime as _dt
+
+        week_ago = state.now() - _dt.timedelta(days=7)
+        for uid, token in devices[:cap]:
+            # per-user weekly cap: don't re-gift a player who got a code in the last 7 days
+            _mkref = (
+                state.db()
+                .collection("stagenator_user_sends")
+                .document(f"{game}__{uid}")
+            )
+            _last = (_mkref.get().to_dict() or {}).get("lastSentAt")
+            if _last and _last > week_ago:
+                continue
+            code_ids = _reserve_codes(inv_campaign, 1)
+            if not code_ids:
+                state.critical(
+                    f"{game}: out of codes mid personal-send",
+                    game=game,
+                    campaign=inv_campaign,
+                )
+                break
+            tok = secrets.token_urlsafe(16)
+            _tc().collection("claimTokens").document(tok).set(
+                {
+                    "kind": "single",
+                    "campaignId": inv_campaign,
+                    "codeIds": code_ids,
+                    "claimed": [],
+                    "game": gift_game,
+                    "targetUser": uid,
+                    "createdBy": "stagenator",
+                    "createdAt": state.now(),
+                    "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
+                }
+            )
+            url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
+            try:
+                _msg = payload.get("message")
+                if gift_game != game:  # cross-promo: pitch the OTHER game
+                    _gn = config.GAMES[gift_game]["display"]
+                    _b = (
+                        f"{_msg} " if _msg else ""
+                    ) + f"A free {_gn} gift, reserved just for you — tap to claim."
+                    _title = "🎁 A gift for you"
+                else:
+                    _b = (
+                        f"{_msg} Your code is reserved just for you — tap to claim."
+                        if _msg
+                        else "You've earned a reward, reserved just for you — tap to claim."
+                    )
+                    _title = "🎁 A gift for you"
+                fcm.send_to_token(
+                    game, token, title=_title, body=_b, data={"claimUrl": url}
+                )
+                _mkref.set({"lastSentAt": state.now(), "game": game}, merge=True)
+                sent.append(uid)
+            except Exception as e:  # one bad token never blocks the rest
+                _tc().collection("campaigns").document(inv_campaign).collection(
+                    "codes"
+                ).document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
+                _tc().collection("claimTokens").document(tok).delete()
+                log.warning("push to %s failed, code released: %s", uid, e)
+        return {
+            "sent": len(sent),
+            "personal": True,
+            "each_reserved_single_use": True,
+            **({"cross_promo": f"{game}->{gift_game}"} if gift_game != game else {}),
+        }
+
+    return state.once(task.get("id"), "deliver", _do)
 
 
 def _run_drop_shared(task: dict) -> dict:
@@ -123,91 +186,124 @@ def _run_drop_shared(task: dict) -> dict:
     from agent import rules
 
     game, payload = task["game"], task["payload"]
-    gift_game = payload.get("gift_game") or game  # cross-promo: gift another game's code
+    gift_game = (
+        payload.get("gift_game") or game
+    )  # cross-promo: gift another game's code
     n = min(payload.get("n_codes") or 5, 10)
 
-    # Reserve a pool PER platform (from the GIFT game's campaigns) so one /drop/ link
-    # serves iOS and Android with a redeemable code.
-    pools: dict[str, dict] = {}
-    for plat, camp in rules.campaign_inventory(gift_game).get("campaigns", {}).items():
-        cid = camp.get("campaign_id")
-        if not cid:
-            continue
-        ids = _reserve_codes(cid, n)
-        if ids:
-            pools[plat] = {"campaignId": cid, "codeIds": ids}
-    if not pools:
-        raise RuntimeError(f"no codes reservable for {game}")
+    if config.DRY_RUN:  # report intent WITHOUT reserving any codes
+        plats = list(rules.campaign_inventory(gift_game).get("campaigns", {}))
+        return {"dry_run": True, "would_reserve_per_platform": n, "platforms": plats}
 
-    if config.DRY_RUN:
-        return {"dry_run": True, "would_reserve_per_platform": n,
-                "pools": {p: len(v["codeIds"]) for p, v in pools.items()}}
+    def _do():
+        # Reserve a pool PER platform (from the GIFT game's campaigns) so one /drop/
+        # link serves iOS and Android with a redeemable code.
+        pools: dict[str, dict] = {}
+        for plat, camp in (
+            rules.campaign_inventory(gift_game).get("campaigns", {}).items()
+        ):
+            cid = camp.get("campaign_id")
+            if not cid:
+                continue
+            ids = _reserve_codes(cid, n)
+            if ids:
+                pools[plat] = {"campaignId": cid, "codeIds": ids}
+        if not pools:
+            raise RuntimeError(f"no codes reservable for {game}")
 
-    drop_id = secrets.token_urlsafe(12)
-    _tc().collection("claimTokens").document(drop_id).set(
-        {
-            "kind": "drop",
-            "pools": pools,  # {apple|google: {campaignId, codeIds}}
-            "claimed": [],   # flat list; each entry tagged with its platform
-            "game": gift_game,
-            "segment": payload.get("segment"),
-            "createdBy": "stagenator",
-            "createdAt": state.now(),
-            "expiresAt": state.now() + __import__("datetime").timedelta(days=3),
-        }
-    )
-    url = f"{config.CLAIM_BASE_URL}/drop/{drop_id}"
+        drop_id = secrets.token_urlsafe(12)
+        _tc().collection("claimTokens").document(drop_id).set(
+            {
+                "kind": "drop",
+                "pools": pools,  # {apple|google: {campaignId, codeIds}}
+                "claimed": [],  # flat list; each entry tagged with its platform
+                "game": gift_game,
+                "createdBy": "stagenator",
+                "createdAt": state.now(),
+                "expiresAt": state.now() + __import__("datetime").timedelta(days=3),
+            }
+        )
+        url = f"{config.CLAIM_BASE_URL}/drop/{drop_id}"
 
-    topic = config.GAMES[game]["level_push_topic"]
-    push = None
-    if topic:
-        _msg = payload.get("message")
-        if gift_game != game:  # cross-promo pitch for the other game
-            _gn = config.GAMES[gift_game]["display"]
-            _body = (f"{_msg} " if _msg else "") + f"Grab a free {_gn} code — first come, first served! ⏳"
-        else:
-            _body = (f"{_msg} Limited codes — first come, first served! ⏳"
-                     if _msg else
-                     "A limited code drop just went live — grab yours before they're gone! ⏳")
-        push = fcm.send_topic_push(game, title="🎁 Limited code drop", body=_body,
-                                   data={"claimUrl": url})
-    return {"drop_id": drop_id, "url": url,
+        topic = config.GAMES[game]["level_push_topic"]
+        push = None
+        if topic:
+            _msg = payload.get("message")
+            if gift_game != game:  # cross-promo pitch for the other game
+                _gn = config.GAMES[gift_game]["display"]
+                _body = (
+                    f"{_msg} " if _msg else ""
+                ) + f"Grab a free {_gn} code — first come, first served! ⏳"
+            else:
+                _body = (
+                    f"{_msg} Limited codes — first come, first served! ⏳"
+                    if _msg
+                    else "A limited code drop just went live — grab yours before they're gone! ⏳"
+                )
+            push = fcm.send_topic_push(
+                game, title="🎁 Limited code drop", body=_body, data={"claimUrl": url}
+            )
+        return {
+            "drop_id": drop_id,
+            "url": url,
             "codes": sum(len(v["codeIds"]) for v in pools.values()),
-            "platforms": list(pools), "push": push}
+            "platforms": list(pools),
+            "push": push,
+        }
+
+    return state.once(task.get("id"), "deliver", _do)
 
 
 def run_individual(task: dict) -> dict:
     """Tier-1 individual code: single-use token pushed to one user's device."""
     game, payload = task["game"], task["payload"]
     if config.GAMES[game]["tier"] < 1:
-        raise RuntimeError(f"{game} is Tier 0 — individual codes need the identity-linked app update")
-    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
+        raise RuntimeError(
+            f"{game} is Tier 0 — individual codes need the identity-linked app update"
+        )
+    inv_campaign = payload.get("campaign_id") or _find_campaign(
+        game, payload.get("platform")
+    )
 
     if config.DRY_RUN:
         return {"dry_run": True, "campaign": inv_campaign}
 
-    code_ids = _reserve_codes(inv_campaign, 1)
-    if not code_ids:
-        raise RuntimeError(f"no codes reservable for {game}")
-    token = secrets.token_urlsafe(16)
-    _tc().collection("claimTokens").document(token).set(
-        {
-            "kind": "single",
-            "campaignId": inv_campaign,
-            "codeIds": code_ids,
-            "claimed": [],
-            "game": game,
-            "targetUser": payload.get("user"),
-            "createdBy": "stagenator",
-            "createdAt": state.now(),
-            "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
-        }
-    )
-    url = f"{config.CLAIM_BASE_URL}/claim/{token}"
-    push = fcm.send_user_push(game, payload.get("user"), title="A gift for you 🎁",
-                              body="You've earned a reward — tap to claim it.",
-                              data={"claimUrl": url})
-    return {"token": token, "url": url, "push": push}
+    def _do():
+        code_ids = _reserve_codes(inv_campaign, 1)
+        if not code_ids:
+            raise RuntimeError(f"no codes reservable for {game}")
+        token = secrets.token_urlsafe(16)
+        _tc().collection("claimTokens").document(token).set(
+            {
+                "kind": "single",
+                "campaignId": inv_campaign,
+                "codeIds": code_ids,
+                "claimed": [],
+                "game": game,
+                "targetUser": payload.get("user"),
+                "createdBy": "stagenator",
+                "createdAt": state.now(),
+                "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
+            }
+        )
+        url = f"{config.CLAIM_BASE_URL}/claim/{token}"
+        try:
+            push = fcm.send_user_push(
+                game,
+                payload.get("user"),
+                title="A gift for you 🎁",
+                body="You've earned a reward — tap to claim it.",
+                data={"claimUrl": url},
+            )
+        except Exception:  # release the reserved code + token so nothing is orphaned
+            _tc().collection("campaigns").document(inv_campaign).collection(
+                "codes"
+            ).document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
+            _tc().collection("claimTokens").document(token).delete()
+            raise
+        return {"token": token, "url": url, "push": push}
+
+    return state.once(task.get("id"), "deliver", _do)
 
 
 def _find_campaign(game: str, platform: str | None = None) -> str:

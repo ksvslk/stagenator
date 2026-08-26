@@ -18,7 +18,9 @@ _client: genai.Client | None = None
 def client() -> genai.Client:
     global _client
     if _client is None:
-        _client = genai.Client(vertexai=True, project=config.HOME_PROJECT, location="global")
+        _client = genai.Client(
+            vertexai=True, project=config.HOME_PROJECT, location="global"
+        )
     return _client
 
 

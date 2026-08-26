@@ -20,7 +20,9 @@ class Reflection(BaseModel):
         "the current playbook you were shown (philosophy, knobs, segment_rules, "
         "capability_tiers, ceo_directives, evidence). Change only what the evidence supports."
     )
-    changes_summary: str = Field(description="What changed in the playbook and why, 1-3 sentences")
+    changes_summary: str = Field(
+        description="What changed in the playbook and why, 1-3 sentences"
+    )
     brief: str = Field(
         description="Daily brief for the owner, markdown, sections: What I did / What happened / "
         "What I changed / Needs you (only if something genuinely needs the owner, e.g. low Runpod balance)"
@@ -73,7 +75,9 @@ def apply_reflection(reflection: dict) -> dict:
         state.critical(f"Reflector produced unparseable playbook: {e}")
         return {"applied": False, "error": str(e)}
     if not isinstance(playbook, dict):  # valid JSON but not an object (null/list/str)
-        state.critical(f"Reflector playbook is not an object: {type(playbook).__name__}")
+        state.critical(
+            f"Reflector playbook is not an object: {type(playbook).__name__}"
+        )
         return {"applied": False, "error": "playbook is not a JSON object"}
 
     # Preserve any sections the model omitted — merge over the current playbook so a
@@ -94,9 +98,15 @@ def apply_reflection(reflection: dict) -> dict:
             break
         merged.pop(_k, None)
     playbook = merged
-    state.update_playbook(playbook, reason=reflection.get("changes_summary", "nightly reflection"))
+    state.update_playbook(
+        playbook, reason=reflection.get("changes_summary", "nightly reflection")
+    )
     state.db().collection(config.COL_BRIEFS).document().set(
-        {"ts": state.now(), "brief": reflection.get("brief", ""), "changes": reflection.get("changes_summary", "")}
+        {
+            "ts": state.now(),
+            "brief": reflection.get("brief", ""),
+            "changes": reflection.get("changes_summary", ""),
+        }
     )
     state.ledger("brief", None, brief=reflection.get("brief", "")[:2000])
     return {"applied": True, "changes": reflection.get("changes_summary", "")}

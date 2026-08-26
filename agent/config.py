@@ -17,7 +17,9 @@ MODEL = os.getenv("MODEL_NAME", "gemini-3.7-flash")
 
 # --- Projects ---
 HOME_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "operation-sunrise")
-REGION = os.getenv("DEPLOY_REGION", "us-central1")  # Cloud Run/Scheduler region; model uses GOOGLE_CLOUD_LOCATION=global
+REGION = os.getenv(
+    "DEPLOY_REGION", "us-central1"
+)  # Cloud Run/Scheduler region; model uses GOOGLE_CLOUD_LOCATION=global
 TAKECODES_PROJECT = "take-codes"
 
 # --- Runtime flags ---
@@ -53,14 +55,6 @@ GAMES: dict[str, dict] = {
 
 ACTIVE_GAMES = {g for g, cfg in GAMES.items() if cfg.get("active", True)}
 
-# Every GCP/Firebase project this agent system incurs cost in. All bill to one
-# account, so all land in the single billing-export table (keyed by project.id):
-# the home/billing project, take-codes (proffer.codes), and each active game's
-# project. Inactive games (billing often disabled) are excluded.
-STAGENATOR_PROJECTS = {HOME_PROJECT, TAKECODES_PROJECT} | {
-    GAMES[g]["project"] for g in ACTIVE_GAMES
-}
-
 
 # --- Hard caps (enforced in guardrails.py, never negotiable by the LLM) ---
 CAPS = {
@@ -68,7 +62,7 @@ CAPS = {
     "codes_per_game_per_day": 20,
     "code_actions_per_game_per_day": 1,  # 1 code-notification/game/day
     "levels_per_game_per_day": 1,
-    "push_actions_per_game_per_4h": 1,
+    "push_actions_per_game_per_4h": 2,  # lets a NEW player get welcome level + code in one window
     "drops_per_game_per_day": 2,
     "veo_videos_per_day": 5,
     "runpod_generations_per_day": 10,
@@ -86,15 +80,13 @@ COL_BRIEFS = f"{_PREFIX}_briefs"
 
 # --- Cost model (USD, for the Mission Control spend estimate) ---
 UNIT_COSTS = {
-    "veo_clip": 0.40,        # AI Movie Quiz level (Veo 3.1 Lite, 8s)
-    "runpod_puzzle": 0.05,   # Subliminal Words level (ComfyUI endpoint run)
-    "gemini_call": 0.004,    # a Strategist/Reflector/QA/design Gemini call
+    "veo_clip": 0.40,  # AI Movie Quiz level (Veo 3.1 Lite, 8s)
+    "runpod_puzzle": 0.05,  # Subliminal Words level (ComfyUI endpoint run)
+    "gemini_call": 0.004,  # a Strategist/Reflector/QA/design Gemini call
 }
-MONTHLY_BUDGET_EUR = 25.0
-EUR_USD = 1.08
 
 # --- Alerting ---
-# severity=CRITICAL structured logs drive the Cloud Monitoring email alert policy.
+# critical() emails the owner immediately (deduped ~1/hr per issue); the CRITICAL log is supplementary.
 CRITICAL_LOG_NAME = "stagenator-critical"
 
 # --- proffer.codes ---
@@ -102,5 +94,23 @@ CLAIM_BASE_URL = os.getenv("CLAIM_BASE_URL", "https://proffer.codes")
 
 # --- Task pipeline ---
 MAX_TASK_ATTEMPTS = 3
+# Heavy generation tasks (Veo / Runpod) can legitimately run several minutes; give
+# them a longer stale window before re-lease so a slow-but-alive run is not double-executed.
+HEAVY_TASKS = {"level_pipeline"}
+TASK_STALE_MIN = 15
+HEAVY_TASK_STALE_MIN = 30
+
+# Bounded-growth retention (the housekeeping janitor). All comfortably exceed the
+# longest window anything READS (guardrails 24h, nightly reflector 7d), so pruning
+# can never remove data a live path still depends on.
+LEDGER_RETENTION_DAYS = 30  # routine ledger entries
+LEDGER_OUTCOME_RETENTION_DAYS = (
+    90  # keep 'outcome' rows longer — they're the learning signal
+)
+TASK_RETENTION_DAYS = 14  # done/dead task docs (never pending/running)
+BRIEF_RETENTION_DAYS = 30
+RESERVATION_MAX_AGE_DAYS = (
+    14  # release a code held longer than any token's TTL (max 7d)
+)
 
 GA_POLL_MINUTES = 10  # look-back window per pulse (2x overlap over 5-min cadence)

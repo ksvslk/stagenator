@@ -1,6 +1,6 @@
 """Trigger endpoints — the ambient seam (pattern: ambient-expense-agent).
 
-Cloud Scheduler POSTs /triggers/pulse | /triggers/nightly | /triggers/replenish;
+Cloud Scheduler POSTs /triggers/pulse | /triggers/nightly | /triggers/replenish | /triggers/health;
 Eventarc POSTs Firestore events to /triggers/event. Each run is a fresh,
 recorded session driven through the shared Runner, so every scheduled turn is
 inspectable in the ADK web UI and the ledger."""
@@ -29,7 +29,9 @@ async def _run(request: Request, message: str) -> dict:
     async for event in runner.run_async(
         user_id=SCHEDULER_USER,
         session_id=session.id,
-        new_message=types.Content(role="user", parts=[types.Part.from_text(text=message)]),
+        new_message=types.Content(
+            role="user", parts=[types.Part.from_text(text=message)]
+        ),
     ):
         if getattr(event, "output", None) is not None:
             outputs.append(event.output)

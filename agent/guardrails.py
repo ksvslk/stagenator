@@ -19,8 +19,18 @@ VALID_TYPES = {
 
 
 def _count_recent(kind: str, game: str, action_types: set[str], hours: int) -> int:
+    """Count COMPLETED actions only (status=done). An enqueued-but-failed attempt must
+    not consume the cap — the player got nothing, so the budget is still available and
+    the agent can retry. Double-enqueue of the same intent is already prevented by the
+    per-(type,game) idempotency key, not by this count."""
     entries = state.recent_ledger(hours=hours, kind=kind)
-    return sum(1 for e in entries if e.get("game") == game and e.get("action") in action_types)
+    return sum(
+        1
+        for e in entries
+        if e.get("game") == game
+        and e.get("action") in action_types
+        and e.get("status") == "done"
+    )
 
 
 def validate(action: dict) -> dict | None:
@@ -54,8 +64,12 @@ def validate(action: dict) -> dict | None:
             return {"error": f"levels/day cap reached ({shipped})"}
 
     if t in ("send_code_drop", "send_individual_code", "send_level_push", "ship_level"):
-        pushes = _count_recent("action", game,
-                               {"code_drop", "individual_code", "level_pipeline", "level_push"}, hours=4)
+        pushes = _count_recent(
+            "action",
+            game,
+            {"code_drop", "individual_code", "level_pipeline", "level_push"},
+            hours=4,
+        )
         if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
             return {"error": f"push-action/4h cap reached for {game}"}
 
@@ -91,7 +105,16 @@ def gate_and_enqueue(decision: dict) -> dict:
             if task_id:
                 enqueued.append({"task": task_id, **action})
         elif not verdict.get("silent"):
-            state.ledger("rejected", action.get("game"), action=action.get("type"),
-                         reason=verdict["error"], raw=action)
+            state.ledger(
+                "rejected",
+                action.get("game"),
+                action=action.get("type"),
+                reason=verdict["error"],
+                raw=action,
+            )
             rejected.append({**action, "rejected": verdict["error"]})
-    return {"enqueued": enqueued, "rejected": rejected, "notes": decision.get("notes", "")}
+    return {
+        "enqueued": enqueued,
+        "rejected": rejected,
+        "notes": decision.get("notes", ""),
+    }

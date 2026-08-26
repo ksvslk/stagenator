@@ -27,9 +27,14 @@ def push_only(task: dict) -> dict:
         raise RuntimeError(f"{game} has no push channel")
     if config.DRY_RUN:
         return {"dry_run": True, "topic": topic}
-    return {"push": fcm.send_topic_push(game, title="New levels are waiting",
-                                        body=task["payload"].get("reason") or "Jump back in!",
-                                        data={})}
+    return {
+        "push": fcm.send_topic_push(
+            game,
+            title="New levels are waiting",
+            body=task["payload"].get("reason") or "Jump back in!",
+            data={},
+        )
+    }
 
 
 def _subliminal_generate_and_submit(task: dict) -> dict:

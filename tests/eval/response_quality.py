@@ -1,5 +1,7 @@
 """Local LLM-as-judge for `custom_response_quality` (see eval_config.yaml)."""
 
+import os
+
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
@@ -32,7 +34,9 @@ def evaluate(instance):
 
     client = genai.Client()  # AI Studio (GEMINI_API_KEY) or Agent Platform (ADC)
     response = client.models.generate_content(
-        model="gemini-3.7-flash",
+        model=os.getenv(
+            "MODEL_NAME", "gemini-3.7-flash"
+        ),  # same source as agent/config.MODEL
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0,  # deterministic grading

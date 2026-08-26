@@ -1,9 +1,9 @@
 [project]
 name = "stagenator"
 version = "0.1.0"
-description = ""
+description = "Stagenator — autonomous engagement & retention agent for a mobile-game portfolio"
 authors = [
-    {name = "Your Name", email = "your@email.com"},
+    {name = "Indrek", email = "indrekl@gmail.com"},
 ]
 
 dependencies = [
@@ -23,7 +23,6 @@ dependencies = [
     "firebase-admin>=7.5.0",
     "google-analytics-data>=0.23.0",
     "google-cloud-bigquery>=3.43.0",
-    "google-cloud-secret-manager>=2.30.0",
     "requests>=2.34.2",
     "pillow>=12.3.0",
 ]
@@ -35,6 +34,7 @@ dev = [
     "pytest>=9.0.2,<10.0.0",
     "pytest-asyncio>=1.0.0,<2.0.0",
     "nest-asyncio>=1.6.0,<2.0.0",
+    "ruff>=0.16.4",
 ]
 
 [project.optional-dependencies]

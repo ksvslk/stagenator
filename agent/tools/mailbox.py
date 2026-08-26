@@ -43,11 +43,15 @@ def _pw() -> str:
 
 def send_restock_request(game: str, campaign_id: str, play_app_id: str | None) -> None:
     """Email the owner exactly what Play promo codes to create + how to reply."""
-    product, ptype = PLAY_GIFT.get(game, ("your standard gift product", "one-time product"))
+    product, ptype = PLAY_GIFT.get(
+        game, ("your standard gift product", "one-time product")
+    )
     end = (dt.date.today() + dt.timedelta(days=364)).isoformat()
     create_url = (
         f"https://play.google.com/console/u/0/developers/{mint_play_dev()}/app/"
-        f"{play_app_id}/promotions/create" if play_app_id else "your Play Console → Promo codes → Create"
+        f"{play_app_id}/promotions/create"
+        if play_app_id
+        else "your Play Console → Promo codes → Create"
     )
     body = (
         f"Stagenator needs a Google Play code restock for {game}.\n\n"
@@ -65,15 +69,22 @@ def send_restock_request(game: str, campaign_id: str, play_app_id: str | None) -
         f"— Stagenator\nMission Control: https://stagenator-mission.web.app\n"
     )
     msg = EmailMessage()
-    msg["Subject"] = f"[stagenator-restock:{campaign_id}] {game} Google Play codes low — reply with CSV"
+    msg["Subject"] = (
+        f"[stagenator-restock:{campaign_id}] {game} Google Play codes low — reply with CSV"
+    )
     msg["From"] = f"Stagenator <{USER}>"
     msg["To"] = OWNER
     msg.set_content(body)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
         s.login(USER, _pw())
         s.send_message(msg)
-    state.ledger("action", game, action="restock_email", status="sent",
-                 result={"campaign": campaign_id, "product": product})
+    state.ledger(
+        "action",
+        game,
+        action="restock_email",
+        status="sent",
+        result={"campaign": campaign_id, "product": product},
+    )
     log.info("restock request emailed for %s / %s", game, campaign_id)
 
 
@@ -102,18 +113,31 @@ def poll_and_import() -> dict:
                     msg = email.message_from_bytes(raw[0][1])
                     tag = TAG_RE.search(msg.get("Subject", ""))
                     if not tag:
-                        m.store(num, "+FLAGS", "\\Seen")  # matched subject but untagged — don't reprocess
+                        m.store(
+                            num, "+FLAGS", "\\Seen"
+                        )  # matched subject but untagged — don't reprocess
                         continue
                     campaign_id = tag.group(1)
                     codes = _extract_codes(msg)
                     if not codes:
-                        m.store(num, "+FLAGS", "\\Seen")  # nothing to import — don't loop
+                        m.store(
+                            num, "+FLAGS", "\\Seen"
+                        )  # nothing to import — don't loop
                         continue
                     n = _import_codes(campaign_id, codes)
                     m.store(num, "+FLAGS", "\\Seen")  # mark BEFORE the confirm reply
                     imported[campaign_id] = n
-                    state.ledger("action", None, action="restock_import", status="done",
-                                 result={"campaign": campaign_id, "codes": n, "via": "email reply"})
+                    state.ledger(
+                        "action",
+                        None,
+                        action="restock_import",
+                        status="done",
+                        result={
+                            "campaign": campaign_id,
+                            "codes": n,
+                            "via": "email reply",
+                        },
+                    )
                     try:
                         _reply_confirm(m, msg, campaign_id, n)
                     except Exception as e:
@@ -155,12 +179,19 @@ def _import_codes(campaign_id: str, codes: list[str]) -> int:
     # Chunk under Firestore's 500-op batch cap (2 writes per code).
     for i in range(0, len(codes), 200):
         batch = tc.batch()
-        for code in codes[i:i + 200]:
+        for code in codes[i : i + 200]:
             cid = hashlib.sha1(f"{campaign_id}:{code}".encode()).hexdigest()[:16]
-            batch.set(camp.collection("codes").document(cid),
-                      {"id": cid, "isTorn": False, "codeType": "one_time_code",
-                       "createdAt": int(time.time() * 1000), "mintedBy": "stagenator",
-                       "promotionEnd": end})
+            batch.set(
+                camp.collection("codes").document(cid),
+                {
+                    "id": cid,
+                    "isTorn": False,
+                    "codeType": "one_time_code",
+                    "createdAt": int(time.time() * 1000),
+                    "mintedBy": "stagenator",
+                    "promotionEnd": end,
+                },
+            )
             batch.set(camp.collection("secrets").document(cid), {"code": code})
         batch.commit()
     camp.update({"availableCodes": firestore.Increment(len(codes))})
@@ -179,3 +210,16 @@ def _reply_confirm(m, original, campaign_id: str, n: int) -> None:
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
         s.login(USER, _pw())
         s.send_message(reply)
+
+
+def send_alert(subject: str, body: str) -> None:
+    """Send a plain alert email from the agent to the owner (health degrade, etc.)."""
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = f"Stagenator <{USER}>"
+    msg["To"] = OWNER
+    msg.set_content(body)
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        s.login(USER, _pw())
+        s.send_message(msg)
+    log.info("alert emailed to %s: %s", OWNER, subject)

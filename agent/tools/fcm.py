@@ -24,7 +24,9 @@ def _app(game: str) -> firebase_admin.App:
     return _apps[project]
 
 
-def send_topic_push(game: str, title: str, body: str, data: dict, label: str = "stagenator") -> dict:
+def send_topic_push(
+    game: str, title: str, body: str, data: dict, label: str = "stagenator"
+) -> dict:
     topic = config.GAMES[game]["level_push_topic"]
     if not topic:
         raise RuntimeError(f"{game} has no push topic")
@@ -32,14 +34,18 @@ def send_topic_push(game: str, title: str, body: str, data: dict, label: str = "
         topic=topic,
         notification=messaging.Notification(title=title, body=body),
         data={k: str(v) for k, v in data.items()},
-        fcm_options=messaging.FCMOptions(analytics_label=label),  # -> notification_open/dismiss/receive in GA4
+        fcm_options=messaging.FCMOptions(
+            analytics_label=label
+        ),  # -> notification_open/dismiss/receive in GA4
     )
     message_id = messaging.send(msg, app=_app(game))
     log.info("topic push sent game=%s topic=%s id=%s", game, topic, message_id)
     return {"message_id": message_id, "topic": topic}
 
 
-def send_to_token(game: str, token: str, title: str, body: str, data: dict, label: str = "stagenator") -> dict:
+def send_to_token(
+    game: str, token: str, title: str, body: str, data: dict, label: str = "stagenator"
+) -> dict:
     """Send to a single raw device token (the caller already resolved it)."""
     msg = messaging.Message(
         token=token,
@@ -71,4 +77,8 @@ def send_user_push(game: str, uid: str, title: str, body: str, data: dict) -> di
         fcm_options=messaging.FCMOptions(analytics_label="stagenator"),
     )
     resp = messaging.send_each_for_multicast(msg, app=_app(game))
-    return {"success": resp.success_count, "failure": resp.failure_count, "tokens": len(tokens)}
+    return {
+        "success": resp.success_count,
+        "failure": resp.failure_count,
+        "tokens": len(tokens),
+    }

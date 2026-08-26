@@ -30,21 +30,27 @@ def ga() -> BetaAnalyticsDataClient:
 
 
 def realtime_snapshot(game: str) -> dict:
-    """Active users in the poll window, split new vs established, per platform."""
+    """Active users in the poll window, keyed by platform:country.
+
+    NOTE: `newVsReturning` is NOT a valid Realtime API dimension — including it 400s
+    every call and silently blinds the agent to all live users. Realtime supports
+    platform + country; the new-vs-returning / lapsing signal comes from the nightly
+    audience profile (BigQuery) instead."""
     prop = config.GAMES[game]["ga_property"]
     req = RunRealtimeReportRequest(
         property=f"properties/{prop}",
-        dimensions=[Dimension(name="platform"), Dimension(name="newVsReturning")],
+        dimensions=[Dimension(name="platform"), Dimension(name="country")],
         metrics=[Metric(name="activeUsers")],
         minute_ranges=[MinuteRange(start_minutes_ago=config.GA_POLL_MINUTES, end_minutes_ago=0)],
     )
-    rows = {}
+    rows: dict = {}
     try:
         resp = ga().run_realtime_report(req)
         for r in resp.rows:
             platform = r.dimension_values[0].value or "unknown"
-            cohort = r.dimension_values[1].value or "unknown"
-            rows[f"{platform}:{cohort}"] = int(r.metric_values[0].value)
+            country = r.dimension_values[1].value or "unknown"
+            key = f"{platform}:{country}"
+            rows[key] = rows.get(key, 0) + int(r.metric_values[0].value)
     except Exception as e:  # GA hiccup: log, return empty — next pulse overlaps
         log.warning("GA realtime failed for %s: %s", game, e)
     return rows
@@ -327,17 +333,12 @@ def detect_signals() -> list[dict]:
         snapshot = realtime_snapshot(game)
         active = sum(snapshot.values())
         if active > 0:
-            country = top_country(game)
             for key, count in snapshot.items():
-                platform, cohort = key.split(":", 1)
-                sig = "new_user_active" if cohort.lower() == "new" else "user_active"
-                detail = platform  # stable — don't re-fire as the live count wiggles
-                if (game, sig, detail) not in seen:
-                    sigd = {"game": game, "signal": sig, "detail": detail,
-                            "platform": platform, "count": count}
-                    if country:
-                        sigd["country"] = country
-                    signals.append(sigd)
+                platform, country = key.split(":", 1)
+                detail = key  # platform:country — stable and distinct per segment
+                if (game, "user_active", detail) not in seen:
+                    signals.append({"game": game, "signal": "user_active", "detail": detail,
+                                    "platform": platform, "country": country, "count": count})
 
         inv = campaign_inventory(game)
         if inv["campaign_id"] and inv["available"] is not None and inv["available"] <= 5:

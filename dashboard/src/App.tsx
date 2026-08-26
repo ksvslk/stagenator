@@ -598,13 +598,12 @@ function HistoryOverview() {
   const x0 = (i: number) => PAD + i * slot;
   const xc = (i: number) => x0(i) + slot / 2 - 1;
   const acted = keys.map((k) => ((days[k]?._agent?.actions ?? 0) > 0));
-  const failed = keys.map((k) => ((days[k]?._agent?.errors ?? 0) > 0));
   // vertical eye-lines through a chart of height h, on agent days
   const marks = (h: number) =>
     keys.map((k, i) =>
-      acted[i] || failed[i] ? (
+      acted[i] ? (
         <line key={'m' + k} x1={xc(i)} y1={2} x2={xc(i)} y2={h} strokeDasharray="2 3"
-          stroke={failed[i] ? '#dc2626' : '#059669'} strokeWidth="1.4" opacity="0.6" />
+          stroke="#059669" strokeWidth="1.4" opacity="0.6" />
       ) : null,
     );
   const maxOf = (f: (g: { players?: number; revenue_usd?: number; engagement_min?: number }) => number) =>
@@ -647,13 +646,13 @@ function HistoryOverview() {
         <div>
           <div className="flex justify-between items-baseline mb-1">
             <span className="text-zinc-700 dark:text-zinc-300 font-bold">1 · Agent acted</span>
-            <span className="text-zinc-500 dark:text-zinc-400"><span className="text-emerald-600 dark:text-emerald-400">■</span> acted · <span className="text-red-600 dark:text-red-400">■</span> failure</span>
+            <span className="text-zinc-500 dark:text-zinc-400"><span className="text-emerald-600 dark:text-emerald-400">■</span> acted</span>
           </div>
           <svg viewBox={`0 0 ${W} 16`} className="w-full h-auto">
             {keys.map((k, i) => (
               <rect key={k} x={x0(i)} y={2} width={Math.max(3, slot - 2)} height={10} rx="2"
-                fill={failed[i] ? '#dc2626' : acted[i] ? '#059669' : 'currentColor'}
-                opacity={failed[i] || acted[i] ? 0.95 : 0.1} />
+                fill={acted[i] ? '#059669' : 'currentColor'}
+                opacity={acted[i] ? 0.95 : 0.1} />
             ))}
           </svg>
         </div>

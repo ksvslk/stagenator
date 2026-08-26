@@ -368,6 +368,8 @@ function Dashboard() {
 
           <EarningsOverview />
 
+          <HistoryOverview />
+
           <section>
             <SectionTitle>
               Plan{' '}
@@ -582,8 +584,91 @@ function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs:
   );
 }
 
+function HistoryOverview() {
+  const hist = useDoc('stagenator_playbook/daily_history');
+  if (!hist) return null;
+  const days = (hist.days ?? {}) as Record<string, Record<string, { players?: number; revenue_usd?: number; actions?: number; errors?: number }>>;
+  const keys = Object.keys(days).sort().slice(-30);
+  if (keys.length < 2) return null;
+  const games = ['subliminal-words', 'ai-movie-quiz'];
+  const colors: Record<string, string> = { 'subliminal-words': '#0d9488', 'ai-movie-quiz': '#7c3aed' };
+  const W = 560, H = 120, PAD = 6;
+  const x = (i: number) => PAD + (i * (W - 2 * PAD)) / (keys.length - 1);
+  const playersMax = Math.max(1, ...keys.map((k) => Math.max(...games.map((g) => days[k]?.[g]?.players ?? 0))));
+  const revTotals = keys.map((k) => games.reduce((a, g) => a + (days[k]?.[g]?.revenue_usd ?? 0), 0));
+  const revMax = Math.max(0.01, ...revTotals);
+  const line = (g: string) =>
+    keys.map((k, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${(H - PAD - ((days[k]?.[g]?.players ?? 0) / playersMax) * (H - 2 * PAD)).toFixed(1)}`).join(' ');
+  const revSum = revTotals.reduce((a, b) => a + b, 0);
+  const playersSum = keys.reduce((a, k) => a + games.reduce((b, g) => b + (days[k]?.[g]?.players ?? 0), 0), 0);
+  const fmtD = (k: string) => `${k.slice(8, 10)}.${k.slice(5, 7)}`;
+  return (
+    <section>
+      <SectionTitle>
+        Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(hist.updated)}</span>
+      </SectionTitle>
+      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-3 text-[11px]">
+        <div>
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-zinc-700 dark:text-zinc-300">players / day</span>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              {games.map((g) => (
+                <span key={g} className="ml-3"><span style={{ color: colors[g] }}>●</span> {g.split('-')[0]}</span>
+              ))}
+            </span>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+            <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="currentColor" opacity="0.15" />
+            {games.map((g) => (
+              <path key={g} d={line(g)} fill="none" stroke={colors[g]} strokeWidth="2" strokeLinejoin="round" />
+            ))}
+            {keys.map((k, i) => {
+              const a = days[k]?._agent;
+              if (!a) return null;
+              return (
+                <g key={k}>
+                  {(a.actions ?? 0) > 0 && <circle cx={x(i)} cy={H - PAD + 0.5} r="2.5" fill="#059669" />}
+                  {(a.errors ?? 0) > 0 && <circle cx={x(i)} cy={H - PAD + 0.5} r="2.5" fill="#dc2626" opacity="0.9" />}
+                </g>
+              );
+            })}
+          </svg>
+          <div className="flex justify-between text-zinc-500 dark:text-zinc-400 text-[10px]">
+            <span>{fmtD(keys[0])}</span>
+            <span>peak {playersMax} · total {playersSum}</span>
+            <span>{fmtD(keys[keys.length - 1])}</span>
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-zinc-700 dark:text-zinc-300">earnings / day</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">${revSum.toFixed(2)} total</span>
+          </div>
+          <svg viewBox={`0 0 ${W} 70`} className="w-full h-auto">
+            <line x1={PAD} y1={64} x2={W - PAD} y2={64} stroke="currentColor" opacity="0.15" />
+            {keys.map((k, i) => {
+              const v = revTotals[i];
+              const h = (v / revMax) * 56;
+              return v > 0 ? (
+                <rect key={k} x={x(i) - 3} y={64 - h} width="6" height={h} rx="1.5"
+                  className="fill-emerald-500 dark:fill-emerald-400" />
+              ) : null;
+            })}
+          </svg>
+        </div>
+        <div className="text-zinc-500 dark:text-zinc-400">
+          dots under the player chart: <span className="text-emerald-600 dark:text-emerald-400">●</span> agent acted ·{' '}
+          <span className="text-red-600 dark:text-red-400">●</span> something failed
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function HealthOverview() {
   const h = useDoc('stagenator_playbook/health');
+  const [open, setOpen] = useState(true);
   if (!h) return null;
   const checks = (h.checks ?? []) as { name: string; ok: boolean; warn: boolean; detail: string; ms: number }[];
   const st = String(h.status);
@@ -593,11 +678,18 @@ function HealthOverview() {
     <section>
       <SectionTitle>Health <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
-        <div className="flex justify-between items-baseline">
-          <span className={`font-bold uppercase tracking-wide ${stColor}`}>{st}</span>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex justify-between items-baseline w-full text-left cursor-pointer"
+          aria-expanded={open}
+        >
+          <span className={`font-bold uppercase tracking-wide ${stColor}`}>
+            <span className="text-zinc-500 dark:text-zinc-400 mr-1.5 normal-case font-normal">{open ? '▾' : '▸'}</span>
+            {st}
+          </span>
           <span className="text-zinc-500 dark:text-zinc-400">{Number(h.ok ?? 0)} ok · {Number(h.warn ?? 0)} warn · <span className={Number(h.fail) ? 'text-red-600 dark:text-red-400' : ''}>{Number(h.fail ?? 0)} down</span></span>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </button>
+        {open && <div className="flex flex-col gap-1.5">
           {checks.map((c) => (
             <div key={c.name} className="grid grid-cols-[10px_1fr] gap-x-2 items-start">
               <span className={`inline-block w-1.5 h-1.5 rounded-full mt-[5px] ${dot(c)}`} />
@@ -608,7 +700,7 @@ function HealthOverview() {
             </div>
           ))}
           {checks.length === 0 && <span className="text-zinc-600 dark:text-zinc-400 italic">runs at deploy + daily</span>}
-        </div>
+        </div>}
       </div>
     </section>
   );

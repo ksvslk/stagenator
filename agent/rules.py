@@ -192,6 +192,55 @@ def _revenue(
     return (float(m[0].value), float(m[1].value), int(m[2].value))
 
 
+def refresh_daily_history() -> None:
+    """30-day per-day history for the dashboard chart: players + revenue per game
+    (GA4 daily report — backfills the past month in one query) and the agent's own
+    actions/errors per day (from the ledger). Recomputed idempotently; throttled by
+    the caller. Powers the 'is it working' trend view."""
+    import datetime as dt
+
+    from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
+
+    from agent import state
+
+    doc_ref = state.db().collection(config.COL_PLAYBOOK).document("daily_history")
+    days: dict[str, dict] = {}
+
+    for game in config.ACTIVE_GAMES:
+        prop = config.GAMES[game]["ga_property"]
+        try:
+            req = RunReportRequest(
+                property=f"properties/{prop}",
+                dimensions=[Dimension(name="date")],
+                metrics=[Metric(name="activeUsers"), Metric(name="totalRevenue")],
+                date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
+            )
+            for r in ga().run_report(req).rows:
+                d = r.dimension_values[0].value  # YYYYMMDD
+                key = f"{d[:4]}-{d[4:6]}-{d[6:]}"
+                day = days.setdefault(key, {})
+                g = day.setdefault(game, {})
+                g["players"] = int(float(r.metric_values[0].value or 0))
+                g["revenue_usd"] = round(float(r.metric_values[1].value or 0), 2)
+        except Exception as e:
+            log.warning("daily history GA failed for %s: %s", game, e)
+
+    # agent's own activity per day (ledger keeps 30d)
+    for e in state.recent_ledger(hours=24 * 30):
+        ts = e.get("ts")
+        if not ts:
+            continue
+        key = f"{ts:%Y-%m-%d}"
+        day = days.setdefault(key, {})
+        agg = day.setdefault("_agent", {"actions": 0, "errors": 0})
+        if e.get("kind") == "action" and e.get("status") == "done":
+            agg["actions"] += 1
+        elif e.get("kind") == "error":
+            agg["errors"] += 1
+
+    doc_ref.set({"days": days, "updated": state.now()})
+
+
 def refresh_earnings() -> None:
     """Per-game EARNINGS the agent can actually move. YESTERDAY (the last COMPLETE day) is
     the headline — 'today' is partial and ad revenue lags — with 7d and 30d for trend. From
@@ -385,7 +434,16 @@ def _recently_seen() -> set:
 def detect_signals() -> list[dict]:
     """The pulse's entire deterministic brain. Returns only NEW signals."""
     signals: list[dict] = []
-    for _fn in (refresh_codes_summary, refresh_cost_summary):
+    refreshers = [refresh_codes_summary, refresh_cost_summary]
+    try:  # daily-history chart data: recompute at most every 6h (2 GA queries)
+        from agent import state as _st
+        hist = _st.db().collection(config.COL_PLAYBOOK).document("daily_history").get().to_dict()
+        stale = not hist or (_st.now() - hist.get("updated", _st.now())).total_seconds() > 6 * 3600
+        if stale:
+            refreshers.append(refresh_daily_history)
+    except Exception:
+        pass
+    for _fn in refreshers:
         try:
             _fn()
         except Exception as e:

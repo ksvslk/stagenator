@@ -19,3 +19,12 @@ body {
 .dark body {
   background-color: #09090b; /* zinc-950 (dark) */
 }
+
+/* slim, theme-matched scrollbars for inner scroll areas */
+* { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / 0.5) transparent; }
+.dark * { scrollbar-color: rgb(82 82 91 / 0.7) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgb(161 161 170 / 0.45); border-radius: 9999px; }
+.dark *::-webkit-scrollbar-thumb { background: rgb(82 82 91 / 0.7); }
+*::-webkit-scrollbar-thumb:hover { background: rgb(113 113 122 / 0.7); }

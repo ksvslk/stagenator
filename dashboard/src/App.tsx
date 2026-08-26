@@ -239,7 +239,7 @@ function Dashboard() {
 
 
   return (
-    <div className="min-h-screen text-zinc-800 dark:text-zinc-200 max-w-7xl mx-auto flex flex-col gap-5 sm:gap-6 px-4 sm:px-6 pb-12">
+    <div className="min-h-screen text-zinc-800 dark:text-zinc-200 max-w-[1750px] mx-auto flex flex-col gap-5 sm:gap-6 px-4 sm:px-6 pb-12">
       <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           <img src={stegoLogo} alt="Stagenator" className="h-11 w-auto shrink-0" />
@@ -278,7 +278,7 @@ function Dashboard() {
 
       <div className="flex flex-col xl:flex-row gap-5 items-start">
         {/* Ledger feed */}
-        <section className="w-full xl:w-[38%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2">
+        <section className="w-full xl:w-[30%] 2xl:w-[26%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2">
           <SectionTitle>Activity — live</SectionTitle>
           <div className="flex flex-col gap-2 max-h-[60vh] xl:max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
             {ledger.map((e) => (
@@ -308,7 +308,7 @@ function Dashboard() {
         </section>
 
         {/* Everything else — responsive masonry of cards */}
-        <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 2xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
+        <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
           <section>
             <SectionTitle>Tasks</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">

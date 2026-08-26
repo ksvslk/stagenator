@@ -51,6 +51,14 @@ async def replenish(request: Request) -> dict:
     return await _run(request, "replenish")
 
 
+@router.post("/health")
+async def health(request: Request) -> dict:
+    """Full dependency health check — run daily by scheduler and at deploy."""
+    raw = (await request.body()).decode("utf-8", "ignore").strip()
+    msg = raw if raw.startswith("health") else "health:scheduled"
+    return await _run(request, msg)
+
+
 @router.post("/event")
 async def event(request: Request) -> dict:
     """Eventarc Firestore trigger — fast path. Body may be CloudEvent JSON."""

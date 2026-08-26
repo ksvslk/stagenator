@@ -27,6 +27,11 @@ class Action(BaseModel):
         "on the hook. Omit to use a sensible default.")
     segment: str | None = Field(default=None, description="Target segment description, if applicable")
     platform: str | None = Field(default=None, description="android | ios | both, if applicable")
+    gift_game: str | None = Field(
+        default=None,
+        description="CROSS-PROMO: send a code for THIS other game to the audience game's "
+        f"players (one of {', '.join(config.ACTIVE_GAMES)}). Omit for a normal same-game code. "
+        "Use to pull an engaged player of one game into the other.")
     n_codes: int | None = Field(default=None, description="Codes to back a drop with (small: 3-10)")
     culture: str | None = Field(
         default=None,

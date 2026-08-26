@@ -61,7 +61,8 @@ def run_personal_codes(task: dict) -> dict:
     """Each registered device gets its OWN reserved, single-use code, pushed only
     to that device. Guarantees the code is ready for that user and only them."""
     game, payload = task["game"], task["payload"]
-    inv_campaign = payload.get("campaign_id") or _find_campaign(game, payload.get("platform"))
+    gift_game = payload.get("gift_game") or game  # cross-promo: gift another game's code
+    inv_campaign = payload.get("campaign_id") or _find_campaign(gift_game, payload.get("platform"))
     cap = min(payload.get("n_codes") or 10, config.CAPS["codes_per_game_per_day"])
 
     # collect registered devices (uid -> token) across android/ios
@@ -89,24 +90,30 @@ def run_personal_codes(task: dict) -> dict:
         tok = secrets.token_urlsafe(16)
         _tc().collection("claimTokens").document(tok).set({
             "kind": "single", "campaignId": inv_campaign, "codeIds": code_ids,
-            "claimed": [], "game": game, "targetUser": uid, "createdBy": "stagenator",
+            "claimed": [], "game": gift_game, "targetUser": uid, "createdBy": "stagenator",
             "createdAt": state.now(),
             "expiresAt": state.now() + __import__("datetime").timedelta(days=7),
         })
         url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
         try:
             _msg = payload.get("message")
-            _b = (f"{_msg} Your code is reserved just for you — tap to claim."
-                  if _msg else "You've earned a reward, reserved just for you — tap to claim.")
-            fcm.send_to_token(game, token, title="🎁 A gift for you",
-                              body=_b, data={"claimUrl": url})
+            if gift_game != game:  # cross-promo: pitch the OTHER game
+                _gn = config.GAMES[gift_game]["display"]
+                _b = (f"{_msg} " if _msg else "") + f"A free {_gn} gift, reserved just for you — tap to claim."
+                _title = "🎁 A gift for you"
+            else:
+                _b = (f"{_msg} Your code is reserved just for you — tap to claim."
+                      if _msg else "You've earned a reward, reserved just for you — tap to claim.")
+                _title = "🎁 A gift for you"
+            fcm.send_to_token(game, token, title=_title, body=_b, data={"claimUrl": url})
             sent.append(uid)
         except Exception as e:  # one bad token never blocks the rest
             _tc().collection("campaigns").document(inv_campaign).collection("codes") \
                 .document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
             _tc().collection("claimTokens").document(tok).delete()
             log.warning("push to %s failed, code released: %s", uid, e)
-    return {"sent": len(sent), "personal": True, "each_reserved_single_use": True}
+    return {"sent": len(sent), "personal": True, "each_reserved_single_use": True,
+            **({"cross_promo": f"{game}->{gift_game}"} if gift_game != game else {})}
 
 
 def _run_drop_shared(task: dict) -> dict:
@@ -116,13 +123,13 @@ def _run_drop_shared(task: dict) -> dict:
     from agent import rules
 
     game, payload = task["game"], task["payload"]
+    gift_game = payload.get("gift_game") or game  # cross-promo: gift another game's code
     n = min(payload.get("n_codes") or 5, 10)
 
-    # Reserve a pool PER platform so one /drop/ link serves iOS and Android correctly:
-    # the claim page detects the visitor's OS and dispenses from the matching pool
-    # (an Android visitor never tears an un-redeemable Apple code, and vice-versa).
+    # Reserve a pool PER platform (from the GIFT game's campaigns) so one /drop/ link
+    # serves iOS and Android with a redeemable code.
     pools: dict[str, dict] = {}
-    for plat, camp in rules.campaign_inventory(game).get("campaigns", {}).items():
+    for plat, camp in rules.campaign_inventory(gift_game).get("campaigns", {}).items():
         cid = camp.get("campaign_id")
         if not cid:
             continue
@@ -142,7 +149,7 @@ def _run_drop_shared(task: dict) -> dict:
             "kind": "drop",
             "pools": pools,  # {apple|google: {campaignId, codeIds}}
             "claimed": [],   # flat list; each entry tagged with its platform
-            "game": game,
+            "game": gift_game,
             "segment": payload.get("segment"),
             "createdBy": "stagenator",
             "createdAt": state.now(),
@@ -155,15 +162,15 @@ def _run_drop_shared(task: dict) -> dict:
     push = None
     if topic:
         _msg = payload.get("message")
-        _body = (f"{_msg} Limited codes — first come, first served! ⏳"
-                 if _msg else
-                 "A limited code drop just went live — grab yours before they're gone! ⏳")
-        push = fcm.send_topic_push(
-            game,
-            title="🎁 Limited code drop",
-            body=_body,
-            data={"claimUrl": url},
-        )
+        if gift_game != game:  # cross-promo pitch for the other game
+            _gn = config.GAMES[gift_game]["display"]
+            _body = (f"{_msg} " if _msg else "") + f"Grab a free {_gn} code — first come, first served! ⏳"
+        else:
+            _body = (f"{_msg} Limited codes — first come, first served! ⏳"
+                     if _msg else
+                     "A limited code drop just went live — grab yours before they're gone! ⏳")
+        push = fcm.send_topic_push(game, title="🎁 Limited code drop", body=_body,
+                                   data={"claimUrl": url})
     return {"drop_id": drop_id, "url": url,
             "codes": sum(len(v["codeIds"]) for v in pools.values()),
             "platforms": list(pools), "push": push}

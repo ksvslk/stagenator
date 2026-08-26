@@ -36,6 +36,10 @@ def validate(action: dict) -> dict | None:
     if game not in config.ACTIVE_GAMES:
         return {"error": f"{game} is not active"}
 
+    gift = action.get("gift_game")
+    if gift and gift not in config.ACTIVE_GAMES:
+        return {"error": f"gift_game {gift!r} is not an active game"}
+
     if t in ("send_code_drop", "send_individual_code"):
         acts = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
         if acts >= config.CAPS["code_actions_per_game_per_day"]:

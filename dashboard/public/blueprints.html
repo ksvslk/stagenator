@@ -496,7 +496,7 @@
   <div class="meta">
     <span class="tag">Loop · <span class="lvl">it improves itself</span></span>
     <h2>9 · It learns while everyone sleeps</h2>
-    <p class="desc">Once a night, the AI reads what the day's actions actually achieved — codes claimed, notifications opened or ignored, money earned — and rewrites its own playbook. Tomorrow's decisions start from tonight's lessons.</p>
+    <p class="desc">Once a night, the AI reads what the day's actions actually achieved — codes claimed, notifications opened or ignored, money earned — and rewrites its own playbook. Tomorrow's decisions start from tonight's lessons. It also runs its own <b>A/B experiments</b>: for every push notification the AI writes two versions with different hooks — half the players receive version A, half version B — and codes claimed are counted per version, so the nightly review learns which style of writing actually works.</p>
   </div>
   <figure>
     <div class="sheet has-port">
@@ -515,7 +515,7 @@
       <svg class="port" viewBox="0 0 380 346" role="img" aria-label="Nightly learning drawn vertically."><g class="node n-store"><rect x="40" y="16" width="280" height="56"/><text class="t" x="180" y="40" text-anchor="middle">The day, summed up</text><text class="s" x="180" y="58" text-anchor="middle">results, not raw dumps</text></g><line class="edge" x1="180" y1="72" x2="180" y2="98" marker-end="url(#ah)"/><g class="node n-decision"><rect x="40" y="102" width="280" height="56"/><text class="t" x="180" y="126" text-anchor="middle">Reflector</text><text class="s" x="180" y="144" text-anchor="middle">what worked?</text></g><line class="edge" x1="180" y1="158" x2="180" y2="184" marker-end="url(#ah)"/><g class="node n-store"><rect x="40" y="188" width="280" height="56"/><text class="t" x="180" y="212" text-anchor="middle">Playbook</text><text class="s" x="180" y="230" text-anchor="middle">rewritten · size-capped</text></g><line class="edge accent" x1="180" y1="244" x2="180" y2="270" marker-end="url(#ahA)"/><text class="el hi" x="190" y="263">rewrite</text><g class="node n-decision"><rect x="40" y="274" width="280" height="56"/><text class="t" x="180" y="298" text-anchor="middle">Strategist</text><text class="s" x="180" y="316" text-anchor="middle">tomorrow</text></g><path class="edge dash" d="M320 276 L352 276 L352 40 L324 40" marker-end="url(#ah)"/><text class="el" x="368" y="173" transform="rotate(90 368 173)" text-anchor="middle">read on every check-in</text></svg>
     </div>
     <p class="scrollhint">◂ swipe the diagram sideways ▸</p>
-    <figcaption><b>How to read it:</b> two safeguards keep the learning sane. With too little data, the Reflector deliberately changes nothing, so one lucky or unlucky day cannot swing the whole strategy. And the playbook has a hard size cap, so months of learning can never bloat the AI’s memory or its costs.</figcaption>
+    <figcaption><b>How to read it:</b> two safeguards keep the learning sane. With too little data, the Reflector deliberately changes nothing, so one lucky or unlucky day cannot swing the whole strategy. And the playbook has a hard size cap, so months of learning can never bloat the AI’s memory or its costs. The A/B results feed the same loop: the winning notification style becomes a playbook lesson, so the agent’s writing improves from its own measured evidence — not from anyone’s opinion.</figcaption>
   </figure>
 </section>
 
@@ -602,6 +602,18 @@
     <figcaption><b>How to read it:</b> running this costs pennies. The service sleeps when nobody needs it, and the only real spend is a small prepaid balance for AI image and video generation — which the agent watches itself and emails about when it runs low. Apple promo codes are minted fully automatically. Google Play offers no such API, so the agent emails the owner exact instructions and imports the reply. That is the one human touchpoint in the system, and it exists by Google’s design, not ours.</figcaption>
   </figure>
 </section>
+
+<section class="fig" id="d11">
+  <div class="meta">
+    <span class="tag">Idea · <span class="lvl">built to grow</span></span>
+    <h2>11 · One agent, a whole portfolio</h2>
+    <p class="desc">Everything on this page except the level-making is shared machinery, keyed by a per-game settings entry: watching players, deciding, the safety limits, the job queue, code gifts on proffer.codes, the A/B experiments, health checks and nightly learning. Adding a game costs one settings entry plus — at most — one content pipeline.</p>
+  </div>
+  <figure>
+    <figcaption><b>Concretely, the next four games in the same portfolio:</b> <b>Penalty 2D</b> — promo codes only: one settings entry, zero new code. <b>Palindrome</b> — text-only levels, the smallest possible pipeline; or the same AI inspector pointed at player-submitted levels, approving instead of creating. <b>Trivia Player</b> — the agent schedules in-game events through Firebase Remote Config and announces them: one new tool and one new action type behind the same limits. <b>Snackroach</b> — the honest hard case: its levels are built in a game editor today, so the agent can only take over once levels become data files the game reads.</figcaption>
+  </figure>
+</section>
+
 
 <footer>
   Stagenator · fully autonomous engagement &amp; retention agent · All Things Agentic — Taskmaster track ·

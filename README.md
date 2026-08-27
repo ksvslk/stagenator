@@ -94,6 +94,25 @@ budget. All state lives in Firestore and feeds the dashboard live.
   emulator) and a graded `agents-cli eval` suite — 4/4 scenarios at maximum
   scores.
 
+## Built to grow
+
+Everything except level-making is shared machinery keyed by a per-game config
+entry — watching players, deciding, the hard limits, the job queue, code gifts
+on proffer.codes, the A/B experiments, health checks, nightly learning. Adding
+a game costs one config entry plus, at most, one content pipeline. The next
+four games in the same portfolio, in order of effort:
+
+- **Penalty 2D** — promo codes only: one config entry, zero new code.
+- **Palindrome** — text-only levels (the smallest possible pipeline), or the
+  same AI inspector pointed at player-submitted levels — approving instead of
+  creating.
+- **Trivia Player** — the agent schedules in-game events through Firebase
+  Remote Config and announces them: one new tool, one new action type, same
+  caps.
+- **Snackroach** — the honest hard case: levels are built in a game editor
+  today, so the agent can take over only once levels become data files the
+  game reads.
+
 ## Stack
 
 Cloud Run · Cloud Scheduler · Eventarc · Firestore · BigQuery (GA4 export) ·

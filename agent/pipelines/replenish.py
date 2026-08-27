@@ -98,7 +98,6 @@ def audit_inventory(task: dict) -> dict:
                 game=game,
             )
 
-    state.ledger("action", None, action="inventory_audit", status="done", result=report)
     return report
 
 

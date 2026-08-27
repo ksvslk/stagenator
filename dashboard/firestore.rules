@@ -41,6 +41,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     
+    // AMQ tier-1 push-token registration: each signed-in (anonymous) user may
+    // write only their own token doc. Nobody reads these from the client —
+    // only the agent (Admin SDK) does.
+    match /fcmTokensAndroid/{uid} {
+      allow read: if false;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.token is string
+        && request.resource.data.token.size() < 4096;
+    }
+    match /fcmTokensIos/{uid} {
+      allow read: if false;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.token is string
+        && request.resource.data.token.size() < 4096;
+    }
+
     function isValidLevelData(levelData) {
       let expectedKeys = ['levelNumber', 'name', 'path', 'sound', 'characteristic', 'hints'];
       let hintKeys = ['actor', 'quote', 'year'];

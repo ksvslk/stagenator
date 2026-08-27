@@ -5,6 +5,7 @@ the ledger, and emit only *new* signals. If this returns an empty list, the
 pulse exits without ever invoking Gemini (a zero-cost tick).
 """
 
+import datetime as dt
 import logging
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
@@ -352,8 +353,35 @@ def refresh_audience_profile() -> None:
         out[game] = {
             "players_14d": sum(c["players"] for c in countries),
             "top_countries": countries,
-            "note": "players are pseudonymous in GA; set setUserId(uid) in-app for 1:1 code targeting",
         }
+    # Tier-1 reachability: installs the agent can address 1:1 (per-uid push
+    # tokens the game app registers). Independent of GA; appears per game as
+    # soon as its fcm_token_collections are configured.
+    for game in config.ACTIVE_GAMES:
+        cols = config.GAMES[game].get("fcm_token_collections") or []
+        entry = out.setdefault(game, {})
+        if not cols:
+            entry["reachable"] = {"note": "no per-user tokens yet (tier 0)"}
+            continue
+        try:
+            gdb = state.game_db(game)
+            week_ago = state.now() - dt.timedelta(days=7)
+            registered = active_7d = 0
+            for col in cols:
+                for snap in gdb.collection(col).limit(500).stream():
+                    d = snap.to_dict() or {}
+                    if not d.get("token"):
+                        continue
+                    registered += 1
+                    ts = d.get("updatedAt")
+                    if ts is not None and ts >= week_ago:
+                        active_7d += 1
+            entry["reachable"] = {
+                "registered_installs": registered,
+                "active_7d": active_7d,
+            }
+        except Exception as e:
+            log.warning("reachability failed for %s: %s", game, e)
     state.db().collection(config.COL_PLAYBOOK).document("audience").set(
         {"games": out, "updated": state.now()}
     )

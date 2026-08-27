@@ -102,16 +102,18 @@ on proffer.codes, the A/B experiments, health checks, nightly learning. Adding
 a game costs one config entry plus, at most, one content pipeline. The next
 four games in the same portfolio, in order of effort:
 
-- **Penalty 2D** — promo codes only: one config entry, zero new code.
+- **Trivia Player** — already has push notifications, so it plugs straight in:
+  the agent schedules in-game events through Firebase Remote Config and
+  announces them — one new tool, one new action type, same caps.
+- **Penalty 2D** — promo codes only: on the agent side just a config entry,
+  but the game needs one app update first to add push support (it has none
+  today) so the codes can reach players.
 - **Palindrome** — text-only levels (the smallest possible pipeline), or the
   same AI inspector pointed at player-submitted levels — approving instead of
-  creating.
-- **Trivia Player** — the agent schedules in-game events through Firebase
-  Remote Config and announces them: one new tool, one new action type, same
-  caps.
-- **Snackroach** — the honest hard case: levels are built in a game editor
-  today, so the agent can take over only once levels become data files the
-  game reads.
+  creating. Also needs the one-time push-support update.
+- **Snackroach** — the honest hard case, twice over: needs the push update,
+  and its levels are built in a game editor today, so the agent can take over
+  level-making only once levels become data files the game reads.
 
 ## Stack
 

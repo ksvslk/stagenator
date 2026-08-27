@@ -110,6 +110,8 @@ strategist = LlmAgent(
         "action that needs a DOWN dependency — e.g. no ship_level if level generation is "
         "down, no code send if the push/claim path is down. Prefer an action whose "
         "dependencies are healthy, or none.\n"
+        "- `now_utc` in the context is the actual current time. Use it for send-window "
+        "and time-of-day judgments; never infer the time from ledger timestamps.\n"
         "- Respect playbook send windows via delay_minutes.\n"
         "- ship_level has an OPTIONAL `culture` lever — softly localize a level when the "
         "breakdown shows players clearly concentrating somewhere; omit for a universal level "

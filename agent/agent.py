@@ -63,6 +63,7 @@ def detect(node_input) -> Event:
     if not signals:
         return Event(output="idle", route="idle")
     context = {
+        "now_utc": state.now().strftime("%Y-%m-%d %H:%M UTC (%A)"),
         "signals": signals,
         "playbook": state.get_playbook(),
         "health": state.health_status(),  # which dependencies are down — don't act on a broken one

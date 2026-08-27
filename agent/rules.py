@@ -204,9 +204,13 @@ def refresh_daily_history() -> None:
     (GA4 daily report — backfills the past month in one query) and the agent's own
     actions/errors per day (from the ledger). Recomputed idempotently; throttled by
     the caller. Powers the 'is it working' trend view."""
-    import datetime as dt
 
-    from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
+    from google.analytics.data_v1beta.types import (
+        DateRange,
+        Dimension,
+        Metric,
+        RunReportRequest,
+    )
 
     from agent import state
 

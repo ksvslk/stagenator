@@ -55,7 +55,8 @@ answers a fixed form. Everything that moves money or changes the games is
 plain, tested code behind hard limits — at most 1 level and 1 code gift per
 game per day. When the AI creates (level designs, images, video, quality
 checks), it does so inside pipelines that code starts, checks, and can throw
-away.
+away. One thing it deliberately cannot do: remove content — taking a bad
+level down is a human decision.
 
 **Why not a tool-calling agent, or more agents?** The action menu is small, fixed,
 and high-stakes — minting codes with monetary value, pushing to strangers' phones,

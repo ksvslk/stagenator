@@ -36,7 +36,10 @@ with players on both stores:
 - **Gifts promo codes.** Apple codes are minted via the App Store Connect API;
   Google Play (which has no minting API) runs through an email loop the agent
   drives from its own inbox. Every code that leaves the shelf is bound to
-  exactly one recipient.
+  exactly one recipient. Delivery runs through **[proffer.codes](https://proffer.codes)** —
+  our own claim site, wired into the same system — which doubles as
+  cross-promotion: a player picking up one game's gift sees the other games'
+  available codes right there.
 - **Learns overnight.** A nightly review compares actions to outcomes and
   rewrites a size-capped playbook that steers the next day. With too little
   data it deliberately changes nothing.

@@ -29,6 +29,8 @@ function reportListenerError(path: string, err: unknown) {
   window.dispatchEvent(new CustomEvent('sg-listener-error', { detail: { path, message } }));
 }
 
+declare const __BUILD_INFO__: string;
+
 function useCollection(path: string, orderField: string, n = 50): Doc[] {
   const [docs, setDocs] = useState<Doc[]>([]);
   useEffect(() => {
@@ -267,14 +269,6 @@ function Dashboard() {
               ? `${String(health.status)}${Number(health.fail) ? ` · ${health.fail} down` : ''}`
               : (taskBuckets.dead.length ? `${taskBuckets.dead.length} dead` : 'no health check yet')}
           </span>
-          <a
-            href="/blueprints.html"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[11px] underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
-          >
-            how it works
-          </a>
           <ThemeToggle />
         </div>
       </header>
@@ -405,6 +399,18 @@ function Dashboard() {
 
         </div>
       </div>
+
+      <footer className="mt-2 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+        <a
+          href="/blueprints.html"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
+          how it works
+        </a>
+        <span className="ml-auto" title="dashboard build: git commit · build date">build {__BUILD_INFO__}</span>
+      </footer>
     </div>
   );
 }

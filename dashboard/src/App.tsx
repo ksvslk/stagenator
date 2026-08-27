@@ -276,8 +276,8 @@ function Dashboard({ owner }: { owner: boolean }) {
 
       <div className="flex flex-col xl:flex-row gap-5 items-start">
         {/* Ledger feed */}
-        <section className="w-full xl:w-[30%] 2xl:w-[26%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2">
-          <SectionTitle>Activity — live</SectionTitle>
+        <section className="w-full xl:w-[30%] 2xl:w-[26%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2 bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+          <SectionTitle accent="bg-sky-500">Activity — live</SectionTitle>
           <div className="flex flex-col gap-2 max-h-[60vh] xl:max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
             {ledger.map((e) => (
               <div
@@ -307,8 +307,8 @@ function Dashboard({ owner }: { owner: boolean }) {
 
         {/* Everything else — responsive masonry of cards */}
         <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
-          <section>
-            <SectionTitle>Tasks</SectionTitle>
+          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+            <SectionTitle accent="bg-amber-500">Tasks</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
               {(['pending', 'running', 'done', 'dead'] as const).map((s) => (
                 <div key={s} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg py-2">
@@ -347,8 +347,8 @@ function Dashboard({ owner }: { owner: boolean }) {
 
           <LearningOverview ledger={ledger} briefs={briefs} playbook={playbook} />
 
-          <section>
-            <SectionTitle>Daily summary</SectionTitle>
+          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+            <SectionTitle accent="bg-teal-500">Daily summary</SectionTitle>
             <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
               {briefs.map((b) => (
                 <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
@@ -368,8 +368,8 @@ function Dashboard({ owner }: { owner: boolean }) {
 
           <HistoryOverview />
 
-          <section>
-            <SectionTitle>
+          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+            <SectionTitle accent="bg-violet-500">
               Plan{' '}
               <span className="text-zinc-600 dark:text-zinc-400 normal-case">
                 v{String(playbook?.version ?? '—')} · {ts(playbook?.updated)}
@@ -500,8 +500,8 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
     String(r.movie ?? r.word ?? r.published ?? r.would_publish ?? '?');
 
   return (
-    <section>
-      <SectionTitle>Stages created</SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-emerald-500">Stages created</SectionTitle>
       <div className="flex flex-col gap-3">
         {GAMES.map((g) => {
           const events = levelEvents.filter((e) => e.game === g);
@@ -547,8 +547,8 @@ function CodesOverview() {
   const summary = useDoc('stagenator_playbook/codes_summary');
   const games = (summary?.games ?? {}) as Record<string, Record<string, unknown>>;
   return (
-    <section>
-      <SectionTitle>Codes & claims <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-orange-500">Codes & claims <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).map(([g, d]) => {
           const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
@@ -585,8 +585,8 @@ function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs:
   const outcomes = ledger.filter((e) => e.kind === 'outcome').length;
   const lastChange = briefs.map((b) => String(b.changes ?? '')).find((c) => c && c.trim());
   return (
-    <section>
-      <SectionTitle>Learning <span className="text-zinc-600 dark:text-zinc-400 normal-case">· nightly</span></SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-violet-500">Learning <span className="text-zinc-600 dark:text-zinc-400 normal-case">· nightly</span></SectionTitle>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
         <div className="flex justify-between items-baseline">
           <span className="text-zinc-700 dark:text-zinc-300">Plan <span className="text-zinc-500 dark:text-zinc-400">v{String(playbook?.version ?? '—')}</span></span>
@@ -641,8 +641,8 @@ function HistoryOverview() {
   const revSum = rev.reduce((a, b) => a + b, 0);
   const fmtD = (k: string) => `${k.slice(8, 10)}.${k.slice(5, 7)}.`;
   return (
-    <section>
-      <SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-blue-500">
         Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· a dashed line = a day the agent acted</span>
       </SectionTitle>
       <div className="flex gap-1.5 mb-2 items-center flex-wrap">
@@ -764,8 +764,8 @@ function HealthOverview() {
   const stColor = st === 'healthy' ? 'text-emerald-600 dark:text-emerald-400' : st === 'degraded' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
   const dot = (c: { ok: boolean; warn: boolean }) => (c.ok && !c.warn ? 'bg-emerald-500' : c.warn ? 'bg-amber-400' : 'bg-red-500');
   return (
-    <section>
-      <SectionTitle>Health <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-rose-500">Health <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
         <button
           onClick={() => setOpen((o) => !o)}
@@ -800,8 +800,8 @@ function EarningsOverview() {
   if (!e) return null;
   const games = (e.games ?? {}) as Record<string, { yesterday_usd?: number; d7_usd?: number; d30_usd?: number; yesterday_arpu?: number; arpu_30d?: number; status?: string }>;
   return (
-    <section>
-      <SectionTitle>Earnings <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 30 days · {ts(e.updated)}</span></SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-green-600">Earnings <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 30 days · {ts(e.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).map(([g, d]) => {
           const live = (d.d30_usd ?? 0) > 0;
@@ -851,8 +851,8 @@ function Directives() {
   };
 
   return (
-    <section>
-      <SectionTitle>Message the agent</SectionTitle>
+    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+      <SectionTitle accent="bg-fuchsia-500">Message the agent</SectionTitle>
       <div className="flex gap-2">
         <input
           value={text}
@@ -885,9 +885,12 @@ function Directives() {
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children, accent = 'bg-zinc-400 dark:bg-zinc-500' }: { children: React.ReactNode; accent?: string }) {
   return (
-    <h2 className="font-display font-semibold text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 mb-2">{children}</h2>
+    <h2 className="font-display font-bold text-[12px] uppercase tracking-[0.18em] text-zinc-700 dark:text-zinc-100 mb-2.5 flex items-baseline gap-2">
+      <span className={`self-center inline-block w-1 h-3.5 rounded-full shrink-0 ${accent}`} />
+      <span>{children}</span>
+    </h2>
   );
 }
 

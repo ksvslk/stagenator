@@ -12,23 +12,23 @@ service cloud.firestore {
     }
     
     match /stagenator_ledger/{id} {
-      allow read: if isStagenatorOwner();
+      allow read: if request.auth != null;  // anyone signed in may watch
       allow write: if false;
     }
     match /stagenator_tasks/{id} {
-      allow read: if isStagenatorOwner();
+      allow read: if request.auth != null;  // anyone signed in may watch
       allow write: if false;
     }
     match /stagenator_playbook/{id} {
-      allow read: if isStagenatorOwner();
+      allow read: if request.auth != null;  // anyone signed in may watch
       allow write: if false;
     }
     match /stagenator_playbook/current/history/{id} {
-      allow read: if isStagenatorOwner();
+      allow read: if request.auth != null;  // anyone signed in may watch
       allow write: if false;
     }
     match /stagenator_briefs/{id} {
-      allow read: if isStagenatorOwner();
+      allow read: if request.auth != null;  // anyone signed in may watch
       allow write: if false;
     }
     match /stagenator_directives/{id} {

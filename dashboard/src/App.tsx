@@ -151,12 +151,12 @@ export function App() {
   );
 
   if (!authReady) return <Center>loading…</Center>;
-  if (!isOwner(user)) return <SignIn denied={!!user} />;
+  if (!user) return <SignIn />;
 
-  return <Dashboard />;
+  return <Dashboard owner={isOwner(user)} />;
 }
 
-function SignIn({ denied }: { denied: boolean }) {
+function SignIn() {
   const [error, setError] = useState('');
   const buttonRef = (el: HTMLDivElement | null) => {
     if (el && !el.hasChildNodes()) gisSignIn(el, setError).catch((e) => setError(String(e)));
@@ -169,7 +169,6 @@ function SignIn({ denied }: { denied: boolean }) {
           <div className="font-display font-bold text-zinc-800 dark:text-zinc-200 text-sm uppercase tracking-widest">Stagenator</div>
           <div className="text-zinc-500 dark:text-zinc-400 text-xs">Pulling the app portfolio out of stagnation</div>
         </div>
-        {denied && <div className="text-red-600 dark:text-red-400 text-xs">this account has no access</div>}
         {error && <div className="text-red-600 dark:text-red-400 text-xs max-w-xs text-center">{error}</div>}
         <div ref={buttonRef} />
       </div>
@@ -227,7 +226,7 @@ function ThemeToggle() {
 }
 
 
-function Dashboard() {
+function Dashboard({ owner }: { owner: boolean }) {
   const ledger = useCollection('stagenator_ledger', 'ts', 60);
   const [openLog, setOpenLog] = useState<Set<string>>(new Set());
   const toggleLog = (id: string) =>
@@ -393,7 +392,13 @@ function Dashboard() {
             )}
           </section>
 
-          <Directives />
+          {owner ? (
+            <Directives />
+          ) : (
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
+              You are watching a live production system, read-only. Only the owner can message the agent.
+            </div>
+          )}
 
           <HealthOverview />
 

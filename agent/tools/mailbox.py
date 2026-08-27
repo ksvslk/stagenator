@@ -46,7 +46,7 @@ def send_restock_request(game: str, campaign_id: str, play_app_id: str | None) -
     product, ptype = PLAY_GIFT.get(
         game, ("your standard gift product", "one-time product")
     )
-    end = (dt.date.today() + dt.timedelta(days=364)).isoformat()
+    end = (dt.datetime.now(dt.UTC).date() + dt.timedelta(days=364)).isoformat()
     create_url = (
         f"https://play.google.com/console/u/0/developers/{mint_play_dev()}/app/"
         f"{play_app_id}/promotions/create"
@@ -174,7 +174,7 @@ def _import_codes(campaign_id: str, codes: list[str]) -> int:
     if not camp.get().exists:
         state.critical(f"restock reply for unknown campaign {campaign_id}")
         return 0
-    end = (dt.date.today() + dt.timedelta(days=364)).isoformat()
+    end = (dt.datetime.now(dt.UTC).date() + dt.timedelta(days=364)).isoformat()
     # Deterministic id per code → a duplicate reply overwrites, never double-inserts.
     # Chunk under Firestore's 500-op batch cap (2 writes per code).
     for i in range(0, len(codes), 200):

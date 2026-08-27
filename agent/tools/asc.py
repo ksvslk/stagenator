@@ -142,7 +142,7 @@ def mint_subscription_offer_codes(
 ) -> tuple[list[tuple[str, str]], str]:
     """One-time-use batch (500) on the subscription gift offer; returns rows+expiry."""
     offer_id = find_or_create_subscription_offer(subscription_id)
-    expiration = (dt.date.today() + dt.timedelta(days=expiry_days)).isoformat()
+    expiration = (dt.datetime.now(dt.UTC).date() + dt.timedelta(days=expiry_days)).isoformat()
     batch = _req(
         "POST",
         "/subscriptionOfferCodeOneTimeUseCodes",
@@ -253,7 +253,7 @@ def mint_iap_offer_codes(
     Apple already carries per-code redeem URLs (ctx=offercodes deep links).
     """
     offer_id = find_or_create_iap_offer(iap_id)
-    expiration = (dt.date.today() + dt.timedelta(days=expiry_days)).isoformat()
+    expiration = (dt.datetime.now(dt.UTC).date() + dt.timedelta(days=expiry_days)).isoformat()
     batch = _req(
         "POST",
         "/inAppPurchaseOfferCodeOneTimeUseCodes",

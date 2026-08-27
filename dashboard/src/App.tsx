@@ -52,7 +52,12 @@ function useDoc(path: string): Doc | null {
 
 const ts = (v: unknown): string => {
   const d = (v as { toDate?: () => Date })?.toDate?.();
-  return d ? d.toLocaleString('en-GB', { hour12: false }).slice(0, 17) : '';
+  return d ? d.toLocaleString('en-GB', { hour12: false }) : '';
+};
+// hover detail: exact UTC time with milliseconds (the agent reasons in UTC)
+const tsUtc = (v: unknown): string => {
+  const d = (v as { toDate?: () => Date })?.toDate?.();
+  return d ? d.toISOString().replace('T', ' ').replace('Z', ' UTC') : '';
 };
 
 function ledgerLine(e: Doc): string {
@@ -293,7 +298,7 @@ function Dashboard() {
                   <span className="text-zinc-600 dark:text-zinc-400">{openLog.has(e.id) ? '▾' : '▸'}</span>
                   <span className="uppercase font-bold">{String(e.kind)}</span>
                   {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
-                  <span className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{ts(e.ts)}</span>
+                  <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{ts(e.ts)}</span>
                 </div>
                 <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
                 {openLog.has(e.id) && (
@@ -354,7 +359,7 @@ function Dashboard() {
             <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
               {briefs.map((b) => (
                 <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
-                  <div className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
+                  <div title={tsUtc(b.ts)} className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
                   <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
                 </div>
               ))}
@@ -422,7 +427,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
           <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             {String(r.movie ?? r.word ?? r.published ?? 'level')}
           </h3>
-          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{String(event.game)} · {ts(event.ts)}</span>
+          <span title={tsUtc(event.ts)} className="text-[11px] text-zinc-500 dark:text-zinc-400">{String(event.game)} · {ts(event.ts)}</span>
           <button onClick={onClose} className="ml-auto text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">✕</button>
         </div>
 
@@ -514,7 +519,7 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
                     {r.qa ? <span className="text-zinc-500 dark:text-zinc-400">qa:{String(r.qa)}</span> : null}
                     {r.levelId ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.levelId)}</span> : null}
                     {r.level ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.level)}</span> : null}
-                    <span className="text-zinc-600 dark:text-zinc-400 ml-auto">{ts(e.ts)}</span>
+                    <span title={tsUtc(e.ts)} className="text-zinc-600 dark:text-zinc-400 ml-auto">{ts(e.ts)}</span>
                   </div>
                 );
               })}

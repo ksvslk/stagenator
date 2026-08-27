@@ -167,6 +167,13 @@ def refresh_codes_summary() -> None:
             s["links"] += 1
             s["codes_backing"] += len(d.get("codeIds", []))
             s["teared"] += len(d.get("claimed", []))
+            # push A/B attribution: which copy variant led to claimed codes
+            v = d.get("variant")
+            if v in ("a", "b"):
+                ex = summary[g].setdefault("experiment", {})
+                row = ex.setdefault(v, {"sends": 0, "claims": 0})
+                row["sends"] += 1
+                row["claims"] += len(d.get("claimed", []))
     state.db().collection(config.COL_PLAYBOOK).document("codes_summary").set(
         {"games": summary, "updated": state.now()}
     )

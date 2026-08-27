@@ -37,6 +37,12 @@ class Action(BaseModel):
     n_codes: int | None = Field(
         default=None, description="Codes to back a drop with (small: 3-10)"
     )
+    message_alt: str | None = Field(
+        default=None,
+        description="OPTIONAL second push-copy variant for the built-in A/B experiment: a "
+        "DIFFERENT hook/tone than `message`. When set, the system alternates the two "
+        "variants across recipients/sends and measures which one gets codes claimed. "
+        "Provide it whenever you write a `message`.")
     culture: str | None = Field(
         default=None,
         description="ship_level OPTIONAL: a country/culture to SOFTLY nod to (e.g. where the "
@@ -96,7 +102,9 @@ strategist = LlmAgent(
         "- You are given an `audience` breakdown per game (top countries, platform split, "
         "engagement time, lapsing counts) plus each signal's live platform:country counts. "
         "Raw context for your judgment and copy — never a limit or a targeting rule.\n"
-        "- You MAY write the push `message` (user-facing copy) creatively; the system appends "
+        "- You MAY write the push `message` (user-facing copy) creatively — and a second "
+        "variant in `message_alt` with a different hook: the system A/B tests the two and "
+        "the nightly review learns which style gets codes claimed. The system appends "
         "the honest cue (limited/first-come for drops, reserved-for-you for personal codes).\n"
         "- You are given `health` (which dependencies are up/down). Do NOT propose an "
         "action that needs a DOWN dependency — e.g. no ship_level if level generation is "

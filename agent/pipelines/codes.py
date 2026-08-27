@@ -17,6 +17,16 @@ from agent.tools import fcm
 log = logging.getLogger("stagenator.codes")
 
 
+def _ab_variant(payload: dict, index: int) -> tuple[str | None, str | None]:
+    """Built-in push A/B: when the Strategist wrote BOTH `message` and `message_alt`,
+    alternate them (by recipient index for personal sends, by UTC day for topic sends)
+    and return (chosen_message, variant_tag). Without an alt, no experiment: (message, None)."""
+    msg, alt = payload.get("message"), payload.get("message_alt")
+    if not (msg and alt):
+        return msg, None
+    return (msg, "a") if index % 2 == 0 else (alt, "b")
+
+
 def _tc() -> firestore.Client:
     return firestore.Client(project=config.TAKECODES_PROJECT)
 
@@ -110,7 +120,7 @@ def run_personal_codes(task: dict) -> dict:
         import datetime as _dt
 
         week_ago = state.now() - _dt.timedelta(days=7)
-        for uid, token in devices[:cap]:
+        for send_i, (uid, token) in enumerate(devices[:cap]):
             # per-user weekly cap: don't re-gift a player who got a code in the last 7 days
             _mkref = (
                 state.db()
@@ -144,7 +154,9 @@ def run_personal_codes(task: dict) -> dict:
             )
             url = f"{config.CLAIM_BASE_URL}/claim/{tok}"
             try:
-                _msg = payload.get("message")
+                _msg, _variant = _ab_variant(payload, send_i)
+                if _variant:
+                    _tc().collection("claimTokens").document(tok).update({"variant": _variant})
                 if gift_game != game:  # cross-promo: pitch the OTHER game
                     _gn = config.GAMES[gift_game]["display"]
                     _b = (
@@ -159,7 +171,8 @@ def run_personal_codes(task: dict) -> dict:
                     )
                     _title = "🎁 A gift for you"
                 fcm.send_to_token(
-                    game, token, title=_title, body=_b, data={"claimUrl": url}
+                    game, token, title=_title, body=_b, data={"claimUrl": url},
+                    label=f"sg-{_variant}" if _variant else "stagenator",
                 )
                 _mkref.set({"lastSentAt": state.now(), "game": game}, merge=True)
                 sent.append(uid)
@@ -228,7 +241,9 @@ def _run_drop_shared(task: dict) -> dict:
         topic = config.GAMES[game]["level_push_topic"]
         push = None
         if topic:
-            _msg = payload.get("message")
+            _msg, _variant = _ab_variant(payload, state.now().toordinal())
+            if _variant:
+                _tc().collection("claimTokens").document(drop_id).update({"variant": _variant})
             if gift_game != game:  # cross-promo pitch for the other game
                 _gn = config.GAMES[gift_game]["display"]
                 _body = (
@@ -241,7 +256,8 @@ def _run_drop_shared(task: dict) -> dict:
                     else "A limited code drop just went live — grab yours before they're gone! ⏳"
                 )
             push = fcm.send_topic_push(
-                game, title="🎁 Limited code drop", body=_body, data={"claimUrl": url}
+                game, title="🎁 Limited code drop", body=_body, data={"claimUrl": url},
+                label=f"sg-{_variant}" if _variant else "stagenator",
             )
         return {
             "drop_id": drop_id,

@@ -269,6 +269,11 @@ def gather_day(node_input: str) -> str:
         },
         "earnings": state.earnings(),  # the ultimate goal — weigh engagement against it
         "push_outcomes": state.push_outcomes(),  # notification open/dismiss — did the pushes land?
+        # push copy A/B: sends + claimed codes per variant — learn which style works
+        "push_experiments": {
+            g: (v.get("experiment") or None)
+            for g, v in (state.codes_summary() or {}).items()
+        },
         "playbook": state.get_playbook(),
         "directives": state.pending_directives(),
     }

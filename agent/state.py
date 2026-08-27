@@ -417,6 +417,12 @@ def push_outcomes() -> dict:
     return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
 
 
+def codes_summary() -> dict:
+    """Per-game code stock/claims summary (incl. push A/B experiment tallies)."""
+    doc = db().collection(config.COL_PLAYBOOK).document("codes_summary").get()
+    return (doc.to_dict() or {}).get("games", {}) if doc.exists else {}
+
+
 def health_status() -> dict:
     """Compact dependency health for the decision layer: overall status plus which
     dependencies are currently DOWN or degraded. Lets the Strategist avoid proposing

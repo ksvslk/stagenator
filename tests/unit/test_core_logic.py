@@ -207,3 +207,18 @@ def test_subliminal_solution_svg_is_canonical_path_format():
     assert 'data-font="Roboto"' in svg and 'style="fill:#000000"' in svg
     for lid in ('id="R"', 'id="E"', 'id="E2"', 'id="L"'):
         assert lid in svg, lid
+
+
+# ── Push copy A/B: alternation is deterministic and degrades to no-experiment ──
+
+
+def test_ab_variant_alternates_and_degrades():
+    from agent.pipelines.codes import _ab_variant
+
+    both = {"message": "hook A", "message_alt": "hook B"}
+    assert _ab_variant(both, 0) == ("hook A", "a")
+    assert _ab_variant(both, 1) == ("hook B", "b")
+    assert _ab_variant(both, 2) == ("hook A", "a")
+    # no alt -> no experiment, exact old behavior
+    assert _ab_variant({"message": "solo"}, 0) == ("solo", None)
+    assert _ab_variant({}, 5) == (None, None)

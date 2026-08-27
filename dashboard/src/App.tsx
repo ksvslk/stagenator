@@ -546,6 +546,16 @@ function CodesOverview() {
               <span className="text-emerald-600 dark:text-emerald-400 ml-auto">
                 {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
               </span>
+              {(() => {
+                const ex = (d as { experiment?: Record<string, { sends: number; claims: number }> }).experiment;
+                if (!ex || (!ex.a && !ex.b)) return null;
+                const f = (v?: { sends: number; claims: number }) => (v ? `${v.claims}/${v.sends}` : '0/0');
+                return (
+                  <span className="w-full text-violet-600 dark:text-violet-400 text-[10.5px]">
+                    copy experiment · A {f(ex.a)} claimed · B {f(ex.b)} claimed
+                  </span>
+                );
+              })()}
             </div>
           );
         })}

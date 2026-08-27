@@ -240,7 +240,14 @@ def refresh_daily_history() -> None:
         key = f"{ts:%Y-%m-%d}"
         day = days.setdefault(key, {})
         agg = day.setdefault("_agent", {"actions": 0, "errors": 0})
-        if e.get("kind") == "action" and e.get("status") == "done":
+        # only PLAYER-FACING actions mark an "agent acted" day — daily maintenance
+        # (audits, housekeeping, restock polls) runs every day and would paint every
+        # square green, destroying the chart's action→effect reading
+        if (
+            e.get("kind") == "action"
+            and e.get("status") == "done"
+            and e.get("action") in ("level_pipeline", "code_drop", "individual_code", "level_push")
+        ):
             agg["actions"] += 1
         elif e.get("kind") == "error":
             agg["errors"] += 1

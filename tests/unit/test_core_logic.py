@@ -222,3 +222,57 @@ def test_ab_variant_alternates_and_degrades():
     # no alt -> no experiment, exact old behavior
     assert _ab_variant({"message": "solo"}, 0) == ("solo", None)
     assert _ab_variant({}, 5) == (None, None)
+
+
+class TestDoorsOpen:
+    """doors_open() must mirror validate()'s cap checks exactly."""
+
+    def _patch_counts(self, monkeypatch, by_window):
+        """by_window: {(frozenset(types), hours): count}"""
+        from agent import guardrails
+
+        def fake_count(kind, game, action_types, hours):
+            return by_window.get((frozenset(action_types), hours), 0)
+
+        monkeypatch.setattr(guardrails, "_count_recent", fake_count)
+
+    def test_fresh_day_is_open(self, monkeypatch):
+        from agent import guardrails
+
+        self._patch_counts(monkeypatch, {})
+        assert guardrails.doors_open("subliminal-words") is True
+
+    def test_push_window_saturated_closes_everything(self, monkeypatch):
+        from agent import guardrails
+
+        self._patch_counts(
+            monkeypatch,
+            {(frozenset({"code_drop", "individual_code", "level_pipeline", "level_push"}), 4): 2},
+        )
+        assert guardrails.doors_open("subliminal-words") is False
+
+    def test_all_daily_budgets_spent_is_closed(self, monkeypatch):
+        from agent import guardrails
+
+        self._patch_counts(
+            monkeypatch,
+            {
+                (frozenset({"code_drop", "individual_code", "level_pipeline", "level_push"}), 4): 1,
+                (frozenset({"level_pipeline"}), 24): 1,
+                (frozenset({"code_drop", "individual_code"}), 24): 1,
+                (frozenset({"level_push"}), 24): 1,
+            },
+        )
+        assert guardrails.doors_open("subliminal-words") is False
+
+    def test_level_door_alone_keeps_it_open(self, monkeypatch):
+        from agent import guardrails
+
+        self._patch_counts(
+            monkeypatch,
+            {
+                (frozenset({"code_drop", "individual_code"}), 24): 1,
+                (frozenset({"level_push"}), 24): 1,
+            },
+        )
+        assert guardrails.doors_open("subliminal-words") is True

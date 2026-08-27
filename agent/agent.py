@@ -62,6 +62,25 @@ def detect(node_input) -> Event:
         signals.append(payload)
     if not signals:
         return Event(output="idle", route="idle")
+    directives = state.pending_directives()
+    # Pre-gate: if every signaled game has all its action doors shut (caps spent /
+    # push window saturated) and there is nothing else for the model to address,
+    # don't wake it — code already knows the only possible answer is "nothing".
+    games = {s.get("game") for s in signals}
+    if not directives and None not in games and all(
+        not guardrails.doors_open(g) for g in games
+    ):
+        state.ledger(
+            "decision",
+            None,
+            action="gate",
+            actions=0,
+            enqueued=0,
+            rejected=0,
+            notes="players active, but all of today's action budgets are already "
+            "used — AI not consulted",
+        )
+        return Event(output="idle", route="idle")
     context = {
         "now_utc": state.now().strftime("%Y-%m-%d %H:%M UTC (%A)"),
         "signals": signals,
@@ -76,7 +95,7 @@ def detect(node_input) -> Event:
             }
             for e in state.recent_ledger(hours=24, kind="action")
         ],
-        "directives": state.pending_directives(),
+        "directives": directives,
     }
     return Event(output=json.dumps(context, default=str), route="decide")
 

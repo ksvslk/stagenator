@@ -80,6 +80,38 @@ def validate(action: dict) -> dict | None:
     return None
 
 
+def doors_open(game: str) -> bool:
+    """Deterministic mirror of validate(): could ANY action for this game pass the
+    gate right now? Used to skip the Strategist entirely on pulses where every
+    door is shut — waking the model to conclude "caps reached" wastes a call and
+    fills the feed with no-op decisions. Mirrors the checks below; keep in sync."""
+    pushes = _count_recent(
+        "action",
+        game,
+        {"code_drop", "individual_code", "level_pipeline", "level_push"},
+        hours=4,
+    )
+    if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
+        return False
+    if (
+        _count_recent("action", game, {"level_pipeline"}, hours=24)
+        < config.CAPS["levels_per_game_per_day"]
+    ):
+        return True
+    if (
+        _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
+        < config.CAPS["code_actions_per_game_per_day"]
+    ):
+        return True
+    # re-announce door: one level_push per game per day (task idempotency key)
+    if (
+        config.GAMES[game].get("level_push_topic")
+        and _count_recent("action", game, {"level_push"}, hours=24) < 1
+    ):
+        return True
+    return False
+
+
 ACTION_TO_TASK = {
     "ship_level": "level_pipeline",
     "send_code_drop": "code_drop",

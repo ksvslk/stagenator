@@ -54,6 +54,24 @@ game per day. When the AI creates (level designs, images, video, quality
 checks), it does so inside pipelines that code starts, checks, and can throw
 away.
 
+**Why not a tool-calling agent, or more agents?** The action menu is small, fixed,
+and high-stakes — minting codes with monetary value, pushing to strangers' phones,
+publishing into store apps, unattended. For that profile, "the model fills in a form,
+tested code executes behind hard limits" beats handing the model tools: the blast
+radius is *which of five safe things, when* — never *whatever the model decided to
+call*. This is ADK's own paved road, not a workaround: the workflow graph and
+schema-locked `LlmAgent` output are first-class ADK features, and Google's
+`ambient-expense-agent` sample uses the same pattern (business rules in code, the
+model for judgment). Under the surface there are ~eight specialist model roles —
+strategist, reflector, two level designers, two visual inspectors, a gift selector,
+an error diagnostician — orchestrated by code instead of a manager-LLM, which is the
+component that drifts and gets prompt-injected. Three ADK idioms are deliberately
+bypassed (tool callbacks, the tool system, session state) because the model holds no
+tools; an independent conformance review confirmed each deviation is deliberate.
+The boundary is explicit and grows on evidence, not vibes: when the graded eval says
+a role is overloaded, it splits; when signals outgrow pre-gathered context, the
+Strategist gains read-only lookups — eyes before hands.
+
 Everything runs as **one ADK Workflow graph on Cloud Run** (asleep and free
 when idle), woken by Cloud Scheduler and Eventarc. Every action is a job on a
 crash-proof to-do list: a crash mid-job is retried, a failure retries

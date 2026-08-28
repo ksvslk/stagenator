@@ -51,6 +51,8 @@ def validate(action: dict) -> dict | None:
         return {"error": f"gift_game {gift!r} is not an active game"}
 
     if t in ("send_code_drop", "send_individual_code"):
+        if not config.GAMES[game].get("codes_enabled", True):
+            return {"error": f"{game} has no promo-code campaign configured"}
         acts = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
         if acts >= config.CAPS["code_actions_per_game_per_day"]:
             return {"error": f"code-notification/day cap reached for {game} (1/day)"}

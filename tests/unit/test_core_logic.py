@@ -330,3 +330,18 @@ class TestPalindromeGates:
 
         assert not p.passes_gates("")
         assert not p.passes_gates("12321")  # digits are not letters
+
+
+class TestCodesCapabilityGate:
+    def test_code_action_refused_for_game_without_campaign(self, monkeypatch):
+        from agent import guardrails
+
+        monkeypatch.setattr(guardrails, "_count_recent", lambda *a, **k: 0)
+        verdict = guardrails.validate({"type": "send_code_drop", "game": "palindrome"})
+        assert verdict and "campaign" in verdict["error"]
+
+    def test_level_action_still_allowed_for_that_game(self, monkeypatch):
+        from agent import guardrails
+
+        monkeypatch.setattr(guardrails, "_count_recent", lambda *a, **k: 0)
+        assert guardrails.validate({"type": "ship_level", "game": "palindrome"}) is None

@@ -63,6 +63,9 @@ GAMES: dict[str, dict] = {
         # "fcmTokensIos" when it goes live.
         "fcm_token_collections": ["fcmTokensAndroid"],
         "tier": 1,  # Android 7.1.0 live: per-player identity + tokens
+        # No proffer.codes campaign exists for this game yet — code actions are
+        # refused at the gate rather than failing three times and dead-lettering.
+        "codes_enabled": False,
         "level_backend": "palindrome",  # text levels into user_submitted_levels
         "play_package": "com.indest.hah",
         "app_store_id": "1673006365",

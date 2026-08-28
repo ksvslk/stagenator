@@ -31,6 +31,26 @@ function reportListenerError(path: string, err: unknown) {
 
 declare const __BUILD_INFO__: string;
 
+// One entry per game the agent runs — label, chart/tab color, store links.
+const GAME_META: Record<string, { label: string; color: string; fg: string; appStore: string; play: string }> = {
+  'subliminal-words': {
+    label: 'Subliminal Words', color: 'var(--sw-c)', fg: 'var(--sw-t)',
+    appStore: 'https://apps.apple.com/app/subliminal-words/id6468366578',
+    play: 'https://play.google.com/store/apps/details?id=com.indest.subliminalwords',
+  },
+  'ai-movie-quiz': {
+    label: 'AI Movie Quiz', color: '#d9a514', fg: '#1c1917',
+    appStore: 'https://apps.apple.com/app/ai-movie-quiz/id6752119990',
+    play: 'https://play.google.com/store/apps/details?id=com.indest.aimoviequiz',
+  },
+  'palindrome': {
+    label: 'Palindrome', color: '#0d9488', fg: '#ffffff',
+    appStore: 'https://apps.apple.com/app/hah-palindrome-puzzles/id1673006365',
+    play: 'https://play.google.com/store/apps/details?id=com.indest.hah',
+  },
+};
+const GAME_KEYS = Object.keys(GAME_META);
+
 function useCollection(path: string, orderField: string, n = 50): Doc[] {
   const [docs, setDocs] = useState<Doc[]>([]);
   useEffect(() => {
@@ -483,7 +503,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
 
 function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
-  const GAMES = ['subliminal-words', 'ai-movie-quiz'];
+  const GAMES = GAME_KEYS;
   const levelEvents = ledger.filter((e) => {
     const r = (e.result ?? {}) as Record<string, unknown>;
     return (
@@ -617,8 +637,7 @@ function HistoryOverview() {
   const days = (hist.days ?? {}) as Record<string, Record<string, { players?: number; revenue_usd?: number; engagement_min?: number; actions?: number; errors?: number }>>;
   const keys = Object.keys(days).sort().slice(-30);
   if (keys.length < 2) return null;
-  const games = ['subliminal-words', 'ai-movie-quiz'];
-  const colors: Record<string, string> = { 'subliminal-words': 'var(--sw-c)', 'ai-movie-quiz': '#d9a514' };
+  const games = GAME_KEYS;
   const W = 580, PAD = 8;
   const slot = (W - 2 * PAD) / keys.length;
   const x0 = (i: number) => PAD + i * slot;
@@ -653,18 +672,18 @@ function HistoryOverview() {
                 ? 'border-transparent text-white'
                 : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
             }`}
-            style={game === g ? { background: colors[g], color: g === 'ai-movie-quiz' ? '#1c1917' : 'var(--sw-t)' } : undefined}
+            style={game === g ? { background: GAME_META[g].color, color: GAME_META[g].fg } : undefined}
           >
-            {g === 'subliminal-words' ? 'Subliminal Words' : 'AI Movie Quiz'}
+            {GAME_META[g].label}
           </button>
         ))}
         <span className="text-[10.5px] text-zinc-500 dark:text-zinc-400 ml-auto">
           live on{' '}
           <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
-            href={game === 'subliminal-words' ? 'https://apps.apple.com/app/subliminal-words/id6468366578' : 'https://apps.apple.com/app/ai-movie-quiz/id6752119990'}>App Store</a>
+            href={GAME_META[game].appStore}>App Store</a>
           {' · '}
           <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
-            href={game === 'subliminal-words' ? 'https://play.google.com/store/apps/details?id=com.indest.subliminalwords' : 'https://play.google.com/store/apps/details?id=com.indest.aimoviequiz'}>Google Play</a>
+            href={GAME_META[game].play}>Google Play</a>
         </span>
       </div>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-3 text-[11px]">

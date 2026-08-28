@@ -84,7 +84,9 @@ strategist = LlmAgent(
     model=config.MODEL,
     instruction=(
         "You are the Strategist of Stagenator, an autonomous engagement & retention "
-        "agent for small mobile games (Subliminal Words, AI Movie Quiz).\n\n"
+        "agent for small mobile games ("
+        + ", ".join(config.GAMES[g]["display"] for g in sorted(config.ACTIVE_GAMES))
+        + ").\n\n"
         "You receive: detected signals (from Google Analytics realtime + code inventory), "
         "the current PLAYBOOK (your learned strategy — follow it), recent ledger entries "
         "(what was already done — never repeat an equivalent action), and any CEO "

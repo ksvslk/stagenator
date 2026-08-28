@@ -51,6 +51,22 @@ GAMES: dict[str, dict] = {
         "play_package": "com.indest.aimoviequiz",
         "app_store_id": "6752119990",
     },
+    "palindrome": {
+        "display": "Palindrome",
+        "project": "hah-35889753",
+        "ga_property": "307701325",
+        "platforms": ["android", "ios"],
+        # The agent announces its own levels here (unlike SW/AMQ, whose game
+        # backends fire their own new-level push).
+        "level_push_topic": "player_levels",
+        # iOS 3.1.0 (which registers tokens) is still in review — add
+        # "fcmTokensIos" when it goes live.
+        "fcm_token_collections": ["fcmTokensAndroid"],
+        "tier": 1,  # Android 7.1.0 live: per-player identity + tokens
+        "level_backend": "palindrome",  # text levels into user_submitted_levels
+        "play_package": "com.indest.hah",
+        "app_store_id": "1673006365",
+    },
 }
 
 ACTIVE_GAMES = {g for g, cfg in GAMES.items() if cfg.get("active", True)}

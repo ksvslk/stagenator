@@ -14,6 +14,8 @@ def run(task: dict) -> dict:
         return _subliminal_generate_and_submit(task)
     if game == "ai-movie-quiz":
         return _moviequiz_generate_and_submit(task)
+    if game == "palindrome":
+        return _palindrome_generate_and_submit(task)
     raise ValueError(f"no level pipeline for {game}")
 
 
@@ -47,3 +49,9 @@ def _moviequiz_generate_and_submit(task: dict) -> dict:
     from agent.pipelines import moviequiz
 
     return moviequiz.run(task)
+
+
+def _palindrome_generate_and_submit(task: dict) -> dict:
+    from agent.pipelines import palindrome
+
+    return palindrome.run(task)

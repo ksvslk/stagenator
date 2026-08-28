@@ -409,3 +409,39 @@ class TestPalindromeSafetyLayering:
             ),
         )
         assert p.judge(["STEP ON NO PETS"], ["hint"]) is None
+
+
+class TestPalindromeHintCompleteness:
+    """A level with missing translations is refused by the Android client, and
+    that refusal abandons the entire sync batch — so we never publish one."""
+
+    def _judge(self, monkeypatch, hints):
+        from agent.pipelines import palindrome as p
+
+        monkeypatch.setattr(
+            p.genai_client,
+            "generate_json",
+            lambda prompt, *a, **k: (
+                {"suitable": True}
+                if "screen puzzle content" in prompt
+                else {"palindrome": "STEP ON NO PETS", "hints": hints, "why": "neat"}
+            ),
+        )
+        return p.judge(["STEP ON NO PETS"], ["hint", "hint_de", "hint_et"])
+
+    def test_complete_hints_accepted(self, monkeypatch):
+        got = self._judge(
+            monkeypatch, {"hint": "Animals", "hint_de": "Tiere", "hint_et": "Loomad"}
+        )
+        assert got and len(got["hints"]) == 3
+
+    def test_missing_language_rejects_the_level(self, monkeypatch):
+        assert self._judge(monkeypatch, {"hint": "Animals", "hint_de": "Tiere"}) is None
+
+    def test_empty_translation_rejects_the_level(self, monkeypatch):
+        assert (
+            self._judge(
+                monkeypatch, {"hint": "Animals", "hint_de": "", "hint_et": "Loomad"}
+            )
+            is None
+        )

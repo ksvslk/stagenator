@@ -227,7 +227,8 @@ def judge(candidates: list[str], keys: list[str]) -> dict | None:
         "letters. If none is suitable, choose none. Then write a SHORT category hint (1-3 words, like "
         '"Geography" or "Wordplay") describing its meaning, translated for each '
         "requested key.\n"
-        f"Hint keys (return every one; 'hint' is English): {keys}\n"
+        f"Hint keys — you MUST return ALL {len(keys)} of them, none omitted or "
+        f"left empty ('hint' is English): {keys}\n"
         'Reply JSON: {"palindrome": "<chosen, exactly as given>", '
         '"hints": {"hint": "...", "hint_de": "...", ...}, "why": "<one line>"}'
     )
@@ -242,8 +243,14 @@ def judge(candidates: list[str], keys: list[str]) -> dict | None:
     if chosen not in candidates or not passes_gates(chosen):
         log.warning("judge returned a non-candidate or failing phrase: %r", chosen)
         return None
-    hints = {k: str(v) for k, v in hints.items() if k in keys and v}
-    if not hints.get("hint"):
+    hints = {k: str(v).strip() for k, v in hints.items() if k in keys and v}
+    # EVERY language or nothing. The Android client refuses a level whose hints
+    # are incomplete, and that refusal abandons the whole snapshot — so one
+    # half-translated level of ours would stop every level from syncing. Better
+    # to fail here and let the task retry.
+    missing = [k for k in keys if not hints.get(k)]
+    if missing:
+        log.warning("dropping %r — hints missing for %s", chosen, ",".join(missing))
         return None
     # Separate, single-purpose verdict — kept apart from the taste judgment so
     # "this one is the cleverest" can never double as "this one is safe".

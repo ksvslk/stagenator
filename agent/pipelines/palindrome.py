@@ -35,6 +35,23 @@ FEATURED_FLAG = "isFeatured_v3"
 # levels above). Kept in sync with the apps' own range filters.
 ID_MIN, ID_MAX = 1081, 9999
 
+# Words that must never reach a level, matched whole-word against the phrase.
+# The model is told to keep levels family-friendly too, but taste is guidance,
+# not a guard — this list is the part that cannot be talked around, and it
+# matters most for the r/palindromes feed, where crude entries are common
+# (several well-known palindromes are unusable for this reason).
+BLOCKED_WORDS = frozenset(
+    """
+    ass arse arsehole bastard bitch bollocks boob boobs bugger cock crap cum
+    cunt dick dildo dyke fag faggot fuck fucked fucker fucking gash goddamn
+    hell horny jizz knob nigga nigger nipple orgasm penis piss pissed porn
+    prick pube pubes pussy queer rape rapist retard screwed semen sex sexy
+    shag shit shite skank slag slut spunk tit tits titties turd twat vagina
+    wank wanker whore
+    """.split()
+)
+WORDS = re.compile(r"[A-Za-z]+")
+
 # Every non-letter becomes a board tile, so punctuation is rationed hard.
 ALLOWED = re.compile(r"^[A-Za-z ,.!?'-]+$")
 PUNCT = re.compile(r"[,.!?'-]")
@@ -59,10 +76,18 @@ def is_palindrome(text: str) -> bool:
     return len(n) > 0 and n == n[::-1]
 
 
+def is_clean(raw: str) -> bool:
+    """Whole-word match, so ordinary words that merely contain a rude sequence
+    (ASSESS, CLASSIC, SHIITAKE) are not punished for it."""
+    return not any(w.lower() in BLOCKED_WORDS for w in WORDS.findall(raw))
+
+
 def passes_gates(raw: str) -> bool:
     """Deterministic admission test. Nothing reaches the model or the game
     without surviving this — including anything scraped from a public forum."""
     if not raw or not ALLOWED.match(raw):
+        return False
+    if not is_clean(raw):
         return False
     if len(PUNCT.findall(raw)) > 2:  # each mark is a tile the player must place
         return False
@@ -172,6 +197,8 @@ def generate_candidates(used: set[str], n: int = 20) -> list[str]:
         "- letters and spaces; at most 2 punctuation marks total\n"
         "- must be a genuine sentence or phrase a person would find clever, "
         "not letter-salad that merely mirrors\n"
+        "- must be family-friendly: nothing crude, sexual, violent or insulting — "
+        "the game is played by all ages\n"
         'Reply JSON: {"palindromes": ["...", "..."]}'
     )
     items = (reply or {}).get("palindromes") or []
@@ -189,8 +216,9 @@ def judge(candidates: list[str], keys: list[str]) -> dict | None:
         "is already verified to read the same in both directions.\n"
         f"Candidates: {json.dumps(candidates[:40])}\n"
         "Choose the ONE that makes the best puzzle: a genuinely clever, sensible, "
-        "memorable phrase — reject anything nonsensical, offensive, or that reads "
-        "like random letters. Then write a SHORT category hint (1-3 words, like "
+        "memorable phrase that is FAMILY-FRIENDLY — reject anything crude, sexual, "
+        "violent, insulting, political, nonsensical, or that reads like random "
+        "letters. If none is suitable, choose none. Then write a SHORT category hint (1-3 words, like "
         '"Geography" or "Wordplay") describing its meaning, translated for each '
         "requested key.\n"
         f"Hint keys (return every one; 'hint' is English): {keys}\n"

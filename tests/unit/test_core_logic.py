@@ -345,3 +345,28 @@ class TestCodesCapabilityGate:
 
         monkeypatch.setattr(guardrails, "_count_recent", lambda *a, **k: 0)
         assert guardrails.validate({"type": "ship_level", "game": "palindrome"}) is None
+
+
+class TestPalindromeContentGate:
+    """Family-friendly is enforced in code, not left to the model's taste —
+    the r/palindromes feed contains plenty that must never reach the game."""
+
+    def test_vulgar_palindromes_blocked(self):
+        from agent.pipelines import palindrome as p
+
+        # genuine, well-known palindromes that are unusable for this game
+        assert not p.passes_gates("A SLUT NIXES SEX IN TULSA")
+        assert not p.passes_gates("SEX AT NOON TAXES")
+
+    def test_blocking_is_case_insensitive(self):
+        from agent.pipelines import palindrome as p
+
+        assert not p.is_clean("Sex at noon taxes")
+        assert not p.is_clean("sex at noon taxes")
+
+    def test_innocent_words_containing_rude_sequences_survive(self):
+        from agent.pipelines import palindrome as p
+
+        for phrase in ("ASSESS AN ASSESSA", "NO, IT IS OPPOSITION", "STEP ON NO PETS"):
+            assert p.is_clean(phrase), phrase
+            assert p.passes_gates(phrase), phrase

@@ -59,9 +59,7 @@ GAMES: dict[str, dict] = {
         # The agent announces its own levels here (unlike SW/AMQ, whose game
         # backends fire their own new-level push).
         "level_push_topic": "player_levels",
-        # iOS 3.1.0 (which registers tokens) is still in review — add
-        # "fcmTokensIos" when it goes live.
-        "fcm_token_collections": ["fcmTokensAndroid"],
+        "fcm_token_collections": ["fcmTokensAndroid", "fcmTokensIos"],
         "tier": 1,  # Android 7.1.0 live: per-player identity + tokens
         # No proffer.codes campaign exists for this game yet — code actions are
         # refused at the gate rather than failing three times and dead-lettering.

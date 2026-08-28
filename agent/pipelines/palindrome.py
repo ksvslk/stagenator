@@ -35,19 +35,15 @@ FEATURED_FLAG = "isFeatured_v3"
 # levels above). Kept in sync with the apps' own range filters.
 ID_MIN, ID_MAX = 1081, 9999
 
-# Words that must never reach a level, matched whole-word against the phrase.
-# The model is told to keep levels family-friendly too, but taste is guidance,
-# not a guard — this list is the part that cannot be talked around, and it
-# matters most for the r/palindromes feed, where crude entries are common
-# (several well-known palindromes are unusable for this reason).
+# A deliberately SHORT floor: only words that are unacceptable in any context.
+# Judgement belongs to is_suitable() — a list cannot tell a bird from an insult
+# ("tit"), a rooster from profanity, or spot innuendo with no rude word in it.
+# This exists because candidates are scraped from a public forum: untrusted text
+# can try to argue with a model, but it cannot argue with a word match.
 BLOCKED_WORDS = frozenset(
     """
-    ass arse arsehole bastard bitch bollocks boob boobs bugger cock crap cum
-    cunt dick dildo dyke fag faggot fuck fucked fucker fucking gash goddamn
-    hell horny jizz knob nigga nigger nipple orgasm penis piss pissed porn
-    prick pube pubes pussy queer rape rapist retard screwed semen sex sexy
-    shag shit shite skank slag slut spunk tit tits titties turd twat vagina
-    wank wanker whore
+    cunt faggot fuck fucked fucker fucking jizz motherfucker nigga nigger
+    rapist retard slut twat wanker whore
     """.split()
 )
 WORDS = re.compile(r"[A-Za-z]+")
@@ -205,6 +201,33 @@ def generate_candidates(used: set[str], n: int = 20) -> list[str]:
     return [p for p in items if isinstance(p, str)]
 
 
+# ---------------------------------------------------------------- safety -----
+
+
+def is_suitable(phrase: str) -> bool:
+    """A model verdict on MEANING, which a wordlist cannot give: innuendo,
+    slurs, cruelty, or anything else unfit for a game played by children. The
+    blocklist is the floor and this is the ceiling — the phrase must clear both,
+    and an unreadable or failed answer counts as unsuitable."""
+    reply = genai_client.generate_json(
+        "You screen puzzle content for a word game played by all ages, including "
+        "children.\n"
+        f"Phrase: {json.dumps(phrase)}\n"
+        "Judge the MEANING, not just the words: reject sexual content or innuendo, "
+        "slurs or stereotypes about any group, violence, cruelty, drugs, profanity, "
+        "or anything a parent would object to. When uncertain, reject.\n"
+        'Reply JSON: {"suitable": true|false, "reason": "<short>"}'
+    )
+    if not reply or reply.get("suitable") is not True:
+        log.info(
+            "rejected as unsuitable: %r (%s)",
+            phrase,
+            (reply or {}).get("reason", "no verdict"),
+        )
+        return False
+    return True
+
+
 # ----------------------------------------------------------------- judge -----
 
 
@@ -238,6 +261,10 @@ def judge(candidates: list[str], keys: list[str]) -> dict | None:
         return None
     hints = {k: str(v) for k, v in hints.items() if k in keys and v}
     if not hints.get("hint"):
+        return None
+    # Separate, single-purpose verdict — kept apart from the taste judgment so
+    # "this one is the cleverest" can never double as "this one is safe".
+    if not is_suitable(chosen):
         return None
     return {"palindrome": chosen.upper(), "hints": hints, "why": reply.get("why", "")}
 

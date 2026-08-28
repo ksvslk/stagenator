@@ -348,59 +348,44 @@ class TestCodesCapabilityGate:
 
 
 class TestPalindromeContentGate:
-    """Family-friendly is enforced in code, not left to the model's taste —
-    the r/palindromes feed contains plenty that must never reach the game."""
+    """Content safety is the model's verdict alone, so the wiring around it has
+    to be strict: fail closed, and never accept a near-miss for a yes."""
 
-    def test_unambiguous_terms_are_blocked_in_code(self):
-        from agent.pipelines import palindrome as p
-
-        # a genuine, well-known palindrome that is unusable for this game
-        assert not p.passes_gates("A SLUT NIXES SEX IN TULSA")
-
-    def test_blocking_is_case_insensitive(self):
-        from agent.pipelines import palindrome as p
-
-        assert not p.is_clean("What a slut")
-        assert not p.is_clean("WHAT A SLUT")
-
-    def test_context_dependent_words_are_left_to_the_model(self):
-        from agent.pipelines import palindrome as p
-
-        # "tit" is a bird, "cock" a rooster, "sex" is not profanity: a list
-        # cannot read context, so these pass the floor and is_suitable() judges
-        # the meaning instead.
-        assert p.is_clean("Tit little? Melt, tilt it.")
-        assert p.is_clean("SEX AT NOON TAXES")
-
-    def test_innocent_words_containing_rude_sequences_survive(self):
-        from agent.pipelines import palindrome as p
-
-        for phrase in ("ASSESS AN ASSESSA", "NO, IT IS OPPOSITION", "STEP ON NO PETS"):
-            assert p.is_clean(phrase), phrase
-            assert p.passes_gates(phrase), phrase
-
-
-class TestPalindromeSafetyLayering:
-    """The wordlist is the floor, the model verdict is the ceiling — a phrase
-    must clear both, and a failed or unreadable verdict counts as unsafe."""
-
-    def test_model_verdict_is_required(self, monkeypatch):
+    def test_missing_verdict_rejects(self, monkeypatch):
         from agent.pipelines import palindrome as p
 
         monkeypatch.setattr(p.genai_client, "generate_json", lambda *_a, **_k: None)
         assert not p.is_suitable("STEP ON NO PETS")
 
-    def test_only_an_explicit_yes_passes(self, monkeypatch):
+    def test_unsuitable_verdict_rejects(self, monkeypatch):
         from agent.pipelines import palindrome as p
 
         monkeypatch.setattr(
-            p.genai_client, "generate_json", lambda *_a, **_k: {"suitable": "yes"}
+            p.genai_client,
+            "generate_json",
+            lambda *_a, **_k: {"suitable": False, "reason": "slur"},
         )
-        assert not p.is_suitable("STEP ON NO PETS")  # string, not boolean true
+        assert not p.is_suitable("NURSE, I SPY GYPSIES, RUN")
+
+    def test_only_boolean_true_is_a_yes(self, monkeypatch):
+        from agent.pipelines import palindrome as p
+
+        for value in ("yes", "true", 1, None, {}):
+            monkeypatch.setattr(
+                p.genai_client,
+                "generate_json",
+                lambda *_a, _v=value, **_k: {"suitable": _v},
+            )
+            assert not p.is_suitable("STEP ON NO PETS"), value
         monkeypatch.setattr(
             p.genai_client, "generate_json", lambda *_a, **_k: {"suitable": True}
         )
         assert p.is_suitable("STEP ON NO PETS")
+
+
+class TestPalindromeSafetyLayering:
+    """A phrase the safety verdict rejects must not reach the game, however
+    good the taste judgement thought it was."""
 
     def test_judge_drops_a_candidate_the_verdict_rejects(self, monkeypatch):
         from agent.pipelines import palindrome as p

@@ -92,33 +92,117 @@ def build_layout(word: str) -> list[dict]:
     x,y normalized (0-1, center), fontSize (24-512), rotationDegrees, scaleX/scaleY
     (0.2-12), skewX/YDegrees (<=80), opacity, fontWeightValue in {200,400,700}.
 
-    Letters keep left-to-right order so the word stays findable (not a jumble), but
-    each level varies: a per-level base size and vertical spread, then per-letter size,
-    rotation, scale, skew and drift. The horizontal jitter is kept under half a slot so
-    letters never cross, preserving the reading path."""
+    Letters are placed IN ORDER along a PATH (a curved/diagonal quadratic Bézier) that
+    spans a large part of the 1024 canvas, and they are SPREAD along its whole length —
+    so different levels arrange the word in very different ways, using the entire canvas
+    rather than a compact block. Each letter follows the local path direction (kept
+    upright) with per-letter rotation, size, scale and skew jitter. Spacing along the
+    path keeps the letters' bounding circles apart, so they never overlap."""
     n = len(word)
-    margin = 0.13
-    slot = (1 - 2 * margin) / n
-    base = random.uniform(110, 195)  # per-LEVEL scale: some big and bold, some smaller
-    spread = random.uniform(0.10, 0.24)  # per-LEVEL vertical liveliness
+    MIN_FONT = 96.0  # ControlNet floor: a smaller glyph won't render cleanly in the mask
+    base = random.uniform(140, 235)
+    props = [
+        {
+            "letter": ch,
+            "fs": base * random.uniform(0.9, 1.9),  # floored at MIN_FONT below
+            "sx": random.uniform(0.85, 1.3),
+            "sy": random.uniform(1.0, 1.55),
+            "rotj": random.uniform(-22, 22),
+            "skx": random.uniform(-12, 12),
+            "sky": random.uniform(-5, 5),
+            "fw": random.choice([400, 700, 700]),
+        }
+        for ch in word
+    ]
+
+    def _radius(p: dict) -> float:
+        return 0.5 * math.hypot(p["fs"] * 0.72 * p["sx"], p["fs"] * 0.82 * p["sy"])
+
+    radii = [_radius(p) for p in props]
+    min_gap = 0.025 * CANVAS
+    need = sum(2 * r for r in radii) + min_gap * (n - 1)  # min length to lay letters out
+    rmax = max(radii)
+    m = rmax + 0.015 * CANVAS  # keep the path (and glyphs) inside the canvas
+    span_max = math.dist((m, m), (CANVAS - m, CANVAS - m))
+    # path spans ENOUGH for the word (letters keep size) and as much of the canvas as
+    # fits (so the word spreads out) — longer words automatically get longer paths
+    span = min(span_max, max(0.6 * CANVAS, need * random.uniform(1.0, 1.5)))
+
+    # lay a segment of length `span` at a random angle, centred so both ends stay on canvas
+    phi = random.uniform(0, 2 * math.pi)
+    half = span / 2
+    ex, ey = abs(half * math.cos(phi)), abs(half * math.sin(phi))
+    lox, hix, loy, hiy = m + ex, CANVAS - m - ex, m + ey, CANVAS - m - ey
+    ccx = random.uniform(lox, hix) if lox < hix else CANVAS / 2
+    ccy = random.uniform(loy, hiy) if loy < hiy else CANVAS / 2
+    a = (ccx - half * math.cos(phi), ccy - half * math.sin(phi))
+    b = (ccx + half * math.cos(phi), ccy + half * math.sin(phi))
+    ux, uy = -math.sin(phi), math.cos(phi)  # perpendicular -> bow into a curve
+    bow = random.uniform(-0.42, 0.42) * span * 0.5
+    cx, cy = ccx + ux * bow, ccy + uy * bow
+
+    def _bez(t: float) -> tuple[float, float]:
+        u = 1 - t
+        return (
+            u * u * a[0] + 2 * u * t * cx + t * t * b[0],
+            u * u * a[1] + 2 * u * t * cy + t * t * b[1],
+        )
+
+    samp = [_bez(i / 160) for i in range(161)]
+    arc = [0.0]
+    for i in range(1, len(samp)):
+        arc.append(arc[-1] + math.dist(samp[i - 1], samp[i]))
+    path_len = arc[-1] or 1.0
+
+    # shrink only if the min layout still exceeds the path, then floor every glyph at
+    # MIN_FONT so none is too small for ControlNet
+    fit = min(1.0, (path_len * 0.98) / need) if need > 0 else 1.0
+    for p in props:
+        p["fs"] = max(MIN_FONT, p["fs"] * fit)
+    radii = [_radius(p) for p in props]
+    foot = [2 * r for r in radii]
+    slack = max(0.0, path_len - sum(foot))
+    gap = slack / (n + 1)  # equal gaps at both ends and between -> letters use the whole path
+
+    def _on_path(s: float) -> tuple[float, float, float]:
+        s = min(max(s, 0.0), path_len)
+        j = 1
+        while j < len(arc) and arc[j] < s:
+            j += 1
+        j = min(j, len(arc) - 1)
+        seg = (arc[j] - arc[j - 1]) or 1.0
+        f = (s - arc[j - 1]) / seg
+        x = samp[j - 1][0] + (samp[j][0] - samp[j - 1][0]) * f
+        y = samp[j - 1][1] + (samp[j][1] - samp[j - 1][1]) * f
+        tang = math.degrees(
+            math.atan2(samp[j][1] - samp[j - 1][1], samp[j][0] - samp[j - 1][0])
+        )
+        return x, y, tang
+
     letters = []
-    for i, ch in enumerate(word):
-        # slot centre + jitter < half a slot -> order (and readability) preserved
-        x = margin + (i + 0.5) * slot + random.uniform(-0.42, 0.42) * slot
-        y = 0.5 + random.uniform(-spread, spread)
+    cursor = gap
+    for p, f in zip(props, foot, strict=True):
+        cursor += f / 2
+        x, y, tang = _on_path(cursor)
+        cursor += f / 2 + gap
+        rot = tang + p["rotj"]
+        while rot > 90:  # follow the path but keep glyphs upright, not inverted
+            rot -= 180
+        while rot < -90:
+            rot += 180
         letters.append(
             {
-                "letter": ch,
-                "x": round(min(max(x, 0.04), 0.96), 4),
-                "y": round(min(max(y, 0.06), 0.94), 4),
-                "fontSize": round(base * random.uniform(0.7, 1.4), 1),  # per-letter size
-                "rotationDegrees": round(random.uniform(-30, 30), 2),
-                "scaleX": round(random.uniform(0.8, 1.35), 3),
-                "scaleY": round(random.uniform(1.0, 1.6), 3),
-                "skewXDegrees": round(random.uniform(-16, 16), 2),
-                "skewYDegrees": round(random.uniform(-6, 6), 2),
+                "letter": p["letter"],
+                "x": round(min(max(x / CANVAS, 0.02), 0.98), 4),
+                "y": round(min(max(y / CANVAS, 0.02), 0.98), 4),
+                "fontSize": round(p["fs"], 1),
+                "rotationDegrees": round(rot, 2),
+                "scaleX": round(p["sx"], 3),
+                "scaleY": round(p["sy"], 3),
+                "skewXDegrees": round(p["skx"], 2),
+                "skewYDegrees": round(p["sky"], 2),
                 "opacity": 1.0,
-                "fontWeightValue": random.choice([400, 700, 700]),
+                "fontWeightValue": p["fw"],
             }
         )
     return letters
@@ -315,29 +399,46 @@ def render_mask(
 
 
 def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
-    """Agent equivalent of the admin dashboard's paint mode: a few freehand brush
-    strokes swept across the word band and baked into the ControlNet mask, so the
-    generated puzzle carries extra obscuring marks and the hidden word is harder to
-    pick out. The reveal SVG stays clean letters — strokes live only in the mask."""
-    from PIL import ImageDraw
+    """Freehand brush strokes swept across the word band and baked into the ControlNet
+    mask so the generated puzzle carries extra background texture. Strokes are drawn on
+    their own layer and composited BEHIND the glyphs (letters always win), so they never
+    cross ON a letter — the word stays crisp and the reveal SVG is clean letters only."""
+    from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
-    d = ImageDraw.Draw(img)
+    stroke = Image.new("L", img.size, 255)  # white = no mark
+    d = ImageDraw.Draw(stroke)
     xs = [L["x"] * CANVAS for L in layout]
-    x0, x1 = min(xs), max(xs)
-    ymid = (sum(L["y"] for L in layout) / len(layout)) * CANVAS
-    for _ in range(n if n is not None else random.randint(2, 5)):
-        width = random.randint(8, 34)  # brush size (admin range 1-50)
-        # per-stroke opacity: 0 = a strong black sweep, ~150 = a faint ghost mark.
-        # The mask is greyscale (L); varying the tone gives layered, uneven obscuring.
-        tone = random.randint(0, 150)
-        sx = random.uniform(x0 - 80, x0 + 120)
-        ex = random.uniform(x1 - 120, x1 + 80)
-        steps = random.randint(4, 7)
-        pts = [
-            (sx + (ex - sx) * (i / (steps - 1)), ymid + random.uniform(-140, 140))
-            for i in range(steps)
-        ]
+    ys = [L["y"] * CANVAS for L in layout]
+    cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)  # word centre — strokes cluster near it
+    for _ in range(n if n is not None else random.randint(3, 6)):
+        width = random.randint(5, 34)  # brush size (admin range 1-50)
+        # per-stroke opacity: 0 = a strong black sweep, ~160 = a faint ghost mark.
+        tone = random.randint(0, 160)
+        # random start near the word, random direction, and a length that ranges from a
+        # short dab to a long sweep across the canvas
+        ang = random.uniform(0, 2 * math.pi)
+        length = random.uniform(90, 820)
+        sx = cx + random.uniform(-260, 260)
+        sy = cy + random.uniform(-260, 260)
+        ex, ey = sx + length * math.cos(ang), sy + length * math.sin(ang)
+        # shape: from near-straight (2 pts) to a wandering curve (up to 9 pts that bow
+        # sideways), so no two strokes look alike
+        steps = random.randint(2, 9)
+        bow = random.uniform(0, 1) * random.uniform(30, 150)
+        phase = random.uniform(0.5, 2.2)
+        nx, ny = -math.sin(ang), math.cos(ang)  # perpendicular to the stroke
+        pts = []
+        for i in range(steps):
+            t = i / (steps - 1) if steps > 1 else 0
+            off = math.sin(t * math.pi * phase) * bow
+            pts.append((sx + (ex - sx) * t + off * nx, sy + (ey - sy) * t + off * ny))
         d.line(pts, fill=tone, width=width, joint="curve")
+    # Keep strokes strictly OFF the glyphs: erase the stroke layer wherever a letter
+    # sits (plus a small halo for a clean gap), so nothing draws on a letter — not even
+    # its soft edge. Then composite behind the letters.
+    letter_mask = img.point(lambda v: 255 if v < 200 else 0).filter(ImageFilter.MaxFilter(13))
+    stroke.paste(255, (0, 0), mask=letter_mask)
+    img.paste(ImageChops.darker(img, stroke))
 
 
 # ---------------------------------------------------------------- QA + dedup ----

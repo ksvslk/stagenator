@@ -672,11 +672,11 @@ def run(task: dict) -> dict:
     # avg_fs spans ~135 (letters near the floor) .. ~300+ (big). Normalise to visibility 0..1.
     visibility = min(1.0, max(0.0, (avg_fs - 135.0) / 165.0))
     # visible layout -> low strength (harder); subtle layout -> high strength (easier).
-    # range [0.90, 1.06]: subtle layout -> 1.06 (easier), full-visibility -> 0.90 floor.
-    difficulty = 1.06 - visibility * 0.16 + random.uniform(-0.03, 0.03)
+    # range [0.90, 1.00]: subtle layout -> 1.00 (easier), full-visibility -> 0.90 floor.
+    difficulty = 1.00 - visibility * 0.10 + random.uniform(-0.02, 0.02)
     if paint:
-        difficulty += 0.04  # paint clutter hides the word a bit -> compensate strength up
-    difficulty = round(min(1.06, max(0.90, difficulty)), 3)
+        difficulty += 0.03  # paint clutter hides the word a bit -> compensate strength up
+    difficulty = round(min(1.00, max(0.90, difficulty)), 3)
 
     if config.DRY_RUN:
         return {

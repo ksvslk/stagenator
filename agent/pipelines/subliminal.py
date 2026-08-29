@@ -68,6 +68,7 @@ def design_level(existing_words: set[str], culture: str | None = None) -> dict |
         + culture_line
         + "Propose ONE new level: a short, punchy English word (3-8 letters, uppercase, "
         "concrete noun or vivid concept) and " + scene_rule + ".\n"
+        "STRONGLY prefer SHORT words (3-5 letters) so the hidden letters render large and bold.\n"
         "The scene must contain NO people, faces, or human figures — use landscapes, objects, "
         "textures, animals, machines, or abstract environments. (People and faces both raise "
         "likeness concerns and disrupt the hidden-word illusion.)\n"
@@ -101,7 +102,7 @@ def build_layout(word: str) -> list[dict]:
     n = len(word)
     # ControlNet floor, raised — but capped per word length so a long word still fits
     # the canvas (an 8-letter word can't have every glyph as big as a 3-letter one)
-    MIN_FONT = min(150.0, 700.0 / n)
+    MIN_FONT = min(215.0, 820.0 / n)
     MAX_FONT = 470.0  # near the 512 cap — a letter this size dominates the canvas
     base = random.uniform(175, 255)  # bigger default letter size
     if random.random() < 0.22:  # some puzzles are GIANT: letters dominate the canvas
@@ -110,21 +111,21 @@ def build_layout(word: str) -> list[dict]:
     def _roll_fs() -> float:
         # big by default; ~2 in 5 letters go even bigger for strong contrast. Floored at
         # MIN_FONT here (so packing respects it) and clamped to MAX_FONT.
-        r = random.uniform(0.95, 1.75)
+        r = random.uniform(0.95, 1.3)
         if random.random() < 0.35:
-            r *= random.uniform(1.4, 2.1)
+            r *= random.uniform(1.8, 3.2)  # SOME letters tower over the rest
         return min(MAX_FONT, max(MIN_FONT, base * r))
 
     props = [
         {
             "letter": ch,
             "fs": _roll_fs(),  # clamped to [MIN_FONT, MAX_FONT] below
-            "sx": random.uniform(0.9, 1.35),
+            "sx": random.uniform(1.0, 1.45),  # never narrower than normal -> not thin
             "sy": random.uniform(1.0, 1.55),
             "rotj": random.uniform(-22, 22),
             "skx": random.uniform(-12, 12),
             "sky": random.uniform(-5, 5),
-            "fw": random.choice([700, 700, 700, 400]),  # bold by default
+            "fw": 700,  # always bold -> thick strokes for ControlNet
         }
         for ch in word
     ]
@@ -348,9 +349,11 @@ def render_mask(
     skew->scale, centered), so the hidden word lands where the solution highlights.
     NOTE: rendered from `layout` with PIL fonts, not by rasterizing the SVG — small
     weight differences vs the Roboto-Black solution glyphs are acceptable for a mask."""
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
     img = Image.new("L", (CANVAS, CANVAS), 255)
+    # per-level boldness: often none, sometimes SOME letters go extra chunky (mask only)
+    bold_frac = random.choice([0.0, 0.0, 0.0, 0.3, 0.55])
     for L in layout:
         size = int(L["fontSize"])
         font = ImageFont.truetype(
@@ -368,6 +371,9 @@ def render_mask(
             font=font,
             fill=255,
         )
+        # SOME letters go extra-bold (mask only) for a chunkier ControlNet signal
+        if random.random() < bold_frac:
+            tile = tile.filter(ImageFilter.MaxFilter(2 * max(1, int(size * 0.03)) + 1))
         # apply skewX + non-uniform scale via affine, then rotate
         sx, sy = L["scaleX"], L["scaleY"]
         skew = math.tan(math.radians(L["skewXDegrees"]))

@@ -402,40 +402,56 @@ def render_mask(
 
 
 def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
-    """Freehand brush strokes swept across the word band and baked into the ControlNet
-    mask so the generated puzzle carries extra background texture. Strokes are drawn on
-    their own layer and composited BEHIND the glyphs (letters always win), so they never
-    cross ON a letter — the word stays crisp and the reveal SVG is clean letters only."""
+    """Freehand marks — curved sweeps, filled blobs and irregular splotches — scattered
+    across the WHOLE canvas (mostly the empty areas, not hugging the word) and baked into
+    the ControlNet mask as extra texture. Composited BEHIND the glyphs (erased over each
+    letter + a halo), so they never mark a letter and the reveal SVG stays clean."""
     from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
     stroke = Image.new("L", img.size, 255)  # white = no mark
     d = ImageDraw.Draw(stroke)
-    xs = [L["x"] * CANVAS for L in layout]
-    ys = [L["y"] * CANVAS for L in layout]
-    cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)  # word centre — strokes cluster near it
-    for _ in range(n if n is not None else random.randint(3, 6)):
-        width = random.randint(5, 34)  # brush size (admin range 1-50)
-        # per-stroke opacity: 0 = a strong black sweep, ~160 = a faint ghost mark.
-        tone = random.randint(0, 160)
-        # random start near the word, random direction, and a length that ranges from a
-        # short dab to a long sweep across the canvas
-        ang = random.uniform(0, 2 * math.pi)
-        length = random.uniform(90, 820)
-        sx = cx + random.uniform(-260, 260)
-        sy = cy + random.uniform(-260, 260)
-        ex, ey = sx + length * math.cos(ang), sy + length * math.sin(ang)
-        # shape: from near-straight (2 pts) to a wandering curve (up to 9 pts that bow
-        # sideways), so no two strokes look alike
-        steps = random.randint(2, 9)
-        bow = random.uniform(0, 1) * random.uniform(30, 150)
-        phase = random.uniform(0.5, 2.2)
-        nx, ny = -math.sin(ang), math.cos(ang)  # perpendicular to the stroke
-        pts = []
-        for i in range(steps):
-            t = i / (steps - 1) if steps > 1 else 0
-            off = math.sin(t * math.pi * phase) * bow
-            pts.append((sx + (ex - sx) * t + off * nx, sy + (ey - sy) * t + off * ny))
-        d.line(pts, fill=tone, width=width, joint="curve")
+    C = CANVAS
+    for _ in range(n if n is not None else random.randint(8, 16)):
+        tone = random.randint(0, 175)  # opacity: 0 = strong black, ~175 = faint ghost
+        kind = random.random()
+        if kind < 0.5:
+            # curved sweep, anywhere on the canvas, short dab to long sweep
+            width = random.randint(5, 42)
+            ang = random.uniform(0, 2 * math.pi)
+            length = random.uniform(90, 940)
+            sx, sy = random.uniform(0, C), random.uniform(0, C)
+            ex, ey = sx + length * math.cos(ang), sy + length * math.sin(ang)
+            steps = random.randint(2, 9)
+            bow = random.uniform(0, 1) * random.uniform(30, 170)
+            phase = random.uniform(0.5, 2.2)
+            nx, ny = -math.sin(ang), math.cos(ang)
+            pts = [
+                (
+                    sx + (ex - sx) * (t := i / (steps - 1) if steps > 1 else 0) + math.sin(t * math.pi * phase) * bow * nx,
+                    sy + (ey - sy) * t + math.sin(t * math.pi * phase) * bow * ny,
+                )
+                for i in range(steps)
+            ]
+            d.line(pts, fill=tone, width=width, joint="curve")
+        elif kind < 0.78:
+            # filled blob (rotated-ish ellipse)
+            bx, by = random.uniform(0, C), random.uniform(0, C)
+            rw = random.uniform(25, 155)
+            rh = rw * random.uniform(0.4, 1.7)
+            d.ellipse([bx - rw, by - rh, bx + rw, by + rh], fill=tone)
+        else:
+            # irregular splotch (random polygon)
+            bx, by = random.uniform(0, C), random.uniform(0, C)
+            k = random.randint(5, 9)
+            rad = random.uniform(30, 165)
+            poly = [
+                (
+                    bx + rad * random.uniform(0.5, 1.2) * math.cos(2 * math.pi * j / k),
+                    by + rad * random.uniform(0.5, 1.2) * math.sin(2 * math.pi * j / k),
+                )
+                for j in range(k)
+            ]
+            d.polygon(poly, fill=tone)
     # Keep strokes strictly OFF the glyphs: erase the stroke layer wherever a letter
     # sits (plus a small halo for a clean gap), so nothing draws on a letter — not even
     # its soft edge. Then composite behind the letters.

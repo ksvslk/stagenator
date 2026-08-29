@@ -99,19 +99,21 @@ def build_layout(word: str) -> list[dict]:
     upright) with per-letter rotation, size, scale and skew jitter. Spacing along the
     path keeps the letters' bounding circles apart, so they never overlap."""
     n = len(word)
-    MIN_FONT = 96.0  # ControlNet floor: a smaller glyph won't render cleanly in the mask
-    MAX_FONT = 380.0  # a glyph this size already fills ~1/3 of the canvas — "huge"
-    base = random.uniform(150, 230)  # bigger default letter size
+    # ControlNet floor, raised — but capped per word length so a long word still fits
+    # the canvas (an 8-letter word can't have every glyph as big as a 3-letter one)
+    MIN_FONT = min(150.0, 700.0 / n)
+    MAX_FONT = 470.0  # near the 512 cap — a letter this size dominates the canvas
+    base = random.uniform(175, 255)  # bigger default letter size
     if random.random() < 0.22:  # some puzzles are GIANT: letters dominate the canvas
-        base *= random.uniform(1.3, 1.55)
+        base *= random.uniform(1.3, 1.6)
 
     def _roll_fs() -> float:
-        # mostly big, but ~1 in 3 letters goes even bigger for strong size contrast;
-        # clamped to MAX_FONT so one giant letter can't blow up the whole layout
-        r = random.uniform(0.9, 1.7)
-        if random.random() < 0.33:
-            r *= random.uniform(1.5, 2.4)
-        return min(MAX_FONT, base * r)
+        # big by default; ~2 in 5 letters go even bigger for strong contrast. Floored at
+        # MIN_FONT here (so packing respects it) and clamped to MAX_FONT.
+        r = random.uniform(0.95, 1.75)
+        if random.random() < 0.35:
+            r *= random.uniform(1.4, 2.1)
+        return min(MAX_FONT, max(MIN_FONT, base * r))
 
     props = [
         {
@@ -134,7 +136,7 @@ def build_layout(word: str) -> list[dict]:
 
     # lay the letters IN ORDER along a curved baseline in nominal coords (centred on 0);
     # gaps scale with letter size for consistent, generous spacing
-    gaps = [random.uniform(0.06, 0.42) * (radii[i] + radii[i + 1]) / 2 for i in range(n - 1)]
+    gaps = [random.uniform(0.12, 0.5) * (radii[i] + radii[i + 1]) / 2 for i in range(n - 1)]
     pos1d, cur = [radii[0]], radii[0]
     for i in range(1, n):
         cur += radii[i - 1] + gaps[i - 1] + radii[i]
@@ -160,7 +162,7 @@ def build_layout(word: str) -> list[dict]:
     maxy = max(pts[i][1] + radii[i] for i in range(n))
     w, h = max(maxx - minx, 1.0), max(maxy - miny, 1.0)
     margin = 0.03 * CANVAS
-    fill = random.uniform(0.82, 1.0)  # fill most/all of the canvas -> big letters
+    fill = random.uniform(0.85, 1.0)  # fill most/all of the canvas -> big letters
     scale = (CANVAS - 2 * margin) * fill / max(w, h)
     bcx, bcy = (minx + maxx) / 2, (miny + maxy) / 2
     sw, sh = w * scale, h * scale
@@ -177,7 +179,7 @@ def build_layout(word: str) -> list[dict]:
 
     letters = []
     for i, p in enumerate(props):
-        fs = min(MAX_FONT, max(MIN_FONT, p["fs"] * scale))
+        fs = min(MAX_FONT, max(MIN_FONT, p["fs"] * scale))  # guaranteed >= MIN
         x = tx + (pts[i][0] - bcx) * scale
         y = ty + (pts[i][1] - bcy) * scale
         rot = tang[i] + p["rotj"]

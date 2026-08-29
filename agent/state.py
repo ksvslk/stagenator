@@ -43,6 +43,31 @@ def now() -> dt.datetime:
 
 # ---------------------------------------------------------------- ledger ----
 
+_REDACTED = "<redacted-claim-link>"
+# Keys whose value alone reconstructs a working claim link (URL = base + /drop|claim/ + id).
+_LINK_KEYS = {"drop_id", "token", "claimUrl", "claim_url"}
+
+
+def redact_claim_links(obj: Any) -> Any:
+    """Strip working claim/drop links from anything bound for a world-readable
+    collection (ledger + task docs any signed-in user can read). A live drop URL
+    or its raw id lets a viewer claim codes ahead of real players; redact the
+    link, keep everything else (counts, ids, media URLs) so the feed stays useful.
+    Recursive, copy-on-write — never mutates the caller's dict."""
+    if isinstance(obj, dict):
+        out: dict = {}
+        for k, v in obj.items():
+            if k in _LINK_KEYS and isinstance(v, str):
+                out[k] = _REDACTED
+            else:
+                out[k] = redact_claim_links(v)
+        return out
+    if isinstance(obj, list):
+        return [redact_claim_links(v) for v in obj]
+    if isinstance(obj, str) and ("/drop/" in obj or "/claim/" in obj):
+        return _REDACTED
+    return obj
+
 
 def ledger(kind: str, game: str | None = None, **fields: Any) -> str:
     """Append an entry to the decision ledger. Returns doc id."""
@@ -50,7 +75,7 @@ def ledger(kind: str, game: str | None = None, **fields: Any) -> str:
         "ts": now(),
         "kind": kind,  # signal | decision | action | outcome | rejected | error | brief
         "game": game,
-        **fields,
+        **redact_claim_links(fields),
     }
     ref = db().collection(config.COL_LEDGER).document()
     ref.set(doc)
@@ -58,7 +83,9 @@ def ledger(kind: str, game: str | None = None, **fields: Any) -> str:
 
 
 def ledger_update(doc_id: str, **fields: Any) -> None:
-    db().collection(config.COL_LEDGER).document(doc_id).set(fields, merge=True)
+    db().collection(config.COL_LEDGER).document(doc_id).set(
+        redact_claim_links(fields), merge=True
+    )
 
 
 def recent_ledger(hours: int = 24, kind: str | None = None) -> list[dict]:
@@ -292,7 +319,8 @@ def finish_task(
                 {
                     "status": "done",
                     "updated": now(),
-                    "result": result or {},
+                    # task docs are world-readable — strip live claim links
+                    "result": redact_claim_links(result or {}),
                     "lease": firestore.DELETE_FIELD,
                 },
             )
@@ -343,7 +371,14 @@ def once(task_id: str | None, step: str, fn):
     result = fn()
     try:
         ref.set(
-            {"sideEffects": {step: {"result": result, "at": now()}}, "updated": now()},
+            # store a redacted copy (task docs are world-readable); the caller
+            # still gets the real result back to finish its own work
+            {
+                "sideEffects": {
+                    step: {"result": redact_claim_links(result), "at": now()}
+                },
+                "updated": now(),
+            },
             merge=True,
         )
     except Exception as e:  # marker is best-effort — never fail the run on it

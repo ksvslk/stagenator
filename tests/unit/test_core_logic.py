@@ -332,6 +332,55 @@ class TestPalindromeGates:
         assert not p.passes_gates("12321")  # digits are not letters
 
 
+class TestClaimLinkRedaction:
+    """World-readable ledger/task docs must never carry a working claim link."""
+
+    def test_drop_url_and_id_redacted(self):
+        from agent import state
+
+        clean = state.redact_claim_links(
+            {
+                "drop_id": "MQeDvcOhD9lMIx2K",
+                "url": "https://proffer.codes/drop/MQeDvcOhD9lMIx2K",
+                "codes": 10,
+                "platforms": ["apple", "google"],
+            }
+        )
+        assert clean["drop_id"] == "<redacted-claim-link>"
+        assert clean["url"] == "<redacted-claim-link>"
+        assert clean["codes"] == 10  # counts survive
+        assert clean["platforms"] == ["apple", "google"]
+
+    def test_individual_token_and_claim_url_redacted(self):
+        from agent import state
+
+        clean = state.redact_claim_links(
+            {"token": "abc123secret", "url": "https://proffer.codes/claim/abc123secret"}
+        )
+        assert clean["token"] == "<redacted-claim-link>"
+        assert clean["url"] == "<redacted-claim-link>"
+
+    def test_nested_and_media_urls_preserved(self):
+        from agent import state
+
+        clean = state.redact_claim_links(
+            {
+                "result": {"push": {"data": {"claimUrl": "https://proffer.codes/drop/x"}}},
+                "media": {"clip": "https://storage.googleapis.com/bucket/level.mp4"},
+            }
+        )
+        assert clean["result"]["push"]["data"]["claimUrl"] == "<redacted-claim-link>"
+        # a level-preview media URL is not a claim link — must be kept
+        assert clean["media"]["clip"].endswith("level.mp4")
+
+    def test_redactor_does_not_mutate_input(self):
+        from agent import state
+
+        original = {"url": "https://proffer.codes/drop/x"}
+        state.redact_claim_links(original)
+        assert original["url"] == "https://proffer.codes/drop/x"
+
+
 class TestCodesCapabilityGate:
     def test_code_action_refused_for_game_without_campaign(self, monkeypatch):
         # every live game has campaigns now, so disable one explicitly

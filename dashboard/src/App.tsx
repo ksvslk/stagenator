@@ -317,8 +317,73 @@ function HeartbeatRing({ at }: { at: unknown }) {
   );
 }
 
+type FeedItem = { type: 'group'; decision: Doc; children: Doc[] } | { type: 'row'; row: Doc };
+
+const rowMs = (r: Doc): number => (r.ts as { toDate?: () => Date })?.toDate?.()?.getTime() ?? 0;
+// gate-phase outcomes of a decision (logged within ms of it); a later `done` row is not one
+const isGateOutcome = (r: Doc): boolean =>
+  r.kind === 'rejected' || (r.kind === 'action' && r.status === 'enqueued');
+
+// Display-only grouping: attach each enqueue/reject row to the decision that produced
+// it (same pulse, within a few ms) so the decision reads as a header with its outcomes
+// nested beneath — while every row keeps its own real timestamp. Signals and later
+// `done` rows stay standalone. No row is ever dropped: anything unattached renders as-is.
+function groupFeed(rows: Doc[]): FeedItem[] {
+  const decisions = rows.filter((r) => r.kind === 'decision');
+  const childOf = new Map<string, string>();
+  for (const r of rows) {
+    if (!isGateOutcome(r)) continue;
+    let best: Doc | null = null;
+    let bestDt = Infinity;
+    for (const d of decisions) {
+      const dt = Math.abs(rowMs(r) - rowMs(d));
+      if (dt < bestDt) { bestDt = dt; best = d; }
+    }
+    if (best && bestDt <= 5000) childOf.set(r.id, best.id);
+  }
+  const kids = new Map<string, Doc[]>();
+  for (const r of rows) {
+    const did = childOf.get(r.id);
+    if (did) { const a = kids.get(did) ?? []; a.push(r); kids.set(did, a); }
+  }
+  for (const a of kids.values()) a.sort((x, y) => rowMs(x) - rowMs(y)); // causal order under header
+  const items: FeedItem[] = [];
+  for (const r of rows) {
+    if (childOf.has(r.id)) continue; // nested under its decision
+    if (r.kind === 'decision') items.push({ type: 'group', decision: r, children: kids.get(r.id) ?? [] });
+    else items.push({ type: 'row', row: r });
+  }
+  return items;
+}
+
+function FeedRow({ e, open, onToggle }: { e: Doc; open: boolean; onToggle: (id: string) => void }) {
+  return (
+    <div
+      onClick={() => onToggle(e.id)}
+      className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-white dark:bg-zinc-900 rounded-r-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer ${
+        KIND_COLORS[String(e.kind)] ?? 'text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
+      }`}
+    >
+      <div className="flex gap-2 items-baseline flex-wrap">
+        <span className="text-zinc-600 dark:text-zinc-400">{open ? '▾' : '▸'}</span>
+        <span className="uppercase font-bold">{String(e.kind)}</span>
+        {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
+        <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{tsMs(e.ts)}</span>
+      </div>
+      <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
+      {open && (
+        <pre className="mt-2 font-mono text-[10.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 whitespace-pre-wrap break-words overflow-x-auto">
+          {JSON.stringify(fullEntry(e), null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function Dashboard({ owner }: { owner: boolean }) {
-  const ledger = useCollection('stagenator_ledger', 'ts', 60);
+  const [feedLimit, setFeedLimit] = useState(60);
+  const ledger = useCollection('stagenator_ledger', 'ts', feedLimit);
+  const feed = useMemo(() => groupFeed(ledger), [ledger]);
   const [openLog, setOpenLog] = useState<Set<string>>(new Set());
   const toggleLog = (id: string) =>
     setOpenLog((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -373,29 +438,31 @@ function Dashboard({ owner }: { owner: boolean }) {
         <section className="w-full xl:w-[30%] 2xl:w-[26%] xl:shrink-0 xl:sticky xl:top-[84px] flex flex-col gap-2 bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
           <SectionTitle accent="bg-sky-500">Activity — live</SectionTitle>
           <div className="flex flex-col gap-2 max-h-[60vh] xl:max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
-            {ledger.map((e) => (
-              <div
-                key={e.id}
-                onClick={() => toggleLog(e.id)}
-                className={`border-l-2 pl-3 pr-2.5 py-2 text-xs bg-white dark:bg-zinc-900 rounded-r-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer ${
-                  KIND_COLORS[String(e.kind)] ?? 'text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
-                }`}
-              >
-                <div className="flex gap-2 items-baseline flex-wrap">
-                  <span className="text-zinc-600 dark:text-zinc-400">{openLog.has(e.id) ? '▾' : '▸'}</span>
-                  <span className="uppercase font-bold">{String(e.kind)}</span>
-                  {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
-                  <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{tsMs(e.ts)}</span>
+            {feed.map((it) =>
+              it.type === 'row' ? (
+                <FeedRow key={it.row.id} e={it.row} open={openLog.has(it.row.id)} onToggle={toggleLog} />
+              ) : (
+                <div key={it.decision.id} className="flex flex-col gap-1">
+                  <FeedRow e={it.decision} open={openLog.has(it.decision.id)} onToggle={toggleLog} />
+                  {it.children.length > 0 && (
+                    <div className="ml-3 pl-1.5 flex flex-col gap-1 border-l border-dashed border-zinc-300 dark:border-zinc-700">
+                      {it.children.map((c) => (
+                        <FeedRow key={c.id} e={c} open={openLog.has(c.id)} onToggle={toggleLog} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
-                {openLog.has(e.id) && (
-                  <pre className="mt-2 font-mono text-[10.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 whitespace-pre-wrap break-words overflow-x-auto">
-                    {JSON.stringify(fullEntry(e), null, 2)}
-                  </pre>
-                )}
-              </div>
-            ))}
+              ),
+            )}
             {ledger.length === 0 && <Empty>Nothing yet</Empty>}
+            {ledger.length >= feedLimit && (
+              <button
+                onClick={() => setFeedLimit((n) => n + 60)}
+                className="mt-1 py-2 text-[11px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-colors"
+              >
+                Load more
+              </button>
+            )}
           </div>
         </section>
 

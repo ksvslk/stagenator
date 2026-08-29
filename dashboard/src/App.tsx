@@ -14,6 +14,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
 import { auth, db, gisSignIn, isOwner } from './firebase';
 import stegoLogo from './assets/stegosaurus.svg';
@@ -50,6 +52,9 @@ const GAME_META: Record<string, { label: string; color: string; fg: string; appS
   },
 };
 const GAME_KEYS = Object.keys(GAME_META);
+// stable per-game ordering for sections fed by backend docs (unknown games last)
+const gameOrder = (g: string) => { const i = GAME_KEYS.indexOf(g); return i < 0 ? 99 : i; };
+const gameLabel = (g: string) => GAME_META[g]?.label ?? g;
 
 function useCollection(path: string, orderField: string, n = 50): Doc[] {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -59,6 +64,25 @@ function useCollection(path: string, orderField: string, n = 50): Doc[] {
       (snap) => setDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
       (err) => reportListenerError(path, err));
   }, [path, orderField, n]);
+  return docs;
+}
+
+// Ledger entries from the last `hours` hours — its own query so a busy live
+// feed (capped at 60 entries) can't push older level ships out of view.
+function useLedgerSince(hours: number, n = 400): Doc[] {
+  const [docs, setDocs] = useState<Doc[]>([]);
+  useEffect(() => {
+    const since = Timestamp.fromMillis(Date.now() - hours * 3600_000);
+    const q = query(
+      collection(db, 'stagenator_ledger'),
+      where('ts', '>', since),
+      orderBy('ts', 'desc'),
+      limit(n),
+    );
+    return onSnapshot(q,
+      (snap) => setDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (err) => reportListenerError('stagenator_ledger(72h)', err));
+  }, [hours, n]);
   return docs;
 }
 
@@ -105,7 +129,7 @@ function ledgerLine(e: Doc): string {
     case 'action': {
       push(e.action); push(e.status);
       // pull the most meaningful result field per action type
-      push(r.word ?? r.movie ?? r.published);
+      push(r.word ?? r.movie ?? r.palindrome ?? r.published);
       if (r.level != null) push(`#${r.level}`);
       if (r.levelId != null) push(`#${r.levelId}`);
       if (r.qa) push(`qa:${r.qa}`);
@@ -380,7 +404,7 @@ function Dashboard({ owner }: { owner: boolean }) {
             </div>
           </section>
 
-          <LevelsOverview ledger={ledger} tasks={tasks} />
+          <LevelsOverview tasks={tasks} />
 
           <CodesOverview />
 
@@ -401,11 +425,20 @@ function Dashboard({ owner }: { owner: boolean }) {
                 <pre className="text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-words overflow-x-auto">
                   {JSON.stringify(playbook.knobs, null, 1)}
                 </pre>
-                {(playbook.ceo_directives as string[] | undefined)?.map((d, i) => (
-                  <div key={i} className="text-violet-600 dark:text-violet-300 border-l-2 border-violet-700 pl-2">
-                    You: {typeof d === 'string' ? d : JSON.stringify(d)}
-                  </div>
-                ))}
+                {(playbook.ceo_directives as unknown[] | undefined)?.map((d, i) => {
+                  // entries are {text, ts, status, id} objects (older ones may be
+                  // plain strings) — show the message, never the raw JSON
+                  const o = d && typeof d === 'object' ? (d as Record<string, unknown>) : { text: d };
+                  return (
+                    <div key={i} className="mt-1.5 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 pl-2 py-1 bg-violet-50/60 dark:bg-violet-500/10 rounded-r">
+                      <span className="text-zinc-500 dark:text-zinc-400">You:</span> “{String(o.text ?? '')}”
+                      <span className="ml-2 text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+                        {String(o.ts ?? '').slice(0, 16)}
+                        {o.status ? ` · ${String(o.status)}` : ''}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <Empty>No plan yet</Empty>
@@ -501,9 +534,10 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
   );
 }
 
-function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
+function LevelsOverview({ tasks }: { tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
   const GAMES = GAME_KEYS;
+  const ledger = useLedgerSince(72);
   const levelEvents = ledger.filter((e) => {
     const r = (e.result ?? {}) as Record<string, unknown>;
     return (
@@ -517,11 +551,11 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
     tasks.filter((t) => t.type === 'level_pipeline' && t.game === g && (t.status === 'pending' || t.status === 'running')).length;
 
   const title = (r: Record<string, unknown>) =>
-    String(r.movie ?? r.word ?? r.published ?? r.would_publish ?? '?');
+    String(r.movie ?? r.word ?? r.palindrome ?? r.published ?? r.would_publish ?? '?');
 
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-emerald-500">Stages created</SectionTitle>
+      <SectionTitle accent="bg-emerald-500">Stages created <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 72 h</span></SectionTitle>
       <div className="flex flex-col gap-3">
         {GAMES.map((g) => {
           const events = levelEvents.filter((e) => e.game === g);
@@ -529,7 +563,7 @@ function LevelsOverview({ ledger, tasks }: { ledger: Doc[]; tasks: Doc[] }) {
           return (
             <div key={g} className="bg-white dark:bg-zinc-900 rounded-lg p-3">
               <div className="flex items-baseline gap-2 text-[11px] mb-1">
-                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{GAME_META[g]?.label ?? g}</span>
                 <span className="text-zinc-600 dark:text-zinc-400 ml-auto">
                   {events.length} created{pending ? ` · ${pending} pending` : ''}
                 </span>
@@ -570,12 +604,12 @@ function CodesOverview() {
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
       <SectionTitle accent="bg-orange-500">Codes & claims <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
-        {Object.entries(games).map(([g, d]) => {
+        {Object.entries(games).sort(([a], [b]) => gameOrder(a) - gameOrder(b)).map(([g, d]) => {
           const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
           const claims = (d.claims ?? { links: 0, codes_backing: 0, teared: 0 }) as Record<string, number>;
           return (
             <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2 flex gap-3 items-baseline flex-wrap">
-              <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+              <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
               <span className="text-zinc-500 dark:text-zinc-400">
                 stock {(stock && typeof stock === 'object' ? Object.entries(stock) : []).map(([p, s]) => `${p}:${(s as { available?: number })?.available ?? '?'}`).join(' · ') || '—'}
               </span>
@@ -822,12 +856,12 @@ function EarningsOverview() {
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
       <SectionTitle accent="bg-green-600">Earnings <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 30 days · {ts(e.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
-        {Object.entries(games).map(([g, d]) => {
+        {Object.entries(games).sort(([a], [b]) => gameOrder(a) - gameOrder(b)).map(([g, d]) => {
           const live = (d.d30_usd ?? 0) > 0;
           return (
             <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
               <div className="flex justify-between items-baseline">
-                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{g}</span>
+                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
                 <span className={live ? 'text-emerald-600 dark:text-emerald-400 font-bold text-sm' : 'text-zinc-500 dark:text-zinc-400'}>
                   ${Number(d.yesterday_usd ?? 0).toFixed(2)} <span className="text-zinc-600 dark:text-zinc-400 font-normal">yesterday</span>
                 </span>

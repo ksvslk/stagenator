@@ -74,9 +74,31 @@ def run_drop(task: dict) -> dict:
     #  - game stores per-user FCM tokens -> push each device its OWN reserved code
     #  - otherwise (topic-only) -> topic push to the shared /drop/ claim page where
     #    each anonymous visitor TEARS their own distinct, reserved, single-use code
-    if config.GAMES[game].get("fcm_token_collections"):
+    # Mid-rollout a game has token collections but almost no registered devices
+    # (only updated installs register; everyone else still hears the topic). A
+    # personal drop then reaches a handful of devices while the topic reaches the
+    # whole install base — so fall back to shared until registration catches up.
+    if _registered_devices(game, need=MIN_PERSONAL_DEVICES) >= MIN_PERSONAL_DEVICES:
         return run_personal_codes(task)
     return _run_drop_shared(task)
+
+
+# Below this many registered devices, a shared topic drop reaches more players
+# than personal pushes would; above it, per-user delivery wins.
+MIN_PERSONAL_DEVICES = 10
+
+
+def _registered_devices(game: str, need: int) -> int:
+    """Count devices with a push token, stopping once `need` are found."""
+    found = 0
+    gdb = state.game_db(game)
+    for col in config.GAMES[game].get("fcm_token_collections") or []:
+        for snap in gdb.collection(col).limit(need).stream():
+            if (snap.to_dict() or {}).get("token"):
+                found += 1
+                if found >= need:
+                    return found
+    return found
 
 
 def run_personal_codes(task: dict) -> dict:

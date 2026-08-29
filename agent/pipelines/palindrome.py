@@ -32,8 +32,13 @@ AUTHOR = "Stagenator"  # shown in-game as the level's creator
 COLLECTION = "user_submitted_levels"
 FEATURED_FLAG = "isFeatured_v3"
 # Player-level id band the games query (curated levels live below, language
-# levels above). Kept in sync with the apps' own range filters.
+# levels above). iOS fetches the whole 1081-9999 band; Android bundles ids up
+# to PLAYER_LEVELS_COVERED_LOCALLY = 1155 (C.kt) and only fetches ABOVE that.
+# So we READ from 1081 (dedup + max-scan) but never ISSUE below 1156 — even if
+# the 1081-1155 Firestore mirrors are one day deleted, a new level must stay
+# inside the band Android actually queries.
 ID_MIN, ID_MAX = 1081, 9999
+ID_ISSUE_MIN = 1156  # = Android PLAYER_LEVELS_COVERED_LOCALLY + 1
 
 # Every non-letter becomes a board tile, so punctuation is rationed hard.
 ALLOWED = re.compile(r"^[A-Za-z ,.!?'-]+$")
@@ -94,7 +99,7 @@ def existing_normalized() -> set[str]:
 
 def next_level_id() -> int:
     """Lowest free id in the player band, one past the current maximum."""
-    highest = ID_MIN - 1
+    highest = ID_ISSUE_MIN - 1
     for snap in (
         state.game_db(GAME)
         .collection(COLLECTION)
@@ -113,15 +118,21 @@ def next_level_id() -> int:
 def hint_keys() -> list[str]:
     """Localization keys the game expects, read from the newest featured level
     so a language added to the app is picked up without a code change."""
-    docs = list(
-        state.game_db(GAME)
+    docs = [
+        snap.to_dict() or {}
+        for snap in state.game_db(GAME)
         .collection(COLLECTION)
         .where(filter=firestore.FieldFilter(FEATURED_FLAG, "==", True))
-        .limit(20)
         .stream()
+    ]
+    # Sorted client-side: where+order_by would need a composite index the
+    # project doesn't have, and the featured set is a few hundred docs.
+    docs.sort(
+        key=lambda d: getattr(d.get("timestamp"), "timestamp", lambda: 0)(),
+        reverse=True,
     )
-    for snap in docs:
-        for value in ((snap.to_dict() or {}).get("solutionToCategory") or {}).values():
+    for doc in docs:
+        for value in (doc.get("solutionToCategory") or {}).values():
             if isinstance(value, dict) and value.get("hint"):
                 return sorted(value.keys())
     return ["hint"]
@@ -291,10 +302,12 @@ def ship(design: dict, task_id: str | None) -> dict:
         topic = config.GAMES[GAME].get("level_push_topic")
         if not topic:
             return {"skipped": "no topic"}
+        # Never put the phrase (the solution) or its hint in the notification —
+        # the puzzle IS reconstructing the phrase, so either would spoil it.
         return fcm.send_topic_push(
             GAME,
             title="New palindrome!",
-            body=f"{phrase} — can you unscramble it?",
+            body="A brand-new palindrome level just landed — can you crack it?",
             data={"levelNumber": str(level_id)},
             label="stagenator",
         )

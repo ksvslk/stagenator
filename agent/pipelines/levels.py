@@ -29,11 +29,13 @@ def push_only(task: dict) -> dict:
         raise RuntimeError(f"{game} has no push channel")
     if config.DRY_RUN:
         return {"dry_run": True, "topic": topic}
+    # `message` is the Strategist's user-facing copy; `reason` is its internal
+    # ledger rationale and must never reach a player's notification shade.
     return {
         "push": fcm.send_topic_push(
             game,
             title="New levels are waiting",
-            body=task["payload"].get("reason") or "Jump back in!",
+            body=task["payload"].get("message") or "Jump back in!",
             data={},
         )
     }

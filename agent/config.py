@@ -34,7 +34,7 @@ GAMES: dict[str, dict] = {
         "platforms": ["android", "ios"],
         "level_push_topic": "sw_plus_levels",  # fired by game's own notifyOnNewLevel
         "fcm_token_collections": ["fcmTokensAndroid", "fcmTokensIos"],
-        "tier": 0,  # 0 = analytics-only; 1 = identity-linked (set via playbook when app update ships)
+        "tier": 1,  # 5.1.0 live: identity-linked, per-player delivery
         "level_backend": "packs",  # Storage + packs/{packId}/levels/{id} transaction
         "play_package": "com.indest.subliminalwords",
         "app_store_id": "6468366578",
@@ -45,8 +45,8 @@ GAMES: dict[str, dict] = {
         "ga_property": "504066506",
         "platforms": ["android", "ios"],
         "level_push_topic": "new_levels",
-        "fcm_token_collections": [],  # app subscribes by topic
-        "tier": 0,
+        "fcm_token_collections": ["fcmTokensAndroid", "fcmTokensIos"],
+        "tier": 1,  # 1.3.0 live: identity-linked, per-player delivery
         "level_backend": "levels_counter",  # levels/{n} + counters/levelsCounter
         "play_package": "com.indest.aimoviequiz",
         "app_store_id": "6752119990",

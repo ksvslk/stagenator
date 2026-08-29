@@ -101,7 +101,8 @@ def doors_open(game: str) -> bool:
     ):
         return True
     if (
-        _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
+        config.GAMES[game].get("codes_enabled", True)  # mirrors validate()'s gate
+        and _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
         < config.CAPS["code_actions_per_game_per_day"]
     ):
         return True

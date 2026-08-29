@@ -411,15 +411,34 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
     stroke = Image.new("L", img.size, 255)  # white = no mark
     d = ImageDraw.Draw(stroke)
     C = CANVAS
-    for _ in range(n if n is not None else random.randint(8, 16)):
+    # Precompute each glyph's clearance circle, then sample mark centres in the FREE area
+    # only (reject points that fall inside a clearance zone). Placing marks off the letters
+    # from the start — instead of scattering everywhere and erasing the ones that overlap —
+    # keeps the mark COUNT high (few get wiped) while still never touching a letter.
+    zones = []
+    for L in layout:
+        r = 0.5 * math.hypot(
+            L["fontSize"] * 0.72 * L["scaleX"], L["fontSize"] * 0.82 * L["scaleY"]
+        )
+        zones.append((L["x"] * C, L["y"] * C, r + max(70.0, 0.6 * r)))
+
+    def _free_center(tries: int = 14) -> tuple[float, float]:
+        px, py = random.uniform(0, C), random.uniform(0, C)
+        for _ in range(tries):
+            if all((px - zx) ** 2 + (py - zy) ** 2 > cz * cz for zx, zy, cz in zones):
+                return px, py
+            px, py = random.uniform(0, C), random.uniform(0, C)
+        return px, py  # canvas is crowded — fall back; the exclusion wipe still guards it
+
+    for _ in range(n if n is not None else random.randint(12, 20)):
         tone = random.randint(0, 175)  # opacity: 0 = strong black, ~175 = faint ghost
         kind = random.random()
         if kind < 0.5:
-            # curved sweep, anywhere on the canvas, short dab to long sweep
+            # curved sweep starting in a free area, short dab to long sweep
             width = random.randint(5, 42)
             ang = random.uniform(0, 2 * math.pi)
             length = random.uniform(90, 940)
-            sx, sy = random.uniform(0, C), random.uniform(0, C)
+            sx, sy = _free_center()
             ex, ey = sx + length * math.cos(ang), sy + length * math.sin(ang)
             steps = random.randint(2, 9)
             bow = random.uniform(0, 1) * random.uniform(30, 170)
@@ -434,14 +453,14 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
             ]
             d.line(pts, fill=tone, width=width, joint="curve")
         elif kind < 0.78:
-            # filled blob (rotated-ish ellipse)
-            bx, by = random.uniform(0, C), random.uniform(0, C)
+            # filled blob (rotated-ish ellipse) in a free area
+            bx, by = _free_center()
             rw = random.uniform(25, 155)
             rh = rw * random.uniform(0.4, 1.7)
             d.ellipse([bx - rw, by - rh, bx + rw, by + rh], fill=tone)
         else:
-            # irregular splotch (random polygon)
-            bx, by = random.uniform(0, C), random.uniform(0, C)
+            # irregular splotch (random polygon) in a free area
+            bx, by = _free_center()
             k = random.randint(5, 9)
             rad = random.uniform(30, 165)
             poly = [

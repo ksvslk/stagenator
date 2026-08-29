@@ -10,10 +10,10 @@ An autonomous agent can.
 Enter **Stagenator** — a 24/7 AI caretaker that brings my live mobile game portfolio out of stagnation.
 
 ## What it does
-Stagenator autonomously manages two live store games — **Subliminal Words** and **AI Movie Quiz** — on iOS and Android with zero human intervention.
+Stagenator autonomously manages three live store games — **Subliminal Words**, **AI Movie Quiz**, and **Palindrome** — on iOS and Android with zero human intervention.
 
 - **Instant Player Reaction & 5-Minute Heartbeat:** When traffic is near zero, every single player visit is precious. If a user opens the app and leaves 2 minutes later, a standard cron job is too late. Stagenator uses **Eventarc** to wake up *instantly* the second a player arrives, backed by a 5-minute Cloud Scheduler heartbeat. It immediately generates custom content or delivers a gift code while the player is still active on-screen.
-- **Multimodal Content Generation:** Creates new levels on the fly (ControlNet images with hidden words for Subliminal Words, or 8-second Veo 3.1 AI video clips with audio for AI Movie Quiz).
+- **Multimodal Content Generation:** Creates new levels on the fly (ControlNet images with hidden words for Subliminal Words, or 8-second Veo 3.1 AI video clips with audio for AI Movie Quiz). For Palindrome, the content is text, so correctness is *proven in code* (a phrase must read the same backwards) — the model only proposes fresh palindromes, screens them for a kids' audience, and writes hints in 18 languages.
 - **Closed-Loop Quality Control:** Before publishing, Gemini 3.7 Vision & Video Understanding inspects the generated media to enforce quality (e.g., verifying word subtlety, ensuring no actor likeness or overlay text).
 - **Player Engagement & Gifting:** Gifts mintable Apple App Store promo codes or Google Play gifts delivered via personal claim links on proffer.codes.
 - **A/B Testing & Self-Reflecting Playbook:** Drafts push notifications in dual variants, measures claim funnel conversions, and runs a nightly reflection step to update its operational playbook for the next day.
@@ -25,10 +25,10 @@ Stagenator autonomously manages two live store games — **Subliminal Words** an
 Built on **Google ADK (Agent Development Kit)** and deployed natively to **Google Cloud**:
 
 - **Orchestration:** Built as an **ADK 2.0 Workflow Graph** running on **Cloud Run**, woken up serverlessly by **Cloud Scheduler** and **Eventarc**.
-- **Model Roles (~8 Specialist Prompts):** Rather than a single monolithic prompt, we split intelligence into specialized roles orchestrated by code: Strategist, Reflector, Level Designers, Visual Inspectors, Gift Selectors, and Error Diagnosticians.
+- **Model Roles (~11 Specialist Prompts):** Rather than a single monolithic prompt, we split intelligence into specialized roles orchestrated by code: Strategist, Reflector, three Level Designers, Visual Inspectors, a Content-Safety Screener, Gift Selectors, and Error Diagnosticians.
 - **Generative & Vision Stack:** Vertex AI (Gemini 3.7 Flash + Veo 3.1), Runpod/ComfyUI (ControlNet), Firebase (Hosting, Auth, FCM, Firestore), BigQuery (GA4 export), and App Store Connect API.
 - **Safety & Guardrails:** Code does the doing; AI does the thinking. The LLM returns structured schema-locked outputs (LlmAgent). Hard code-level guardrails enforce strict daily budgets (e.g., max 1 level and 1 gift per game per day) to prevent runaway costs or store spam.
-- **Development & Testing:** Developed using Google ADK skills (agents-cli-workflow, adk-code, deploy, eval, scaffold). Verified with 19 unit tests, 24 Firestore emulator resilience tests, and a graded agents-cli eval benchmark (passing 4/4 test scenarios).
+- **Development & Testing:** Developed using Google ADK skills (agents-cli-workflow, adk-code, deploy, eval, scaffold). Verified with 45 unit tests, 28 Firestore emulator resilience tests, and a graded agents-cli eval benchmark (passing 4/4 test scenarios).
 
 ## Challenges we ran into
 1. **Architectural Choice — Why Tool-Calling Agents are Overkill:**
@@ -45,7 +45,7 @@ Built on **Google ADK (Agent Development Kit)** and deployed natively to **Googl
    Push notifications sent via FCM carry custom `claimUrl` data payloads pointing to gift claim links on `proffer.codes`. However, existing live game binaries in the store lacked native deep-link tap handlers to directly open an external browser on tap. When we observed this, instead of hot-patching backend code or turning off servers, we simply issued a human directive to the agent's Playbook: *"do no code drops until further notice"*. Stagenator's Strategist immediately read the directive and paused all code-drop actions gracefully without redeploying code.
 
 ## Accomplishments that we're proud of
-- **Built in Just 8 Days (Aug 20–28, 2026):** Went from initial concept and spec writing to a fully deployed, autonomous production agent managing two live store apps — complete with multimodal pipelines, unit/resilience tests, and eval suites — in just 8 days.
+- **Built in Just 8 Days (Aug 20–28, 2026):** Went from initial concept and spec writing to a fully deployed, autonomous production agent managing three live store apps — complete with multimodal pipelines, unit/resilience tests, and eval suites — in just 8 days.
 - **100% Live & Operational:** The agent is shipping real levels into active iOS and Android apps right now.
 - **Full Mission Control Observability:** Built a real-time web dashboard ([stagenator-mission.web.app](https://stagenator-mission.web.app)) that streams every decision ledger entry, generated level preview, rejected action, and playbook directive live.
 - **Keeping My Apps Alive Autonomously:** As a solo developer, it is deeply satisfying to watch brand-new levels, AI videos, and promo gifts automatically ship into production store apps without any daily human involvement. My game portfolio is alive again.
@@ -60,4 +60,4 @@ Built on **Google ADK (Agent Development Kit)** and deployed natively to **Googl
 - **The power of spec-driven AI development:** Writing a rigorous architecture specification upfront saved days of patching downstream logic.
 
 ## What's next for Stagenator
-Stagenator's shared engine is built to scale across my entire app portfolio. Adding a new game only requires a single config entry and a content pipeline. Next up: integrating **Trivia Player**, **Penalty 2D**, **Palindrome**, and **Snackroach**!
+Stagenator's shared engine is built to scale across my entire app portfolio. Adding a new game only requires a single config entry and a content pipeline — **Palindrome** was the live proof, brought online as a third managed game mid-project on one config entry and one small text pipeline, sharing everything else unchanged. Next up: integrating **Trivia Player**, **Penalty 2D**, and **Snackroach**!

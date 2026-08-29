@@ -1,6 +1,6 @@
 # Stagenator
 
-**A fully automatic caretaker for two live mobile games.** No human presses any
+**A fully automatic caretaker for three live mobile games.** No human presses any
 buttons: it watches who is playing right now, decides what would help, creates
 brand-new game levels with AI and ships them straight into the games, can gift
 each player their own promo code, and learns from results every night.
@@ -21,18 +21,25 @@ with players on both stores:
   [App Store](https://apps.apple.com/app/subliminal-words/id6468366578) · [Google Play](https://play.google.com/store/apps/details?id=com.indest.subliminalwords)
 - **AI Movie Quiz** — guess the film from an 8-second AI clip ·
   [App Store](https://apps.apple.com/app/ai-movie-quiz/id6752119990) · [Google Play](https://play.google.com/store/apps/details?id=com.indest.aimoviequiz)
+- **Palindrome** — unscramble a phrase that reads the same both ways ·
+  [App Store](https://apps.apple.com/app/hah-palindrome-puzzles/id1673006365) · [Google Play](https://play.google.com/store/apps/details?id=com.indest.hah)
 
 ## What it does on its own
 
 - **Checks in every 5 minutes.** Most check-ins find nothing and cost nothing —
   doing nothing on purpose is a normal outcome. The AI is only woken when
   someone is playing.
-- **Ships levels — multimodal end to end.** Text becomes an image (a word
-  hidden in a photo, via ControlNet) or an 8-second film with sound (Veo 3.1).
-  Then the model switches roles and inspects its own output: Gemini **vision**
-  judges the picture (the word must be subtle — not printed, not invisible),
-  Gemini **video understanding** watches the clip (recognizable, no title text,
-  no actor likeness). Only then is it saved, all-or-nothing, and re-verified.
+- **Ships levels — multimodal, or provably-correct text.** Text becomes an image
+  (a word hidden in a photo, via ControlNet) or an 8-second film with sound
+  (Veo 3.1). Then the model switches roles and inspects its own output: Gemini
+  **vision** judges the picture (the word must be subtle — not printed, not
+  invisible), Gemini **video understanding** watches the clip (recognizable, no
+  title text, no actor likeness). Only then is it saved, all-or-nothing, and
+  re-verified. Palindrome is the opposite extreme — no media to inspect, so
+  correctness is *proven in code* (normalize to letters, compare with its
+  reverse); the model only proposes candidates, screens them for a kids'
+  audience, and writes the localized hints, and every survivor is re-checked
+  and deduped against the ~900 already in the game.
 - **Gifts promo codes.** Apple codes are minted via the App Store Connect API;
   Google Play (which has no minting API) runs through an email loop the agent
   drives from its own inbox. Every code that leaves the shelf is bound to
@@ -66,10 +73,10 @@ radius is *which of five safe things, when* — never *whatever the model decide
 call*. This is ADK's own paved road, not a workaround: the workflow graph and
 schema-locked `LlmAgent` output are first-class ADK features, and Google's
 `ambient-expense-agent` sample uses the same pattern (business rules in code, the
-model for judgment). Under the surface there are ~eight specialist model roles —
-strategist, reflector, two level designers, two visual inspectors, a gift selector,
-an error diagnostician — orchestrated by code instead of a manager-LLM, which is the
-component that drifts and gets prompt-injected. Three ADK idioms are deliberately
+model for judgment). Under the surface there are ~eleven specialist model roles —
+strategist, reflector, three level designers, two visual inspectors, a content-safety
+screener, a gift selector, an error diagnostician — orchestrated by code instead of a
+manager-LLM, which is the component that drifts and gets prompt-injected. Three ADK idioms are deliberately
 bypassed (tool callbacks, the tool system, session state) because the model holds no
 tools; an independent conformance review confirmed each deviation is deliberate.
 The boundary is explicit and grows on evidence, not vibes: when the graded eval says
@@ -84,14 +91,15 @@ budget. All state lives in Firestore and feeds the dashboard live.
 
 ## Status
 
-- **Working:** levels generated and visible on-device in both
-  games; 100 Apple codes minted via API; the claim pages tested end-to-end;
-  the failure path exercised in production (a dead Runpod key was caught,
-  alerted, and fixed the same evening).
+- **Working:** levels generated and visible on-device in all three
+  games (Palindrome ships text levels straight into the live player-level feed);
+  Apple + Google promo codes minted and audited nightly for expiry; the claim
+  pages tested end-to-end; the failure path exercised in production (a dead
+  Runpod key was caught, alerted, and fixed the same evening).
 - **Not yet claimable:** engagement/retention lift — the games have near-zero
   users so far. The measurement is built (per-code claim funnel, play events,
   nightly review); it proves itself as players arrive. The dashboard shows only measured numbers.
-- **Tested:** 19 unit + 24 resilience tests (against the Firestore
+- **Tested:** 45 unit + 28 resilience tests (against the Firestore
   emulator) and a graded `agents-cli eval` suite — 4/4 scenarios at maximum
   scores.
 
@@ -100,8 +108,10 @@ budget. All state lives in Firestore and feeds the dashboard live.
 Everything except level-making is shared machinery keyed by a per-game config
 entry — watching players, deciding, the hard limits, the job queue, code gifts
 on proffer.codes, the A/B experiments, health checks, nightly learning. Adding
-a game costs one config entry plus, at most, one content pipeline. The next
-four games in the same portfolio, in order of effort:
+a game costs one config entry plus, at most, one content pipeline — Palindrome
+was the proof: a third game brought online mid-project on one config entry and
+one small text pipeline, sharing everything else unchanged. The next three
+games in the same portfolio, in order of effort:
 
 - **Trivia Player** — already has push notifications, so it plugs straight in:
   the agent schedules in-game events through Firebase Remote Config and
@@ -109,9 +119,6 @@ four games in the same portfolio, in order of effort:
 - **Penalty 2D** — promo codes only: on the agent side just a config entry,
   but the game needs one app update first to add push support (it has none
   today) so the codes can reach players.
-- **Palindrome** — text-only levels (the smallest possible pipeline), or the
-  same AI inspector pointed at player-submitted levels — approving instead of
-  creating. Also needs the one-time push-support update.
 - **Snackroach** — the honest hard case, twice over: needs the push update,
   and its levels are built in a game editor today, so the agent can take over
   level-making only once levels become data files the game reads.
@@ -152,7 +159,7 @@ tests/           unit · resilience (emulator) · eval
 - Google Play code minting is Console-only by Google's design — hence the
   email loop, the one human touchpoint.
 - Long AI generations self-pace across check-ins to stay inside Cloud Run's
-  request deadline; two games needing levels in the same moment are served a
+  request deadline; games needing levels in the same moment are served a
   few minutes apart.
 
 ---

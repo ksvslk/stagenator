@@ -61,9 +61,9 @@ GAMES: dict[str, dict] = {
         "level_push_topic": "player_levels",
         "fcm_token_collections": ["fcmTokensAndroid", "fcmTokensIos"],
         "tier": 1,  # Android 7.1.0 live: per-player identity + tokens
-        # No proffer.codes campaign exists for this game yet — code actions are
-        # refused at the gate rather than failing three times and dead-lettering.
-        "codes_enabled": False,
+        # proffer.codes campaigns imported 2026-08-25 (google + apple, audited
+        # nightly); drops go via the shared topic until enough devices register.
+        "codes_enabled": True,
         "level_backend": "palindrome",  # text levels into user_submitted_levels
         "play_package": "com.indest.hah",
         "app_store_id": "1673006365",

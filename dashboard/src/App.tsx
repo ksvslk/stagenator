@@ -277,6 +277,38 @@ function ThemeToggle() {
 }
 
 
+// Circular countdown to the next 5-min pulse: the ring fills as the window
+// elapses; amber once the heartbeat is overdue.
+function HeartbeatRing({ at }: { at: unknown }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const d = (at as { toDate?: () => Date })?.toDate?.();
+  if (!d) return null;
+  const PERIOD = 300; // scheduler pulses every 5 min
+  const elapsed = (Date.now() - d.getTime()) / 1000;
+  const frac = Math.min(1, elapsed / PERIOD);
+  const overdue = elapsed > PERIOD + 90; // grace: run duration + clock skew
+  const R = 6;
+  const C = 2 * Math.PI * R;
+  const remain = Math.max(0, PERIOD - elapsed);
+  const label = overdue
+    ? `pulse overdue — ${Math.round(elapsed / 60)} min since last heartbeat`
+    : `next pulse in ~${Math.floor(remain / 60)}:${String(Math.floor(remain % 60)).padStart(2, '0')}`;
+  return (
+    <span title={label} className="inline-flex items-center align-middle">
+      <svg viewBox="0 0 16 16" className="w-4 h-4 -rotate-90">
+        <circle cx="8" cy="8" r={R} fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.15" />
+        <circle cx="8" cy="8" r={R} fill="none" strokeWidth="2.5" strokeLinecap="round"
+          className={overdue ? 'stroke-amber-500' : 'stroke-emerald-500'}
+          strokeDasharray={`${C}`} strokeDashoffset={`${C * (1 - frac)}`} />
+      </svg>
+    </span>
+  );
+}
+
 function Dashboard({ owner }: { owner: boolean }) {
   const ledger = useCollection('stagenator_ledger', 'ts', 60);
   const [openLog, setOpenLog] = useState<Set<string>>(new Set());
@@ -306,7 +338,10 @@ function Dashboard({ owner }: { owner: boolean }) {
           </div>
         </div>
         <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
-          <span>last run {heartbeat ? ts(heartbeat.at) : '—'}</span>
+          <span className="flex items-center gap-1.5">
+            <HeartbeatRing at={heartbeat?.at} />
+            last run {heartbeat ? ts(heartbeat.at) : '—'}
+          </span>
           <span className="flex items-center gap-1.5">
             <span
               className={`inline-block w-2 h-2 rounded-full animate-pulse ${
@@ -359,7 +394,7 @@ function Dashboard({ owner }: { owner: boolean }) {
         {/* Everything else — responsive masonry of cards */}
         <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
           <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-            <SectionTitle accent="bg-amber-500">Tasks</SectionTitle>
+            <SectionTitle accent="bg-amber-500">Tasks <span className="text-zinc-600 dark:text-zinc-400 normal-case">· 40 most recent</span></SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
               {(['pending', 'running', 'done', 'dead'] as const).map((s) => (
                 <div key={s} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg py-2">
@@ -390,7 +425,8 @@ function Dashboard({ owner }: { owner: boolean }) {
                   </span>
                   <span className="text-zinc-700 dark:text-zinc-300">{String(t.type)}</span>
                   <span className="text-zinc-500 dark:text-zinc-400">{String(t.game)}</span>
-                  <span className="text-zinc-600 dark:text-zinc-400 ml-auto">{String(t.attempts)}×</span>
+                  <span title={tsUtc(t.updated)} className="text-zinc-600 dark:text-zinc-400 ml-auto font-mono text-[10px]">{tsShort(t.updated)}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400">{String(t.attempts)}×</span>
                 </div>
               ))}
             </div>

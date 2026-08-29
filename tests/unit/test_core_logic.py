@@ -334,9 +334,11 @@ class TestPalindromeGates:
 
 class TestCodesCapabilityGate:
     def test_code_action_refused_for_game_without_campaign(self, monkeypatch):
-        from agent import guardrails
+        # every live game has campaigns now, so disable one explicitly
+        from agent import config, guardrails
 
         monkeypatch.setattr(guardrails, "_count_recent", lambda *a, **k: 0)
+        monkeypatch.setitem(config.GAMES["palindrome"], "codes_enabled", False)
         verdict = guardrails.validate({"type": "send_code_drop", "game": "palindrome"})
         assert verdict and "campaign" in verdict["error"]
 

@@ -69,10 +69,17 @@ def redact_claim_links(obj: Any) -> Any:
     return obj
 
 
-def ledger(kind: str, game: str | None = None, **fields: Any) -> str:
-    """Append an entry to the decision ledger. Returns doc id."""
+def ledger(
+    kind: str, game: str | None = None, at: dt.datetime | None = None, **fields: Any
+) -> str:
+    """Append an entry to the decision ledger. Returns doc id.
+
+    `at` overrides the row's timestamp: a decision is stamped with the moment it
+    was MADE (before its actions are adjudicated), so it always orders ahead of
+    the enqueue/rejected rows it produces — even though the summary, which needs
+    the final counts, is physically written a few ms later."""
     doc = {
-        "ts": now(),
+        "ts": at or now(),
         "kind": kind,  # signal | decision | action | outcome | rejected | error | brief
         "game": game,
         **redact_claim_links(fields),

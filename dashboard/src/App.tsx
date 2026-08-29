@@ -107,6 +107,14 @@ const tsShort = (v: unknown): string => {
     ? d.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
     : '';
 };
+// feed rows: local time to the millisecond, so two entries in the same second
+// (a decision and the rejection it produced) read in the right order
+const tsMs = (v: unknown): string => {
+  const d = (v as { toDate?: () => Date })?.toDate?.();
+  return d
+    ? `${d.toLocaleString('en-GB', { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`
+    : '';
+};
 // hover detail: exact UTC time with milliseconds (the agent reasons in UTC)
 const tsUtc = (v: unknown): string => {
   const d = (v as { toDate?: () => Date })?.toDate?.();
@@ -377,7 +385,7 @@ function Dashboard({ owner }: { owner: boolean }) {
                   <span className="text-zinc-600 dark:text-zinc-400">{openLog.has(e.id) ? '▾' : '▸'}</span>
                   <span className="uppercase font-bold">{String(e.kind)}</span>
                   {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
-                  <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{ts(e.ts)}</span>
+                  <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{tsMs(e.ts)}</span>
                 </div>
                 <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
                 {openLog.has(e.id) && (

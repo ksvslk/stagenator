@@ -92,12 +92,16 @@ def detect(node_input) -> Event:
 
 def gate(node_input) -> dict:
     """Validate the Strategist's structured Decision, enqueue what passes."""
+    # The decision is made NOW, before any action is adjudicated; stamp the summary
+    # row with this so it always orders ahead of the enqueue/rejected rows below it.
+    decided_at = state.now()
     # Defensive: if the model output isn't a dict (schema-coercion failure), degrade to
     # a no-op instead of crashing the whole pulse — same restraint as the Reflector.
     if not isinstance(node_input, dict):
         state.ledger(
             "decision",
             None,
+            at=decided_at,
             action="strategist",
             actions=0,
             enqueued=0,
@@ -110,6 +114,7 @@ def gate(node_input) -> dict:
     state.ledger(
         "decision",
         None,
+        at=decided_at,
         action="strategist",
         actions=len(node_input.get("actions", [])),
         enqueued=len(result["enqueued"]),

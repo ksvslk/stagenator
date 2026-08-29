@@ -99,7 +99,7 @@ budget. All state lives in Firestore and feeds the dashboard live.
 - **Not yet claimable:** engagement/retention lift — the games have near-zero
   users so far. The measurement is built (per-code claim funnel, play events,
   nightly review); it proves itself as players arrive. The dashboard shows only measured numbers.
-- **Tested:** 45 unit + 28 resilience tests (against the Firestore
+- **Tested:** 47 unit + 28 resilience tests (against the Firestore
   emulator) and a graded `agents-cli eval` suite — 4/4 scenarios at maximum
   scores.
 

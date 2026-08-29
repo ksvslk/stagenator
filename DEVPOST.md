@@ -28,7 +28,7 @@ Built on **Google ADK (Agent Development Kit)** and deployed natively to **Googl
 - **Model Roles (~11 Specialist Prompts):** Rather than a single monolithic prompt, we split intelligence into specialized roles orchestrated by code: Strategist, Reflector, three Level Designers, Visual Inspectors, a Content-Safety Screener, Gift Selectors, and Error Diagnosticians.
 - **Generative & Vision Stack:** Vertex AI (Gemini 3.7 Flash + Veo 3.1), Runpod/ComfyUI (ControlNet), Firebase (Hosting, Auth, FCM, Firestore), BigQuery (GA4 export), and App Store Connect API.
 - **Safety & Guardrails:** Code does the doing; AI does the thinking. The LLM returns structured schema-locked outputs (LlmAgent). Hard code-level guardrails enforce strict daily budgets (e.g., max 1 level and 1 gift per game per day) to prevent runaway costs or store spam.
-- **Development & Testing:** Developed using Google ADK skills (agents-cli-workflow, adk-code, deploy, eval, scaffold). Verified with 45 unit tests, 28 Firestore emulator resilience tests, and a graded agents-cli eval benchmark (passing 4/4 test scenarios).
+- **Development & Testing:** Developed using Google ADK skills (agents-cli-workflow, adk-code, deploy, eval, scaffold). Verified with 47 unit tests, 28 Firestore emulator resilience tests, and a graded agents-cli eval benchmark (passing 4/4 test scenarios).
 
 ## Challenges we ran into
 1. **Architectural Choice — Why Tool-Calling Agents are Overkill:**

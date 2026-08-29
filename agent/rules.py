@@ -261,6 +261,12 @@ def refresh_daily_history() -> None:
             and e.get("action") in ("level_pipeline", "code_drop", "individual_code", "level_push")
         ):
             agg["actions"] += 1
+            # per-game count so the dashboard's per-game chart can mark only
+            # the days the agent acted on THAT game
+            game = e.get("game")
+            if game:
+                g = day.setdefault(game, {})
+                g["actions"] = int(g.get("actions") or 0) + 1
         elif e.get("kind") == "error":
             agg["errors"] += 1
 

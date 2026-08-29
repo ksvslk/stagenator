@@ -100,6 +100,13 @@ const ts = (v: unknown): string => {
   const d = (v as { toDate?: () => Date })?.toDate?.();
   return d ? d.toLocaleString('en-GB', { hour12: false }) : '';
 };
+// compact form for section titles — full date+time wraps them onto two lines
+const tsShort = (v: unknown): string => {
+  const d = (v as { toDate?: () => Date })?.toDate?.();
+  return d
+    ? d.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+    : '';
+};
 // hover detail: exact UTC time with milliseconds (the agent reasons in UTC)
 const tsUtc = (v: unknown): string => {
   const d = (v as { toDate?: () => Date })?.toDate?.();
@@ -416,7 +423,7 @@ function Dashboard({ owner }: { owner: boolean }) {
             <SectionTitle accent="bg-violet-500">
               Plan{' '}
               <span className="text-zinc-600 dark:text-zinc-400 normal-case">
-                v{String(playbook?.version ?? '—')} · {ts(playbook?.updated)}
+                v{String(playbook?.version ?? '—')} · <span title={tsUtc(playbook?.updated)}>{tsShort(playbook?.updated)}</span>
               </span>
             </SectionTitle>
             {playbook ? (
@@ -487,11 +494,21 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
         className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-baseline gap-3 flex-wrap">
           <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            {String(r.movie ?? r.word ?? r.published ?? 'level')}
+            {String(r.movie ?? r.word ?? r.palindrome ?? r.published ?? 'level')}
           </h3>
-          <span title={tsUtc(event.ts)} className="text-[11px] text-zinc-500 dark:text-zinc-400">{String(event.game)} · {ts(event.ts)}</span>
+          <span title={tsUtc(event.ts)} className="text-[11px] text-zinc-500 dark:text-zinc-400">{gameLabel(String(event.game))} · {ts(event.ts)}</span>
+          {GAME_META[String(event.game)] && (
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              play it on{' '}
+              <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+                href={GAME_META[String(event.game)].appStore}>App Store</a>
+              {' · '}
+              <a target="_blank" rel="noreferrer" className="underline decoration-zinc-400 underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+                href={GAME_META[String(event.game)].play}>Google Play</a>
+            </span>
+          )}
           <button onClick={onClose} className="ml-auto text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">✕</button>
         </div>
 
@@ -602,20 +619,22 @@ function CodesOverview() {
   const games = (summary?.games ?? {}) as Record<string, Record<string, unknown>>;
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-orange-500">Codes & claims <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(summary?.updated)}</span></SectionTitle>
+      <SectionTitle accent="bg-orange-500">Codes & claims <span title={tsUtc(summary?.updated)} className="text-zinc-600 dark:text-zinc-400 normal-case">· {tsShort(summary?.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).sort(([a], [b]) => gameOrder(a) - gameOrder(b)).map(([g, d]) => {
           const stock = (d.stock ?? {}) as Record<string, { available?: number }>;
           const claims = (d.claims ?? { links: 0, codes_backing: 0, teared: 0 }) as Record<string, number>;
           return (
-            <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2 flex gap-3 items-baseline flex-wrap">
-              <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
-              <span className="text-zinc-500 dark:text-zinc-400">
-                stock {(stock && typeof stock === 'object' ? Object.entries(stock) : []).map(([p, s]) => `${p}:${(s as { available?: number })?.available ?? '?'}`).join(' · ') || '—'}
-              </span>
-              <span className="text-emerald-600 dark:text-emerald-400 ml-auto">
-                {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
-              </span>
+            <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
+              <div className="flex justify-between items-baseline gap-3">
+                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 shrink-0">
+                  {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
+                </span>
+              </div>
+              <div className="text-zinc-500 dark:text-zinc-400 mt-0.5">
+                stock {(stock && typeof stock === 'object' ? Object.entries(stock).sort(([a], [b]) => a.localeCompare(b)) : []).map(([p, s]) => `${p}:${(s as { available?: number })?.available ?? '?'}`).join(' · ') || '—'}
+              </div>
               {(() => {
                 const ex = (d as { experiment?: Record<string, { sends: number; claims: number }> }).experiment;
                 if (!ex || (!ex.a && !ex.b)) return null;
@@ -676,7 +695,7 @@ function HistoryOverview() {
   const slot = (W - 2 * PAD) / keys.length;
   const x0 = (i: number) => PAD + i * slot;
   const xc = (i: number) => x0(i) + slot / 2 - 1;
-  const acted = keys.map((k) => ((days[k]?._agent?.actions ?? 0) > 0));
+  const acted = keys.map((k) => ((days[k]?.[game]?.actions ?? 0) > 0));
   // vertical eye-lines through a chart of height h, on agent days
   const marks = (h: number) =>
     keys.map((k, i) =>
@@ -696,7 +715,7 @@ function HistoryOverview() {
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
       <SectionTitle accent="bg-blue-500">
-        Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· a dashed line = a day the agent acted</span>
+        Last 30 days <span className="text-zinc-600 dark:text-zinc-400 normal-case">· per game</span>
       </SectionTitle>
       <div className="flex gap-1.5 mb-2 items-center flex-wrap">
         {games.map((g) => (
@@ -724,8 +743,8 @@ function HistoryOverview() {
 
         <div>
           <div className="flex justify-between items-baseline mb-1">
-            <span className="text-zinc-700 dark:text-zinc-300 font-bold">1 · Agent acted</span>
-            <span className="text-zinc-500 dark:text-zinc-400"><span className="text-emerald-600 dark:text-emerald-400">■</span> acted</span>
+            <span className="text-zinc-700 dark:text-zinc-300 font-bold">1 · Agent acted on this game</span>
+            <span className="text-zinc-500 dark:text-zinc-400"><span className="text-emerald-600 dark:text-emerald-400">■</span> = dashed line below</span>
           </div>
           <svg viewBox={`0 0 ${W} 16`} className="w-full h-auto">
             {keys.map((k, i) => (
@@ -818,7 +837,7 @@ function HealthOverview() {
   const dot = (c: { ok: boolean; warn: boolean }) => (c.ok && !c.warn ? 'bg-emerald-500' : c.warn ? 'bg-amber-400' : 'bg-red-500');
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-rose-500">Health <span className="text-zinc-600 dark:text-zinc-400 normal-case">· {ts(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
+      <SectionTitle accent="bg-rose-500">Health <span title={tsUtc(h.ran_at)} className="text-zinc-600 dark:text-zinc-400 normal-case">· {tsShort(h.ran_at)} · {String(h.trigger ?? '')}</span></SectionTitle>
       <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
         <button
           onClick={() => setOpen((o) => !o)}
@@ -854,7 +873,7 @@ function EarningsOverview() {
   const games = (e.games ?? {}) as Record<string, { yesterday_usd?: number; d7_usd?: number; d30_usd?: number; yesterday_arpu?: number; arpu_30d?: number; status?: string }>;
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-green-600">Earnings <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 30 days · {ts(e.updated)}</span></SectionTitle>
+      <SectionTitle accent="bg-green-600">Earnings <span title={tsUtc(e.updated)} className="text-zinc-600 dark:text-zinc-400 normal-case">· 30 d · {tsShort(e.updated)}</span></SectionTitle>
       <div className="flex flex-col gap-1.5">
         {Object.entries(games).sort(([a], [b]) => gameOrder(a) - gameOrder(b)).map(([g, d]) => {
           const live = (d.d30_usd ?? 0) > 0;

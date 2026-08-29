@@ -5,7 +5,6 @@ One graph serves all trigger kinds; START input routes it:
   "nightly"   -> gather 24h context -> reflector -> apply playbook + brief
   "replenish" -> inventory/balances check -> replenish pipeline tasks -> execute
   "health"    -> run the full real-dependency health check
-  "event:..." -> Eventarc fast path: treat as pulse with the event as a signal
 
 LLM nodes: exactly two (strategist, reflector). Everything else is code.
 """
@@ -40,29 +39,17 @@ def dispatch(node_input) -> Event:
     if kind not in ("pulse", "nightly", "replenish", "health"):
         if kind:
             log.info("unknown trigger kind %r -> pulse", kind[:40])
-        kind = "pulse"  # eventarc events ride the pulse path; detect() sees the payload
+        kind = "pulse"
     state.heartbeat(kind)  # after normalization -> bounded run_kind cardinality
     return Event(output=text.strip(), route=kind, state={"trigger": text.strip()})
 
 
 def detect(node_input) -> Event:
     """Pulse path: deterministic signal detection. No signals -> no LLM."""
-    node_input = node_input if isinstance(node_input, str) else str(node_input)
     # Mirror live owner directives into the playbook every pulse (cheap, no LLM) so
     # an intervention takes visible effect now, not only after the nightly rewrite.
     state.sync_directives_into_playbook()
     signals = rules.detect_signals()
-    if node_input.startswith("event:"):
-        # Eventarc fast path: the event itself is a signal
-        try:
-            payload = json.loads(node_input.split(":", 1)[1])
-        except json.JSONDecodeError:
-            payload = {"raw": node_input}
-        payload.setdefault("signal", "eventarc")
-        payload["ledger_id"] = state.ledger(
-            "signal", payload.get("game"), signal=payload["signal"], data=payload
-        )
-        signals.append(payload)
     if not signals:
         return Event(output="idle", route="idle")
     directives = state.pending_directives()
@@ -373,7 +360,7 @@ root_agent = Workflow(
                 "health": health,
             },
         ),
-        # pulse / eventarc fast path
+        # pulse path
         (
             detect,
             {"decide": strategist, "idle": idle},

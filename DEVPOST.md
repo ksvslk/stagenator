@@ -12,7 +12,7 @@ Enter **Stagenator** — a 24/7 AI caretaker that brings my live mobile game por
 ## What it does
 Stagenator autonomously manages three live store games — **Subliminal Words**, **AI Movie Quiz**, and **Palindrome** — on iOS and Android with zero human intervention.
 
-- **Instant Player Reaction & 5-Minute Heartbeat:** When traffic is near zero, every single player visit is precious. If a user opens the app and leaves 2 minutes later, a standard cron job is too late. Stagenator uses **Eventarc** to wake up *instantly* the second a player arrives, backed by a 5-minute Cloud Scheduler heartbeat. It immediately generates custom content or delivers a gift code while the player is still active on-screen.
+- **5-Minute Heartbeat on Near-Zero Traffic:** When traffic is near zero, every single player visit is precious. A Cloud Scheduler heartbeat wakes Stagenator every 5 minutes to poll Google Analytics realtime; the moment it sees an active player it generates custom content or delivers a gift code — often while the player is still on-screen — and 99% of idle check-ins find no one and cost nothing.
 - **Multimodal Content Generation:** Creates new levels on the fly (ControlNet images with hidden words for Subliminal Words, or 8-second Veo 3.1 AI video clips with audio for AI Movie Quiz). For Palindrome, the content is text, so correctness is *proven in code* (a phrase must read the same backwards) — the model only proposes fresh palindromes, screens them for a kids' audience, and writes hints in 18 languages.
 - **Closed-Loop Quality Control:** Before publishing, Gemini 3.7 Vision & Video Understanding inspects the generated media to enforce quality (e.g., verifying word subtlety, ensuring no actor likeness or overlay text).
 - **Player Engagement & Gifting:** Gifts mintable Apple App Store promo codes or Google Play gifts delivered via personal claim links on proffer.codes.
@@ -24,7 +24,7 @@ Stagenator autonomously manages three live store games — **Subliminal Words**,
 ## How we built it
 Built on **Google ADK (Agent Development Kit)** and deployed natively to **Google Cloud**:
 
-- **Orchestration:** Built as an **ADK 2.0 Workflow Graph** running on **Cloud Run**, woken up serverlessly by **Cloud Scheduler** and **Eventarc**.
+- **Orchestration:** Built as an **ADK 2.0 Workflow Graph** running on **Cloud Run**, woken every 5 minutes by **Cloud Scheduler**.
 - **Model Roles (~11 Specialist Prompts):** Rather than a single monolithic prompt, we split intelligence into specialized roles orchestrated by code: Strategist, Reflector, three Level Designers, Visual Inspectors, a Content-Safety Screener, Gift Selectors, and Error Diagnosticians.
 - **Generative & Vision Stack:** Vertex AI (Gemini 3.7 Flash + Veo 3.1), Runpod/ComfyUI (ControlNet), Firebase (Hosting, Auth, FCM, Firestore), BigQuery (GA4 export), and App Store Connect API.
 - **Safety & Guardrails:** Code does the doing; AI does the thinking. The LLM returns structured schema-locked outputs (LlmAgent). Hard code-level guardrails enforce strict daily budgets (e.g., max 1 level and 1 gift per game per day) to prevent runaway costs or store spam.

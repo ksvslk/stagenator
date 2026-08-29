@@ -98,7 +98,7 @@ def recent_ledger(hours: int = 24, kind: str | None = None) -> list[dict]:
             filter=firestore.FieldFilter("ts", ">=", now() - dt.timedelta(hours=hours))
         )
         .order_by("ts", direction=firestore.Query.DESCENDING)
-        .limit(5000)  # bound reads/memory against an Eventarc storm or a ledger loop
+        .limit(5000)  # bound reads/memory against a runaway ledger loop
     )
     entries = [d.to_dict() | {"id": d.id} for d in q.stream()]
     return [e for e in entries if e.get("kind") == kind] if kind else entries
@@ -108,8 +108,9 @@ def recent_ledger(hours: int = 24, kind: str | None = None) -> list[dict]:
 
 # Types under a 1/day cap: at most ONE active task per (type, game) per day, so the
 # key ignores volatile payload (message, delay/not_before, n_codes). This makes two
-# concurrent deciders (5-min pulse + Eventarc) collapse to the SAME task doc — the
-# atomic enqueue transaction then dedupes them instead of both slipping through.
+# concurrent deciders (e.g. an overlapping pulse and a lease retry) collapse to the
+# SAME task doc — the atomic enqueue transaction then dedupes them instead of both
+# slipping through.
 _DAILY_CAPPED_TYPES = {"level_pipeline", "code_drop", "individual_code", "level_push"}
 
 

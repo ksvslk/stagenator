@@ -1,11 +1,9 @@
 """Trigger endpoints — the ambient seam (pattern: ambient-expense-agent).
 
-Cloud Scheduler POSTs /triggers/pulse | /triggers/nightly | /triggers/replenish | /triggers/health;
-Eventarc POSTs Firestore events to /triggers/event. Each run is a fresh,
-recorded session driven through the shared Runner, so every scheduled turn is
-inspectable in the ADK web UI and the ledger."""
+Cloud Scheduler POSTs /triggers/pulse | /triggers/nightly | /triggers/replenish | /triggers/health.
+Each run is a fresh, recorded session driven through the shared Runner, so every
+scheduled turn is inspectable in the ADK web UI and the ledger."""
 
-import json
 import logging
 import uuid
 
@@ -59,28 +57,3 @@ async def health(request: Request) -> dict:
     raw = (await request.body()).decode("utf-8", "ignore").strip()
     msg = raw if raw.startswith("health") else "health:scheduled"
     return await _run(request, msg)
-
-
-@router.post("/event")
-async def event(request: Request) -> dict:
-    """Eventarc Firestore trigger — fast path. Body may be CloudEvent JSON."""
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    payload = {
-        "game": _game_from_event(body),
-        "signal": "eventarc",
-        "raw_subject": body.get("subject") or body.get("source") or "",
-    }
-    return await _run(request, f"event:{json.dumps(payload)}")
-
-
-def _game_from_event(body: dict) -> str | None:
-    from agent import config
-
-    subject = str(body.get("subject", "")) + str(body.get("source", ""))
-    for game, cfg in config.GAMES.items():
-        if cfg["project"] in subject:
-            return game
-    return None

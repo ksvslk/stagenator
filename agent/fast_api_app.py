@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.runner = runner
     app.state.agent_app_name = adk_app.name
 
-    # Stagenator ambient seam: Cloud Scheduler / Eventarc trigger endpoints.
+    # Stagenator ambient seam: Cloud Scheduler trigger endpoints.
     from agent.triggers import router as triggers_router
 
     app.include_router(triggers_router)

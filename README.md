@@ -84,7 +84,7 @@ a role is overloaded, it splits; when signals outgrow pre-gathered context, the
 Strategist gains read-only lookups — eyes before hands.
 
 Everything runs as **one ADK Workflow graph on Cloud Run** (asleep and free
-when idle), woken by Cloud Scheduler and Eventarc. Every action is a job on a
+when idle), woken every 5 minutes by Cloud Scheduler. Every action is a job on a
 crash-proof to-do list: a crash mid-job is retried, a failure retries
 three times then gives up loudly, and a failed attempt never burns the daily
 budget. All state lives in Firestore and feeds the dashboard live.
@@ -125,7 +125,7 @@ games in the same portfolio, in order of effort:
 
 ## Stack
 
-Cloud Run · Cloud Scheduler · Eventarc · Firestore · BigQuery (GA4 export) ·
+Cloud Run · Cloud Scheduler · Firestore · BigQuery (GA4 export) ·
 Vertex AI (Gemini 3.7 Flash + Veo) · Firebase Hosting/Auth/FCM · Secret
 Manager · Runpod/ComfyUI. Framework: **ADK**. Full spin-up: [SETUP.md](SETUP.md).
 

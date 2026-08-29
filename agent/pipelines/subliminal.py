@@ -452,9 +452,21 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
                 for j in range(k)
             ]
             d.polygon(poly, fill=tone)
-    # Keep strokes strictly OFF the glyphs: erase the stroke layer wherever a letter
-    # sits (plus a small halo for a clean gap), so nothing draws on a letter — not even
-    # its soft edge. Then composite behind the letters.
+    # Keep marks WELL AWAY from every letter — not just off it, but out of a generous
+    # clearance circle around each glyph — so nothing ever sits over, under or touching a
+    # letter (which would wreck the hidden-word generation). Marks live only in the empty
+    # areas. Then composite behind the letters as a final safety.
+    excl = Image.new("L", img.size, 0)
+    ed = ImageDraw.Draw(excl)
+    for L in layout:
+        r = 0.5 * math.hypot(
+            L["fontSize"] * 0.72 * L["scaleX"], L["fontSize"] * 0.82 * L["scaleY"]
+        )
+        clear = r + max(70.0, 0.6 * r)  # big clearance around the glyph
+        gx, gy = L["x"] * CANVAS, L["y"] * CANVAS
+        ed.ellipse([gx - clear, gy - clear, gx + clear, gy + clear], fill=255)
+    stroke.paste(255, (0, 0), mask=excl)  # wipe any mark inside a letter's clearance zone
+    # belt-and-suspenders: also erase over the actual glyph pixels + a halo
     letter_mask = img.point(lambda v: 255 if v < 200 else 0).filter(ImageFilter.MaxFilter(13))
     stroke.paste(255, (0, 0), mask=letter_mask)
     img.paste(ImageChops.darker(img, stroke))

@@ -332,6 +332,31 @@ class TestPalindromeGates:
         assert not p.passes_gates("12321")  # digits are not letters
 
 
+class TestDirectiveProjection:
+    """ceo_directives is a deterministic, newest-first mirror of open directives."""
+
+    def test_projection_is_newest_first_and_minimal(self, monkeypatch):
+        from agent import state
+
+        monkeypatch.setattr(
+            state,
+            "pending_directives",
+            lambda: [
+                {"id": "old", "text": "do no code drops", "ts": "2026-08-27 21:03", "extra": "x"},
+                {"id": "new", "text": "code drops allowed again", "ts": "2026-08-29 09:38"},
+            ],
+        )
+        proj = state.directive_projection()
+        assert [d["id"] for d in proj] == ["new", "old"]  # newest first
+        assert set(proj[0].keys()) == {"id", "text", "ts"}  # no stray fields
+
+    def test_empty_when_nothing_pending(self, monkeypatch):
+        from agent import state
+
+        monkeypatch.setattr(state, "pending_directives", lambda: [])
+        assert state.directive_projection() == []
+
+
 class TestClaimLinkRedaction:
     """World-readable ledger/task docs must never carry a working claim link."""
 

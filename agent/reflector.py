@@ -50,7 +50,10 @@ reflector = LlmAgent(
         "- `activity_by_hour_utc` shows WHEN players are actually active. As volume grows, tune "
         "`code_send_windows_utc` toward the peak-activity hours so sends reach the MOST players — "
         "not fired at whatever hour a lone user happens to appear. While data is thin, stay humble.\n"
-        "- Fold in unhandled CEO directives as playbook entries under ceo_directives.\n"
+        "- CEO directives: `ceo_directives` is maintained automatically (a live mirror "
+        "of open owner directives) — do NOT edit that list. Instead, reflect their intent "
+        "in the philosophy and knobs; when an owner directive has been fully carried out or "
+        "cancelled by a later one, say so in your changes so it reads as resolved.\n"
         "- EARNINGS are the ultimate goal; engagement is the lever. You are given per-game "
         "`earnings` — YESTERDAY (the last complete day) is the actionable number, with 7d/30d "
         "for trend. When revenue data exists, analyze the engagement<->earnings "
@@ -86,6 +89,10 @@ def apply_reflection(reflection: dict) -> dict:
     # Preserve any sections the model omitted — merge over the current playbook so a
     # forgotten `knobs`/`philosophy` isn't silently dropped.
     merged = {**state.get_playbook(), **playbook}
+    # ceo_directives is a deterministic projection of the live directive docs
+    # (state.sync_directives_into_playbook), not the Reflector's to author — re-derive
+    # it so a nightly rewrite can never resurrect a directive you've since cancelled.
+    merged["ceo_directives"] = state.directive_projection()
 
     def _too_big() -> bool:
         return len(json.dumps(merged, default=str)) > PLAYBOOK_MAX_CHARS

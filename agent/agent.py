@@ -48,6 +48,9 @@ def dispatch(node_input) -> Event:
 def detect(node_input) -> Event:
     """Pulse path: deterministic signal detection. No signals -> no LLM."""
     node_input = node_input if isinstance(node_input, str) else str(node_input)
+    # Mirror live owner directives into the playbook every pulse (cheap, no LLM) so
+    # an intervention takes visible effect now, not only after the nightly rewrite.
+    state.sync_directives_into_playbook()
     signals = rules.detect_signals()
     if node_input.startswith("event:"):
         # Eventarc fast path: the event itself is a signal

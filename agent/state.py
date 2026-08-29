@@ -513,6 +513,35 @@ def resolve_directive(directive_id: str, response: str) -> None:
     )
 
 
+def sync_directives_into_playbook() -> None:
+    """Deterministically mirror the LIVE owner-directive set into the playbook's
+    `ceo_directives`, every pulse — so a fresh directive shows on the dashboard Plan
+    panel and reaches the Strategist immediately, not only after the nightly rewrite.
+
+    `ceo_directives` becomes a pure projection of the unresolved directive docs
+    (status 'new'), newest first. When the Strategist resolves one (or supersedes an
+    older one), it drops out here on the next pulse — so the panel and the model can
+    never disagree with what you've actually sent. Merge-only: never bumps the
+    playbook version or archives history (that stays the Reflector's job)."""
+    projected = directive_projection()
+    ref = db().collection(config.COL_PLAYBOOK).document("current")
+    snap = ref.get()
+    if snap.exists and (snap.to_dict() or {}).get("ceo_directives") == projected:
+        return  # already in sync — no write
+    ref.set({"ceo_directives": projected, "updated": now()}, merge=True)
+
+
+def directive_projection() -> list[dict]:
+    """The unresolved owner directives, newest first — the single source of truth
+    for the playbook's `ceo_directives` field (see sync_directives_into_playbook)."""
+    return [
+        {"id": d["id"], "text": str(d.get("text", "")), "ts": str(d.get("ts", ""))}
+        for d in sorted(
+            pending_directives(), key=lambda d: str(d.get("ts", "")), reverse=True
+        )
+    ]
+
+
 # ---------------------------------------------------------------- alerts ----
 
 

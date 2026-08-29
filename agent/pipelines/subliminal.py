@@ -644,9 +644,19 @@ def run(task: dict) -> dict:
     paint = payload.get("paint")
     paint = (random.random() < 0.5) if paint is None else bool(paint)
     mask_png = render_mask(layout, svg, paint=paint)
-    # Difficulty = ControlNet strength (higher = word more visible = easier). Keep it
-    # STABLE: only a small ±0.1 variance around the 1.0 baseline for variety — no big swings.
-    difficulty = round(1.0 + random.uniform(-0.10, 0.10), 3)
+    # Difficulty = ControlNet strength: HIGHER -> the mask is imposed more strongly, so the
+    # word comes out MORE visible -> EASIER to find. We set it INVERSELY to how visible the
+    # layout already is: big/bold letters are easy to spot, so we blend them harder (lower
+    # strength); small/subtle letters get imposed more (higher strength). That keeps the real
+    # find-difficulty roughly even across very different layouts, instead of a blind ±0.1.
+    avg_fs = sum(L["fontSize"] for L in layout) / len(layout)
+    # avg_fs spans ~135 (letters near the floor) .. ~300+ (big). Normalise to visibility 0..1.
+    visibility = min(1.0, max(0.0, (avg_fs - 135.0) / 165.0))
+    # visible layout -> low strength (harder); subtle layout -> high strength (easier).
+    difficulty = 1.12 - visibility * 0.40 + random.uniform(-0.03, 0.03)
+    if paint:
+        difficulty += 0.04  # paint clutter hides the word a bit -> compensate strength up
+    difficulty = round(min(1.15, max(0.70, difficulty)), 3)
 
     if config.DRY_RUN:
         return {

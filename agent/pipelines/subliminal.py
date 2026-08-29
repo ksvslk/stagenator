@@ -50,14 +50,24 @@ def design_level(existing_words: set[str], culture: str | None = None) -> dict |
         if culture
         else ""
     )
+    # The scene need not relate to the word: often it hints thematically, but sometimes
+    # it is DELIBERATELY unrelated and the word hides purely through placement — a fun,
+    # surprising, usually-harder level. Decide here so the mix is even across levels.
+    scene_rule = (
+        "a photorealistic scene prompt that thematically hints at the word without "
+        "depicting it literally as text"
+        if random.random() < 0.6
+        else "a photorealistic scene prompt DELIBERATELY UNRELATED to the word — any "
+        "vivid, concrete real-world scene of your choosing; the word will hide inside it "
+        "purely through placement, which makes a surprising level"
+    )
     reply = genai_client.generate_json(
         "You design levels for 'Subliminal Words' — a puzzle game where a word is hidden "
         "inside a photorealistic image; players stare until the word pops out.\n"
         f"Words already used (do NOT repeat): {random.sample(sorted(existing_words), min(200, len(existing_words)))}\n"
         + culture_line
         + "Propose ONE new level: a short, punchy English word (3-8 letters, uppercase, "
-        "concrete noun or vivid concept) and a photorealistic scene prompt that thematically "
-        "hints at the word without depicting it literally as text.\n"
+        "concrete noun or vivid concept) and " + scene_rule + ".\n"
         "The scene must contain NO people, faces, or human figures — use landscapes, objects, "
         "textures, animals, machines, or abstract environments. (People and faces both raise "
         "likeness concerns and disrupt the hidden-word illusion.)\n"
@@ -82,26 +92,31 @@ def build_layout(word: str) -> list[dict]:
     x,y normalized (0-1, center), fontSize (24-512), rotationDegrees, scaleX/scaleY
     (0.2-12), skewX/YDegrees (<=80), opacity, fontWeightValue in {200,400,700}.
 
-    Letters spread across the canvas center so the word reads left-to-right when
-    highlighted (mild variation keeps it 'hidden', not printed)."""
+    Letters keep left-to-right order so the word stays findable (not a jumble), but
+    each level varies: a per-level base size and vertical spread, then per-letter size,
+    rotation, scale, skew and drift. The horizontal jitter is kept under half a slot so
+    letters never cross, preserving the reading path."""
     n = len(word)
     margin = 0.13
-    font_size = 150.0
+    slot = (1 - 2 * margin) / n
+    base = random.uniform(110, 195)  # per-LEVEL scale: some big and bold, some smaller
+    spread = random.uniform(0.10, 0.24)  # per-LEVEL vertical liveliness
     letters = []
     for i, ch in enumerate(word):
-        x = margin + (i + 0.5) * (1 - 2 * margin) / n
-        y = 0.5 + random.uniform(-0.14, 0.14)
+        # slot centre + jitter < half a slot -> order (and readability) preserved
+        x = margin + (i + 0.5) * slot + random.uniform(-0.42, 0.42) * slot
+        y = 0.5 + random.uniform(-spread, spread)
         letters.append(
             {
                 "letter": ch,
-                "x": round(min(max(x, 0.02), 0.98), 4),
-                "y": round(min(max(y, 0.02), 0.98), 4),
-                "fontSize": font_size,
-                "rotationDegrees": round(random.uniform(-18, 18), 2),
-                "scaleX": round(random.uniform(0.85, 1.25), 3),
-                "scaleY": round(random.uniform(1.05, 1.5), 3),
-                "skewXDegrees": round(random.uniform(-10, 10), 2),
-                "skewYDegrees": 0.0,
+                "x": round(min(max(x, 0.04), 0.96), 4),
+                "y": round(min(max(y, 0.06), 0.94), 4),
+                "fontSize": round(base * random.uniform(0.7, 1.4), 1),  # per-letter size
+                "rotationDegrees": round(random.uniform(-30, 30), 2),
+                "scaleX": round(random.uniform(0.8, 1.35), 3),
+                "scaleY": round(random.uniform(1.0, 1.6), 3),
+                "skewXDegrees": round(random.uniform(-16, 16), 2),
+                "skewYDegrees": round(random.uniform(-6, 6), 2),
                 "opacity": 1.0,
                 "fontWeightValue": random.choice([400, 700, 700]),
             }
@@ -310,8 +325,11 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
     xs = [L["x"] * CANVAS for L in layout]
     x0, x1 = min(xs), max(xs)
     ymid = (sum(L["y"] for L in layout) / len(layout)) * CANVAS
-    for _ in range(n if n is not None else random.randint(2, 4)):
+    for _ in range(n if n is not None else random.randint(2, 5)):
         width = random.randint(8, 34)  # brush size (admin range 1-50)
+        # per-stroke opacity: 0 = a strong black sweep, ~150 = a faint ghost mark.
+        # The mask is greyscale (L); varying the tone gives layered, uneven obscuring.
+        tone = random.randint(0, 150)
         sx = random.uniform(x0 - 80, x0 + 120)
         ex = random.uniform(x1 - 120, x1 + 80)
         steps = random.randint(4, 7)
@@ -319,7 +337,7 @@ def _add_paint_strokes(img, layout: list[dict], n: int | None = None) -> None:
             (sx + (ex - sx) * (i / (steps - 1)), ymid + random.uniform(-140, 140))
             for i in range(steps)
         ]
-        d.line(pts, fill=0, width=width, joint="curve")
+        d.line(pts, fill=tone, width=width, joint="curve")
 
 
 # ---------------------------------------------------------------- QA + dedup ----
@@ -492,7 +510,7 @@ def run(task: dict) -> dict:
     # "Paint mode" on some levels (agent-equivalent of the admin paint tool): brush
     # strokes baked into the mask to make the hidden word harder to guess.
     paint = payload.get("paint")
-    paint = (random.random() < 0.35) if paint is None else bool(paint)
+    paint = (random.random() < 0.5) if paint is None else bool(paint)
     mask_png = render_mask(layout, svg, paint=paint)
     # Difficulty = ControlNet strength (higher = word more visible = easier). Keep it
     # STABLE: only a small ±0.1 variance around the 1.0 baseline for variety — no big swings.

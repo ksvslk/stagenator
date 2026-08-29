@@ -100,17 +100,29 @@ def build_layout(word: str) -> list[dict]:
     path keeps the letters' bounding circles apart, so they never overlap."""
     n = len(word)
     MIN_FONT = 96.0  # ControlNet floor: a smaller glyph won't render cleanly in the mask
-    base = random.uniform(140, 235)
+    MAX_FONT = 380.0  # a glyph this size already fills ~1/3 of the canvas — "huge"
+    base = random.uniform(150, 230)  # bigger default letter size
+    if random.random() < 0.22:  # some puzzles are GIANT: letters dominate the canvas
+        base *= random.uniform(1.3, 1.55)
+
+    def _roll_fs() -> float:
+        # mostly big, but ~1 in 3 letters goes even bigger for strong size contrast;
+        # clamped to MAX_FONT so one giant letter can't blow up the whole layout
+        r = random.uniform(0.9, 1.7)
+        if random.random() < 0.33:
+            r *= random.uniform(1.5, 2.4)
+        return min(MAX_FONT, base * r)
+
     props = [
         {
             "letter": ch,
-            "fs": base * random.uniform(0.9, 1.9),  # floored at MIN_FONT below
-            "sx": random.uniform(0.85, 1.3),
+            "fs": _roll_fs(),  # clamped to [MIN_FONT, MAX_FONT] below
+            "sx": random.uniform(0.9, 1.35),
             "sy": random.uniform(1.0, 1.55),
             "rotj": random.uniform(-22, 22),
             "skx": random.uniform(-12, 12),
             "sky": random.uniform(-5, 5),
-            "fw": random.choice([400, 700, 700]),
+            "fw": random.choice([700, 700, 700, 400]),  # bold by default
         }
         for ch in word
     ]
@@ -119,73 +131,56 @@ def build_layout(word: str) -> list[dict]:
         return 0.5 * math.hypot(p["fs"] * 0.72 * p["sx"], p["fs"] * 0.82 * p["sy"])
 
     radii = [_radius(p) for p in props]
-    min_gap = 0.025 * CANVAS
-    need = sum(2 * r for r in radii) + min_gap * (n - 1)  # min length to lay letters out
-    rmax = max(radii)
-    m = rmax + 0.015 * CANVAS  # keep the path (and glyphs) inside the canvas
-    span_max = math.dist((m, m), (CANVAS - m, CANVAS - m))
-    # path spans ENOUGH for the word (letters keep size) and as much of the canvas as
-    # fits (so the word spreads out) — longer words automatically get longer paths
-    span = min(span_max, max(0.6 * CANVAS, need * random.uniform(1.0, 1.5)))
 
-    # lay a segment of length `span` at a random angle, centred so both ends stay on canvas
+    # lay the letters IN ORDER along a curved baseline in nominal coords (centred on 0);
+    # gaps scale with letter size for consistent, generous spacing
+    gaps = [random.uniform(0.06, 0.42) * (radii[i] + radii[i + 1]) / 2 for i in range(n - 1)]
+    pos1d, cur = [radii[0]], radii[0]
+    for i in range(1, n):
+        cur += radii[i - 1] + gaps[i - 1] + radii[i]
+        pos1d.append(cur)
+    length = (pos1d[-1] + radii[-1]) or 1.0
     phi = random.uniform(0, 2 * math.pi)
-    half = span / 2
-    ex, ey = abs(half * math.cos(phi)), abs(half * math.sin(phi))
-    lox, hix, loy, hiy = m + ex, CANVAS - m - ex, m + ey, CANVAS - m - ey
-    ccx = random.uniform(lox, hix) if lox < hix else CANVAS / 2
-    ccy = random.uniform(loy, hiy) if loy < hiy else CANVAS / 2
-    a = (ccx - half * math.cos(phi), ccy - half * math.sin(phi))
-    b = (ccx + half * math.cos(phi), ccy + half * math.sin(phi))
-    ux, uy = -math.sin(phi), math.cos(phi)  # perpendicular -> bow into a curve
-    bow = random.uniform(-0.42, 0.42) * span * 0.5
-    cx, cy = ccx + ux * bow, ccy + uy * bow
+    cphi, sphi = math.cos(phi), math.sin(phi)
+    bow = random.uniform(-0.6, 0.6)  # 0 = straight line, ±0.6 = strong arc
+    pts, tang = [], []
+    for i in range(n):
+        o = pos1d[i] - length / 2  # signed offset along the baseline
+        t = (o + length / 2) / length
+        off = bow * length * 0.5 * math.sin(t * math.pi)  # perpendicular bow, 0 at the ends
+        pts.append((o * cphi + off * (-sphi), o * sphi + off * cphi))
+        slope = bow * math.pi * 0.5 * math.cos(t * math.pi)  # d(off)/d(o) -> local tangent
+        tang.append(math.degrees(phi) + math.degrees(math.atan(slope)))
 
-    def _bez(t: float) -> tuple[float, float]:
-        u = 1 - t
-        return (
-            u * u * a[0] + 2 * u * t * cx + t * t * b[0],
-            u * u * a[1] + 2 * u * t * cy + t * t * b[1],
-        )
-
-    samp = [_bez(i / 160) for i in range(161)]
-    arc = [0.0]
-    for i in range(1, len(samp)):
-        arc.append(arc[-1] + math.dist(samp[i - 1], samp[i]))
-    path_len = arc[-1] or 1.0
-
-    # shrink only if the min layout still exceeds the path, then floor every glyph at
-    # MIN_FONT so none is too small for ControlNet
-    fit = min(1.0, (path_len * 0.98) / need) if need > 0 else 1.0
-    for p in props:
-        p["fs"] = max(MIN_FONT, p["fs"] * fit)
-    radii = [_radius(p) for p in props]
-    foot = [2 * r for r in radii]
-    slack = max(0.0, path_len - sum(foot))
-    gap = slack / (n + 1)  # equal gaps at both ends and between -> letters use the whole path
-
-    def _on_path(s: float) -> tuple[float, float, float]:
-        s = min(max(s, 0.0), path_len)
-        j = 1
-        while j < len(arc) and arc[j] < s:
-            j += 1
-        j = min(j, len(arc) - 1)
-        seg = (arc[j] - arc[j - 1]) or 1.0
-        f = (s - arc[j - 1]) / seg
-        x = samp[j - 1][0] + (samp[j][0] - samp[j - 1][0]) * f
-        y = samp[j - 1][1] + (samp[j][1] - samp[j - 1][1]) * f
-        tang = math.degrees(
-            math.atan2(samp[j][1] - samp[j - 1][1], samp[j][0] - samp[j - 1][0])
-        )
-        return x, y, tang
+    # SCALE the whole arrangement to fill the canvas -> short words get big letters,
+    # long words stay legible, and the word always uses the space
+    minx = min(pts[i][0] - radii[i] for i in range(n))
+    maxx = max(pts[i][0] + radii[i] for i in range(n))
+    miny = min(pts[i][1] - radii[i] for i in range(n))
+    maxy = max(pts[i][1] + radii[i] for i in range(n))
+    w, h = max(maxx - minx, 1.0), max(maxy - miny, 1.0)
+    margin = 0.03 * CANVAS
+    fill = random.uniform(0.82, 1.0)  # fill most/all of the canvas -> big letters
+    scale = (CANVAS - 2 * margin) * fill / max(w, h)
+    bcx, bcy = (minx + maxx) / 2, (miny + maxy) / 2
+    sw, sh = w * scale, h * scale
+    tx = (
+        random.uniform(margin + sw / 2, CANVAS - margin - sw / 2)
+        if sw < CANVAS - 2 * margin
+        else CANVAS / 2
+    )
+    ty = (
+        random.uniform(margin + sh / 2, CANVAS - margin - sh / 2)
+        if sh < CANVAS - 2 * margin
+        else CANVAS / 2
+    )
 
     letters = []
-    cursor = gap
-    for p, f in zip(props, foot, strict=True):
-        cursor += f / 2
-        x, y, tang = _on_path(cursor)
-        cursor += f / 2 + gap
-        rot = tang + p["rotj"]
+    for i, p in enumerate(props):
+        fs = min(MAX_FONT, max(MIN_FONT, p["fs"] * scale))
+        x = tx + (pts[i][0] - bcx) * scale
+        y = ty + (pts[i][1] - bcy) * scale
+        rot = tang[i] + p["rotj"]
         while rot > 90:  # follow the path but keep glyphs upright, not inverted
             rot -= 180
         while rot < -90:
@@ -195,7 +190,7 @@ def build_layout(word: str) -> list[dict]:
                 "letter": p["letter"],
                 "x": round(min(max(x / CANVAS, 0.02), 0.98), 4),
                 "y": round(min(max(y / CANVAS, 0.02), 0.98), 4),
-                "fontSize": round(p["fs"], 1),
+                "fontSize": round(fs, 1),
                 "rotationDegrees": round(rot, 2),
                 "scaleX": round(p["sx"], 3),
                 "scaleY": round(p["sy"], 3),

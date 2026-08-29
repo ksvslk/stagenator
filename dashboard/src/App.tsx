@@ -415,8 +415,6 @@ function Dashboard({ owner }: { owner: boolean }) {
 
           <CodesOverview />
 
-          <EarningsOverview />
-
           <HistoryOverview />
 
           <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
@@ -867,41 +865,6 @@ function HealthOverview() {
   );
 }
 
-function EarningsOverview() {
-  const e = useDoc('stagenator_playbook/earnings');
-  if (!e) return null;
-  const games = (e.games ?? {}) as Record<string, { yesterday_usd?: number; d7_usd?: number; d30_usd?: number; yesterday_arpu?: number; arpu_30d?: number; status?: string }>;
-  return (
-    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-green-600">Earnings <span title={tsUtc(e.updated)} className="text-zinc-600 dark:text-zinc-400 normal-case">· 30 d · {tsShort(e.updated)}</span></SectionTitle>
-      <div className="flex flex-col gap-1.5">
-        {Object.entries(games).sort(([a], [b]) => gameOrder(a) - gameOrder(b)).map(([g, d]) => {
-          const live = (d.d30_usd ?? 0) > 0;
-          return (
-            <div key={g} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
-              <div className="flex justify-between items-baseline">
-                <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
-                <span className={live ? 'text-emerald-600 dark:text-emerald-400 font-bold text-sm' : 'text-zinc-500 dark:text-zinc-400'}>
-                  ${Number(d.yesterday_usd ?? 0).toFixed(2)} <span className="text-zinc-600 dark:text-zinc-400 font-normal">yesterday</span>
-                </span>
-              </div>
-              {live ? (
-                <div className="text-zinc-500 dark:text-zinc-400 mt-0.5 flex flex-wrap gap-x-3">
-                  <span>7d ${Number(d.d7_usd ?? 0).toFixed(2)}</span>
-                  <span>30d ${Number(d.d30_usd ?? 0).toFixed(2)}</span>
-                  <span>per user ${Number(d.arpu_30d ?? 0).toFixed(3)}</span>
-                </div>
-              ) : (
-                <div className="text-zinc-600 dark:text-zinc-400 mt-0.5">{String(d.status ?? '')}</div>
-              )}
-            </div>
-          );
-        })}
-        {Object.keys(games).length === 0 && <Empty>refreshes on tonight's run</Empty>}
-      </div>
-    </section>
-  );
-}
 
 
 function Directives() {

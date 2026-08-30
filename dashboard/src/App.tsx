@@ -697,7 +697,7 @@ function LevelDetail({ event, onClose }: { event: Doc; onClose: () => void }) {
 function LevelsOverview({ tasks }: { tasks: Doc[] }) {
   const [selected, setSelected] = useState<Doc | null>(null);
   const GAMES = GAME_KEYS;
-  const ledger = useLedgerSince(72);
+  const ledger = useLedgerSince(24 * 7);
   const levelEvents = ledger.filter((e) => {
     const r = (e.result ?? {}) as Record<string, unknown>;
     return (
@@ -715,7 +715,7 @@ function LevelsOverview({ tasks }: { tasks: Doc[] }) {
 
   return (
     <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-emerald-500">Stages created <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 72 h</span></SectionTitle>
+      <SectionTitle accent="bg-emerald-500">Stages created <span className="text-zinc-600 dark:text-zinc-400 normal-case">· last 7 days</span></SectionTitle>
       <div className="flex flex-col gap-3">
         {GAMES.map((g) => {
           const events = levelEvents.filter((e) => e.game === g);
@@ -729,7 +729,7 @@ function LevelsOverview({ tasks }: { tasks: Doc[] }) {
                 </span>
               </div>
               {events.length === 0 && !pending && <Empty>none yet</Empty>}
-              {events.slice(0, 4).map((e) => {
+              {events.slice(0, 7).map((e) => {
                 const r = (e.result ?? {}) as Record<string, unknown>;
                 return (
                   <div

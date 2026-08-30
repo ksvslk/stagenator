@@ -334,15 +334,16 @@ function PushCopyTest({ ex }: { ex: Record<string, { sends: number; claims: numb
         onClick={() => setOpen((o) => !o)}
         className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer text-left"
       >
-        {open ? '▾' : '▸'} push copy test · A: {f(ex.a)} · B: {f(ex.b)}
+        {open ? '▾' : '▸'} push copy test
       </button>
       {open && (
         <div className="mt-1 text-zinc-500 dark:text-zinc-400 leading-relaxed border-l-2 border-violet-300 dark:border-violet-700 pl-2">
-          Every code push is drafted in two writing styles, A and B, and players are split
-          between them. One push is one notification — a shared drop link that several
-          players can claim through, so more claims than pushes is normal. The style that
-          earns more claims per push wins, and the nightly review writes the winning style
-          into the playbook.
+          <div>A: {f(ex.a)}</div>
+          <div>B: {f(ex.b)}</div>
+          <div className="mt-0.5">
+            Two notification styles compete; a push is a shared drop link, so several
+            players can claim through one. The winning style goes into the playbook.
+          </div>
         </div>
       )}
     </div>

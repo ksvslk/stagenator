@@ -37,9 +37,20 @@ def _reserve_codes(campaign_id: str, n: int) -> list[str]:
     never stamp the same code into two claim tokens."""
     tc = _tc()
     col = tc.collection("campaigns").document(campaign_id).collection("codes")
-    q = col.where(filter=firestore.FieldFilter("isTorn", "==", False)).limit(n * 4)
+    # Scan WIDE and filter client-side: a small doc-ID-ordered window (the old
+    # limit(n*4)) starves — reservations are always grabbed from the window's start,
+    # so held codes accumulate exactly there and mask plentiful free stock deeper in
+    # the collection ("only 3/5 reservable" with 56 free). Campaigns are at most a
+    # few hundred codes, so streaming them is cheap; the per-code transaction below
+    # still guards every grab against races.
+    q = col.where(filter=firestore.FieldFilter("isTorn", "==", False)).limit(500)
+    candidates = [
+        snap
+        for snap in q.stream()
+        if not (lambda d: d.get("reservedBy") or d.get("expired"))(snap.to_dict() or {})
+    ]
     reserved: list[str] = []
-    for snap in q.stream():
+    for snap in candidates:
         if len(reserved) >= n:
             break
         ref = snap.reference

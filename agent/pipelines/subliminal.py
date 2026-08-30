@@ -143,7 +143,10 @@ def build_layout(word: str) -> list[dict]:
         cur += radii[i - 1] + gaps[i - 1] + radii[i]
         pos1d.append(cur)
     length = (pos1d[-1] + radii[-1]) or 1.0
-    phi = random.uniform(0, 2 * math.pi)
+    # Direction restricted to the RIGHT half-circle: words may run left-to-right,
+    # straight down, straight up, or any diagonal between — but never right-to-left
+    # (a mirrored word reads as gibberish, not as a hidden word).
+    phi = random.uniform(-math.pi / 2, math.pi / 2)
     cphi, sphi = math.cos(phi), math.sin(phi)
     bow = random.uniform(-0.6, 0.6)  # 0 = straight line, ±0.6 = strong arc
     pts, tang = [], []

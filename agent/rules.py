@@ -149,7 +149,11 @@ def refresh_codes_summary() -> None:
     from agent import state
 
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
+    ref = state.db().collection(config.COL_PLAYBOOK).document("codes_summary")
+    # Prior per-token claim counts: the baseline for detecting NEW claims below.
+    prev_counts: dict = (ref.get().to_dict() or {}).get("token_claims", {})
     summary: dict = {}
+    token_claims: dict[str, int] = {}
     for game in config.ACTIVE_GAMES:
         inv = campaign_inventory(game)
         summary[game] = {"stock": inv["campaigns"]}
@@ -175,9 +179,22 @@ def refresh_codes_summary() -> None:
                 row = ex.setdefault(v, {"sends": 0, "claims": 0})
                 row["sends"] += 1
                 row["claims"] += len(d.get("claimed", []))
-    state.db().collection(config.COL_PLAYBOOK).document("codes_summary").set(
-        {"games": summary, "updated": state.now()}
-    )
+            # NEW claims since the last refresh -> an 'outcome' ledger entry, the
+            # learning signal gather_day feeds the Reflector and the dashboard's
+            # "results so far" counts. Per-token deltas stay correct when other
+            # (expired) tokens are cleaned up; a claim is ledgered exactly once.
+            token_claims[snap.id] = len(d.get("claimed", []))
+            new = token_claims[snap.id] - int(prev_counts.get(snap.id, 0))
+            if new > 0:
+                state.ledger(
+                    "outcome",
+                    g,
+                    action="codes_claimed",
+                    count=new,
+                    channel=d.get("kind"),
+                    variant=d.get("variant"),
+                )
+    ref.set({"games": summary, "token_claims": token_claims, "updated": state.now()})
 
 
 def _revenue(

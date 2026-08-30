@@ -383,7 +383,10 @@ function FeedRow({ e, open, onToggle }: { e: Doc; open: boolean; onToggle: (id: 
 function Dashboard({ owner }: { owner: boolean }) {
   const [feedLimit, setFeedLimit] = useState(60);
   const ledger = useCollection('stagenator_ledger', 'ts', feedLimit);
-  const feed = useMemo(() => groupFeed(ledger), [ledger]);
+  // `outcome` rows are the learning signal (counted in the Learning panel and fed to
+  // the nightly Reflector) — but one row per claim batch is clutter in the live feed,
+  // so they're recorded without being listed here.
+  const feed = useMemo(() => groupFeed(ledger.filter((e) => e.kind !== 'outcome')), [ledger]);
   const [openLog, setOpenLog] = useState<Set<string>>(new Set());
   const toggleLog = (id: string) =>
     setOpenLog((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -703,14 +706,14 @@ function LevelsOverview({ tasks }: { tasks: Doc[] }) {
                     onClick={() => setSelected(e)}
                     className="text-[11px] flex gap-2 items-baseline py-0.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded px-1 -mx-1"
                   >
-                    <span className={e.status === 'preview' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
+                    <span className={`shrink-0 whitespace-nowrap ${e.status === 'preview' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       {e.status === 'preview' ? '◔ preview' : '✓ live'}
                     </span>
-                    <span className="text-zinc-700 dark:text-zinc-300 font-bold">{title(r)}</span>
-                    {r.qa ? <span className="text-zinc-500 dark:text-zinc-400">qa:{String(r.qa)}</span> : null}
-                    {r.levelId ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.levelId)}</span> : null}
-                    {r.level ? <span className="text-zinc-500 dark:text-zinc-400">#{String(r.level)}</span> : null}
-                    <span title={tsUtc(e.ts)} className="text-zinc-600 dark:text-zinc-400 ml-auto">{ts(e.ts)}</span>
+                    <span className="text-zinc-700 dark:text-zinc-300 font-bold truncate min-w-0" title={title(r)}>{title(r)}</span>
+                    {r.qa ? <span className="text-zinc-500 dark:text-zinc-400 shrink-0">qa:{String(r.qa)}</span> : null}
+                    {r.levelId ? <span className="text-zinc-500 dark:text-zinc-400 shrink-0">#{String(r.levelId)}</span> : null}
+                    {r.level ? <span className="text-zinc-500 dark:text-zinc-400 shrink-0">#{String(r.level)}</span> : null}
+                    <span title={tsUtc(e.ts)} className="text-zinc-600 dark:text-zinc-400 ml-auto shrink-0 whitespace-nowrap">{ts(e.ts)}</span>
                   </div>
                 );
               })}
@@ -747,10 +750,11 @@ function CodesOverview() {
               {(() => {
                 const ex = (d as { experiment?: Record<string, { sends: number; claims: number }> }).experiment;
                 if (!ex || (!ex.a && !ex.b)) return null;
-                const f = (v?: { sends: number; claims: number }) => (v ? `${v.claims}/${v.sends}` : '0/0');
+                const f = (v?: { sends: number; claims: number }) =>
+                  `${v?.claims ?? 0} claim${(v?.claims ?? 0) === 1 ? '' : 's'} from ${v?.sends ?? 0} send${(v?.sends ?? 0) === 1 ? '' : 's'}`;
                 return (
-                  <span className="w-full text-violet-600 dark:text-violet-400 text-[10.5px]">
-                    copy experiment · A {f(ex.a)} claimed · B {f(ex.b)} claimed
+                  <span className="w-full text-violet-600 dark:text-violet-400 text-[10.5px]" title="Each push is written in two styles; half the players get A, half get B. Claims per style show which copy works.">
+                    push copy test — A: {f(ex.a)} · B: {f(ex.b)}
                   </span>
                 );
               })()}

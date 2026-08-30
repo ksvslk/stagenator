@@ -319,6 +319,36 @@ function HeartbeatRing({ at }: { at: unknown }) {
 
 type FeedItem = { type: 'group'; decision: Doc; children: Doc[] } | { type: 'row'; row: Doc };
 
+// Push copy A/B tally: tap to expand the explanation. A "push" is one notification
+// (a shared drop link many players can claim through), so several claims per push is normal.
+function PushCopyTest({ ex }: { ex: Record<string, { sends: number; claims: number }> }) {
+  const [open, setOpen] = useState(false);
+  const f = (v?: { sends: number; claims: number }) => {
+    const p = v?.sends ?? 0;
+    const c = v?.claims ?? 0;
+    return `${p} push${p === 1 ? '' : 'es'} → ${c} claim${c === 1 ? '' : 's'}`;
+  };
+  return (
+    <div className="w-full text-[10.5px]">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer text-left"
+      >
+        {open ? '▾' : '▸'} push copy test · A: {f(ex.a)} · B: {f(ex.b)}
+      </button>
+      {open && (
+        <div className="mt-1 text-zinc-500 dark:text-zinc-400 leading-relaxed border-l-2 border-violet-300 dark:border-violet-700 pl-2">
+          Every code push is drafted in two writing styles, A and B, and players are split
+          between them. One push is one notification — a shared drop link that several
+          players can claim through, so more claims than pushes is normal. The style that
+          earns more claims per push wins, and the nightly review writes the winning style
+          into the playbook.
+        </div>
+      )}
+    </div>
+  );
+}
+
 const rowMs = (r: Doc): number => (r.ts as { toDate?: () => Date })?.toDate?.()?.getTime() ?? 0;
 // gate-phase outcomes of a decision (logged within ms of it); a later `done` row is not one
 const isGateOutcome = (r: Doc): boolean =>
@@ -750,13 +780,7 @@ function CodesOverview() {
               {(() => {
                 const ex = (d as { experiment?: Record<string, { sends: number; claims: number }> }).experiment;
                 if (!ex || (!ex.a && !ex.b)) return null;
-                const f = (v?: { sends: number; claims: number }) =>
-                  `${v?.claims ?? 0} claim${(v?.claims ?? 0) === 1 ? '' : 's'} from ${v?.sends ?? 0} send${(v?.sends ?? 0) === 1 ? '' : 's'}`;
-                return (
-                  <span className="w-full text-violet-600 dark:text-violet-400 text-[10.5px]" title="Each push is written in two styles; half the players get A, half get B. Claims per style show which copy works.">
-                    push copy test — A: {f(ex.a)} · B: {f(ex.b)}
-                  </span>
-                );
+                return <PushCopyTest ex={ex} />;
               })()}
             </div>
           );

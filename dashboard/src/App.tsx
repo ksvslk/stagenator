@@ -772,7 +772,7 @@ function CodesOverview() {
               <div className="flex justify-between items-baseline gap-3">
                 <span className="text-zinc-800 dark:text-zinc-200 font-bold">{gameLabel(g)}</span>
                 <span className="text-emerald-600 dark:text-emerald-400 shrink-0">
-                  {claims.teared ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
+                  {(claims.total ?? claims.teared) ?? 0} claimed · {claims.links ?? 0} drop{(claims.links ?? 0) === 1 ? '' : 's'} live
                 </span>
               </div>
               <div className="text-zinc-500 dark:text-zinc-400 mt-0.5">

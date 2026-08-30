@@ -150,8 +150,12 @@ def refresh_codes_summary() -> None:
 
     tc = firestore.Client(project=config.TAKECODES_PROJECT)
     ref = state.db().collection(config.COL_PLAYBOOK).document("codes_summary")
+    prior = ref.get().to_dict() or {}
     # Prior per-token claim counts: the baseline for detecting NEW claims below.
-    prev_counts: dict = (ref.get().to_dict() or {}).get("token_claims", {})
+    prev_counts: dict = prior.get("token_claims", {})
+    # Durable per-game claim totals: live tokens expire and are cleaned up, which
+    # erases their claim history from the live view — the running total survives.
+    totals: dict = dict(prior.get("claims_total", {}))
     summary: dict = {}
     token_claims: dict[str, int] = {}
     for game in config.ACTIVE_GAMES:
@@ -186,6 +190,7 @@ def refresh_codes_summary() -> None:
             token_claims[snap.id] = len(d.get("claimed", []))
             new = token_claims[snap.id] - int(prev_counts.get(snap.id, 0))
             if new > 0:
+                totals[g] = int(totals.get(g, 0)) + new
                 state.ledger(
                     "outcome",
                     g,
@@ -194,7 +199,18 @@ def refresh_codes_summary() -> None:
                     channel=d.get("kind"),
                     variant=d.get("variant"),
                 )
-    ref.set({"games": summary, "token_claims": token_claims, "updated": state.now()})
+    for g in summary:  # every game shows its durable total, live tokens or not
+        summary[g].setdefault("claims", {"links": 0, "codes_backing": 0, "teared": 0})[
+            "total"
+        ] = int(totals.get(g, 0))
+    ref.set(
+        {
+            "games": summary,
+            "token_claims": token_claims,
+            "claims_total": totals,
+            "updated": state.now(),
+        }
+    )
 
 
 def _revenue(

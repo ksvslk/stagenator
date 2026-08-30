@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import secrets
+import time
 from typing import Any
 
 from google.cloud import firestore
@@ -458,6 +459,45 @@ def push_outcomes() -> dict:
     """Cached push effectiveness (notification open/dismiss/receive per game), nightly."""
     snap = db().collection(config.COL_PLAYBOOK).document("push_outcomes").get()
     return (snap.to_dict() or {}).get("games", {}) if snap.exists else {}
+
+
+def merge_cap_overrides(defaults: dict, doc: dict | None, at: dt.datetime) -> dict:
+    """Pure merge of owner cap-overrides onto the hard defaults. Safety contract:
+    only KNOWN cap keys apply; each value is clamped to [0, 3x default] (a code-level
+    ceiling no doc can exceed); a missing/expired doc changes nothing. The overrides
+    doc is written ONLY by the owner (console/script) — no model output path writes
+    it — so the LLM still cannot negotiate a single cap."""
+    if not doc:
+        return dict(defaults)
+    expires = doc.get("expires")
+    if expires is None or not hasattr(expires, "timestamp") or expires <= at:
+        return dict(defaults)  # no expiry = invalid (overrides must be temporary)
+    out = dict(defaults)
+    for key, dflt in defaults.items():
+        v = doc.get(key)
+        if isinstance(v, int) and not isinstance(v, bool):
+            out[key] = max(0, min(dflt * 3, v))
+    return out
+
+
+_caps_memo: tuple[float, dict] | None = None
+
+
+def effective_caps() -> dict:
+    """config.CAPS with any live owner overrides applied (60s memo). Fail-safe:
+    any read problem -> the hard-coded defaults, never looser."""
+    global _caps_memo
+    t = time.monotonic()
+    if _caps_memo and t - _caps_memo[0] < 60:
+        return _caps_memo[1]
+    caps = dict(config.CAPS)
+    try:
+        snap = db().collection(config.COL_PLAYBOOK).document("cap_overrides").get()
+        caps = merge_cap_overrides(config.CAPS, snap.to_dict() if snap.exists else None, now())
+    except Exception as e:
+        log.warning("cap_overrides read failed — using defaults: %s", e)
+    _caps_memo = (t, caps)
+    return caps
 
 
 def codes_summary() -> dict:

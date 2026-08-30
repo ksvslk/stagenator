@@ -521,3 +521,42 @@ class TestPalindromeHintCompleteness:
             )
             is None
         )
+
+
+class TestCapOverrides:
+    """merge_cap_overrides: owner-only, clamped, expiring — the LLM has no write path."""
+
+    def _at(self, offset_h=0):
+        import datetime as dt
+
+        return dt.datetime(2026, 8, 30, 12, tzinfo=dt.UTC) + dt.timedelta(
+            hours=offset_h
+        )
+
+    def test_no_doc_keeps_defaults(self):
+        from agent.state import merge_cap_overrides
+
+        assert merge_cap_overrides({"a": 1}, None, self._at()) == {"a": 1}
+
+    def test_valid_override_applies_and_clamps(self):
+        from agent.state import merge_cap_overrides
+
+        doc = {"a": 2, "b": 99, "expires": self._at(1)}
+        out = merge_cap_overrides({"a": 1, "b": 2}, doc, self._at())
+        assert out["a"] == 2  # within 3x
+        assert out["b"] == 6  # clamped to 3x default
+
+    def test_expired_or_missing_expiry_ignored(self):
+        from agent.state import merge_cap_overrides
+
+        assert merge_cap_overrides({"a": 1}, {"a": 3}, self._at()) == {"a": 1}
+        assert (
+            merge_cap_overrides({"a": 1}, {"a": 3, "expires": self._at(-1)}, self._at())
+            == {"a": 1}
+        )
+
+    def test_unknown_keys_and_bad_types_ignored(self):
+        from agent.state import merge_cap_overrides
+
+        doc = {"zz": 9, "a": "5", "b": True, "expires": self._at(1)}
+        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at()) == {"a": 1, "b": 2}

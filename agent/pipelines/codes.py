@@ -122,7 +122,7 @@ def run_personal_codes(task: dict) -> dict:
     inv_campaign = payload.get("campaign_id") or _find_campaign(
         gift_game, payload.get("platform")
     )
-    cap = min(payload.get("n_codes") or 10, config.CAPS["codes_per_game_per_day"])
+    cap = min(payload.get("n_codes") or 10, state.effective_caps()["codes_per_game_per_day"])
 
     # collect registered devices (uid -> token) across android/ios
     gdb = state.game_db(game)

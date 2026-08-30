@@ -54,7 +54,7 @@ def validate(action: dict) -> dict | None:
         if not config.GAMES[game].get("codes_enabled", True):
             return {"error": f"{game} has no promo-code campaign configured"}
         acts = _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
-        if acts >= config.CAPS["code_actions_per_game_per_day"]:
+        if acts >= state.effective_caps()["code_actions_per_game_per_day"]:
             return {"error": f"code-notification/day cap reached for {game} (1/day)"}
         n = action.get("n_codes") or 1
         if n > 10:
@@ -62,7 +62,7 @@ def validate(action: dict) -> dict | None:
 
     if t == "ship_level":
         shipped = _count_recent("action", game, {"level_pipeline"}, hours=24)
-        if shipped >= config.CAPS["levels_per_game_per_day"]:
+        if shipped >= state.effective_caps()["levels_per_game_per_day"]:
             return {"error": f"levels/day cap reached ({shipped})"}
 
     if t in ("send_code_drop", "send_individual_code", "send_level_push", "ship_level"):
@@ -72,7 +72,7 @@ def validate(action: dict) -> dict | None:
             {"code_drop", "individual_code", "level_pipeline", "level_push"},
             hours=4,
         )
-        if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
+        if pushes >= state.effective_caps()["push_actions_per_game_per_4h"]:
             return {"error": f"push-action/4h cap reached for {game}"}
 
     # A level push needs the game's level topic; code paths use FCM tokens / drops, not it.
@@ -93,17 +93,17 @@ def doors_open(game: str) -> bool:
         {"code_drop", "individual_code", "level_pipeline", "level_push"},
         hours=4,
     )
-    if pushes >= config.CAPS["push_actions_per_game_per_4h"]:
+    if pushes >= state.effective_caps()["push_actions_per_game_per_4h"]:
         return False
     if (
         _count_recent("action", game, {"level_pipeline"}, hours=24)
-        < config.CAPS["levels_per_game_per_day"]
+        < state.effective_caps()["levels_per_game_per_day"]
     ):
         return True
     if (
         config.GAMES[game].get("codes_enabled", True)  # mirrors validate()'s gate
         and _count_recent("action", game, {"code_drop", "individual_code"}, hours=24)
-        < config.CAPS["code_actions_per_game_per_day"]
+        < state.effective_caps()["code_actions_per_game_per_day"]
     ):
         return True
     # re-announce door: one level_push per game per day (task idempotency key)

@@ -129,6 +129,8 @@ strategist = LlmAgent(
         f"{config.CAPS['codes_per_game_per_day']} codes/game/day, "
         f"{config.CAPS['levels_per_game_per_day']} levels/game/day, "
         f"{config.CAPS['push_actions_per_game_per_4h']} push-actions/game/4h. "
+        "(defaults — the signal context carries a `caps` field with today's LIVE budgets; "
+        "the owner may temporarily raise them, and the code gate enforces them either way.)\n"
         "(Hard-enforced downstream regardless.)"
     ),
     output_schema=Decision,

@@ -579,7 +579,7 @@ function Dashboard({ owner }: { owner: boolean }) {
               ))}
             </div>
             <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-              {tasks.slice(0, 8).map((t) => (
+              {tasks.map((t) => (
                 <div key={t.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded px-2.5 py-1.5 flex gap-2">
                   <span
                     className={

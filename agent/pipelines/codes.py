@@ -153,7 +153,9 @@ def run_personal_codes(task: dict) -> dict:
         import datetime as _dt
 
         week_ago = state.now() - _dt.timedelta(days=7)
-        for send_i, (uid, token) in enumerate(devices[:cap]):
+        for send_i, (uid, token) in enumerate(devices):
+            if len(sent) >= cap:  # cap counts SENDS — dead tokens must not eat the batch
+                break
             # per-user weekly cap: don't re-gift a player who got a code in the last 7 days
             _mkref = (
                 state.db()
@@ -215,6 +217,13 @@ def run_personal_codes(task: dict) -> dict:
                 ).document(code_ids[0]).update({"reservedBy": firestore.DELETE_FIELD})
                 _tc().collection("claimTokens").document(tok).delete()
                 log.warning("push to %s failed, code released: %s", uid, e)
+                if "NotRegistered" in str(e) or "Unregistered" in str(e):
+                    # dead install — drop the stale token so it never eats a batch again
+                    for _col in config.GAMES[game].get("fcm_token_collections") or []:
+                        try:
+                            gdb.collection(_col).document(uid).delete()
+                        except Exception:
+                            pass
         return {
             "sent": len(sent),
             "personal": True,

@@ -203,15 +203,6 @@ export function App() {
   useEffect(
     () =>
       onAuthStateChanged(auth, (u) => {
-        // No session -> sign in anonymously: the dashboard is public WATCH-ONLY
-        // (rules gate every write on the owner's email, which a guest token lacks).
-        // The Google button (in SignIn, reachable if anonymous fails) is for the owner.
-        if (!u) {
-          if (sessionStorage.getItem('sg_signed_out')) { setUser(null); setAuthReady(true); return; }
-          signInAnonymously(auth).catch(() => setAuthReady(true));
-          return;
-        }
-        sessionStorage.removeItem('sg_signed_out');
         setUser(u);
         setAuthReady(true);
       }),
@@ -240,7 +231,7 @@ function SignIn() {
         {error && <div className="text-red-600 dark:text-red-400 text-xs max-w-xs text-center">{error}</div>}
         <div ref={buttonRef} />
         <button
-          onClick={() => { sessionStorage.removeItem('sg_signed_out'); signInAnonymously(auth).catch((e) => setError(String(e))); }}
+          onClick={() => signInAnonymously(auth).catch((e) => setError(String(e)))}
           className="text-[11px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer"
         >
           continue as guest
@@ -627,7 +618,7 @@ function Dashboard({ owner }: { owner: boolean }) {
         </a>
         <span className="ml-auto" title="dashboard build: git commit · build date">build {__BUILD_INFO__}</span>
         <button
-          onClick={() => { sessionStorage.setItem('sg_signed_out', '1'); signOut(auth); }}
+          onClick={() => signOut(auth)}
           className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer"
         >
           sign out

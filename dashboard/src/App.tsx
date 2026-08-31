@@ -243,7 +243,7 @@ function SignIn() {
           onClick={() => { sessionStorage.removeItem('sg_signed_out'); signInAnonymously(auth).catch((e) => setError(String(e))); }}
           className="text-[11px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer"
         >
-          continue as guest — read-only
+          continue as guest
         </button>
       </div>
     </Center>

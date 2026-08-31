@@ -541,7 +541,6 @@ function Dashboard({ owner }: { owner: boolean }) {
             </div>
           </section>
 
-          <LearningOverview ledger={ledger} briefs={briefs} playbook={playbook} />
 
           <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
             <SectionTitle accent="bg-teal-500">Daily summary</SectionTitle>
@@ -787,35 +786,6 @@ function CodesOverview() {
           );
         })}
         {!summary && <Empty>Updates on the next run</Empty>}
-      </div>
-    </section>
-  );
-}
-
-function LearningOverview({ ledger, briefs, playbook }: { ledger: Doc[]; briefs: Doc[]; playbook: Doc | null }) {
-  const outcomes = ledger.filter((e) => e.kind === 'outcome').length;
-  const lastChange = briefs.map((b) => String(b.changes ?? '')).find((c) => c && c.trim());
-  return (
-    <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-      <SectionTitle accent="bg-violet-500">Learning <span className="text-zinc-600 dark:text-zinc-400 normal-case">· nightly</span></SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 text-[11px]">
-        <div className="flex justify-between items-baseline">
-          <span className="text-zinc-700 dark:text-zinc-300">Plan <span className="text-zinc-500 dark:text-zinc-400">v{String(playbook?.version ?? '—')}</span></span>
-          <span className="text-zinc-600 dark:text-zinc-400">updated {ts(playbook?.updated)}</span>
-        </div>
-        <div className="flex justify-between items-baseline">
-          <span className="text-zinc-600 dark:text-zinc-400">results so far</span>
-          <span className={outcomes ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-zinc-500 dark:text-zinc-400'}>{outcomes}</span>
-        </div>
-        {outcomes === 0 ? (
-          <div className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            It checks results every night. So far no one has claimed a code or come back, so there is <span className="text-zinc-700 dark:text-zinc-300">nothing to go on yet</span> — it keeps the current plan rather than reacting to thin data, and starts adjusting once real numbers come in.
-          </div>
-        ) : (
-          <div className="text-zinc-500 dark:text-zinc-400">
-            last change: <span className="text-violet-600 dark:text-violet-300">{lastChange ?? 'kept the plan the same (not enough data yet)'}</span>
-          </div>
-        )}
       </div>
     </section>
   );

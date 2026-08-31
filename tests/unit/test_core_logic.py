@@ -543,8 +543,8 @@ class TestCapOverrides:
 
         doc = {"a": 2, "b": 99, "expires": self._at(1)}
         out = merge_cap_overrides({"a": 1, "b": 2}, doc, self._at())
-        assert out["a"] == 2  # within 10x
-        assert out["b"] == 20  # clamped to 10x default
+        assert out["a"] == 2  # within 3x
+        assert out["b"] == 6  # clamped to 3x default
 
     def test_expired_or_missing_expiry_ignored(self):
         from agent.state import merge_cap_overrides
@@ -569,6 +569,6 @@ class TestCapOverrides:
             "expires": self._at(1),
         }
         # scoped game gets the raise (clamped); other games stay at defaults
-        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at(), "subliminal-words") == {"a": 3, "b": 20}
+        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at(), "subliminal-words") == {"a": 3, "b": 6}
         assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at(), "palindrome") == {"a": 1, "b": 2}
         assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at()) == {"a": 1, "b": 2}

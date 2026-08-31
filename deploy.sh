@@ -25,9 +25,12 @@ gcloud run services update stagenator --project "$PROJECT" --region "$REGION" \
   --update-env-vars "DRY_RUN=false,OWNER_EMAIL=indrekl@gmail.com,MODEL_NAME=gemini-3.7-flash" \
   --cpu-throttling --max-instances=4 --memory=2Gi
 
-echo "✓ deployed. Verifying DRY_RUN…"
-gcloud run services describe stagenator --project "$PROJECT" --region "$REGION" \
-  --format="value(spec.template.spec.containers[0].env)" | grep -o "DRY_RUN[^,]*" || true
+echo "✓ deployed. Verifying prod env (HARD gate — deploy fails if wrong)…"
+ENV=$(gcloud run services describe stagenator --project "$PROJECT" --region "$REGION" \
+  --format="value(spec.template.spec.containers[0].env)")
+echo "$ENV" | grep -q "'DRY_RUN', 'value': 'false'" || { echo "✗ DRY_RUN is not false — ABORT"; exit 1; }
+echo "$ENV" | grep -q "STAGENATOR_COLLECTION_PREFIX" && { echo "✗ eval prefix still set — ABORT"; exit 1; }
+echo "  env OK: DRY_RUN=false, no eval prefix"
 
 echo "→ running deployment health check…"
 URL=$(gcloud run services describe stagenator --project "$PROJECT" --region "$REGION" --format="value(status.url)")

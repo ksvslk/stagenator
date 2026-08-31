@@ -508,6 +508,60 @@ function Dashboard({ owner }: { owner: boolean }) {
 
         {/* Everything else — responsive masonry of cards */}
         <div className="w-full xl:flex-1 xl:min-w-0 columns-1 md:columns-2 xl:columns-3 gap-4 [&>section]:mb-4 [&>section]:break-inside-avoid">
+          <LevelsOverview tasks={tasks} />
+
+          <CodesOverview />
+
+          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+            <SectionTitle accent="bg-violet-500">
+              Plan{' '}
+              <span className="text-zinc-600 dark:text-zinc-400 normal-case">
+                v{String(playbook?.version ?? '—')} · <span title={tsUtc(playbook?.updated)}>{tsShort(playbook?.updated)}</span>
+              </span>
+            </SectionTitle>
+            {playbook ? (
+              <div className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {playbook.philosophy ? <p className="text-zinc-700 dark:text-zinc-300 italic">“{String(playbook.philosophy)}”</p> : null}
+                <pre className="text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-words overflow-x-auto">
+                  {JSON.stringify(playbook.knobs, null, 1)}
+                </pre>
+                {(playbook.ceo_directives as unknown[] | undefined)?.map((d, i) => {
+                  // entries are {text, ts, status, id} objects (older ones may be
+                  // plain strings) — show the message, never the raw JSON
+                  const o = d && typeof d === 'object' ? (d as Record<string, unknown>) : { text: d };
+                  return (
+                    <div key={i} className="mt-1.5 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 pl-2 py-1 bg-violet-50/60 dark:bg-violet-500/10 rounded-r">
+                      <span className="text-zinc-500 dark:text-zinc-400">You:</span> “{String(o.text ?? '')}”
+                      <span className="ml-2 text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+                        {String(o.ts ?? '').slice(0, 16)}
+                        {o.status ? ` · ${String(o.status)}` : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Empty>No plan yet</Empty>
+            )}
+          </section>
+
+          {owner && <Directives />}
+
+          <HistoryOverview />
+
+          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
+            <SectionTitle accent="bg-teal-500">Daily summary</SectionTitle>
+            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+              {briefs.map((b) => (
+                <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
+                  <div title={tsUtc(b.ts)} className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
+                  <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
+                </div>
+              ))}
+              {briefs.length === 0 && <Empty>first summary arrives after tonight's run</Empty>}
+            </div>
+          </section>
+
           <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
             <SectionTitle accent="bg-amber-500">Tasks <span className="text-zinc-600 dark:text-zinc-400 normal-case">· 40 most recent</span></SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-2">
@@ -546,61 +600,6 @@ function Dashboard({ owner }: { owner: boolean }) {
               ))}
             </div>
           </section>
-
-
-          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-            <SectionTitle accent="bg-teal-500">Daily summary</SectionTitle>
-            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
-              {briefs.map((b) => (
-                <div key={b.id} className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3">
-                  <div title={tsUtc(b.ts)} className="text-zinc-600 dark:text-zinc-400 mb-1">{ts(b.ts)}</div>
-                  <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{String(b.brief)}</div>
-                </div>
-              ))}
-              {briefs.length === 0 && <Empty>first summary arrives after tonight's run</Empty>}
-            </div>
-          </section>
-
-          <LevelsOverview tasks={tasks} />
-
-          <CodesOverview />
-
-          <HistoryOverview />
-
-          <section className="bg-white/55 dark:bg-white/[0.03] border border-zinc-300/60 dark:border-zinc-800 rounded-2xl p-3.5">
-            <SectionTitle accent="bg-violet-500">
-              Plan{' '}
-              <span className="text-zinc-600 dark:text-zinc-400 normal-case">
-                v{String(playbook?.version ?? '—')} · <span title={tsUtc(playbook?.updated)}>{tsShort(playbook?.updated)}</span>
-              </span>
-            </SectionTitle>
-            {playbook ? (
-              <div className="text-[11px] bg-white dark:bg-zinc-900 rounded-lg p-3 flex flex-col gap-2 max-h-64 overflow-y-auto">
-                {playbook.philosophy ? <p className="text-zinc-700 dark:text-zinc-300 italic">“{String(playbook.philosophy)}”</p> : null}
-                <pre className="text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-words overflow-x-auto">
-                  {JSON.stringify(playbook.knobs, null, 1)}
-                </pre>
-                {(playbook.ceo_directives as unknown[] | undefined)?.map((d, i) => {
-                  // entries are {text, ts, status, id} objects (older ones may be
-                  // plain strings) — show the message, never the raw JSON
-                  const o = d && typeof d === 'object' ? (d as Record<string, unknown>) : { text: d };
-                  return (
-                    <div key={i} className="mt-1.5 text-violet-600 dark:text-violet-300 border-l-2 border-violet-500 pl-2 py-1 bg-violet-50/60 dark:bg-violet-500/10 rounded-r">
-                      <span className="text-zinc-500 dark:text-zinc-400">You:</span> “{String(o.text ?? '')}”
-                      <span className="ml-2 text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
-                        {String(o.ts ?? '').slice(0, 16)}
-                        {o.status ? ` · ${String(o.status)}` : ''}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <Empty>No plan yet</Empty>
-            )}
-          </section>
-
-          {owner && <Directives />}
 
           <HealthOverview />
 

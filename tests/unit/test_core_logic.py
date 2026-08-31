@@ -560,3 +560,15 @@ class TestCapOverrides:
 
         doc = {"zz": 9, "a": "5", "b": True, "expires": self._at(1)}
         assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at()) == {"a": 1, "b": 2}
+
+    def test_game_scoped_overrides(self):
+        from agent.state import merge_cap_overrides
+
+        doc = {
+            "games": {"subliminal-words": {"a": 3, "b": 99}},
+            "expires": self._at(1),
+        }
+        # scoped game gets the raise (clamped); other games stay at defaults
+        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at(), "subliminal-words") == {"a": 3, "b": 6}
+        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at(), "palindrome") == {"a": 1, "b": 2}
+        assert merge_cap_overrides({"a": 1, "b": 2}, doc, self._at()) == {"a": 1, "b": 2}

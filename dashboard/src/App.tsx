@@ -609,13 +609,7 @@ function Dashboard({ owner }: { owner: boolean }) {
             )}
           </section>
 
-          {owner ? (
-            <Directives />
-          ) : (
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
-              You are watching a live production system, read-only. Only the owner can message the agent.
-            </div>
-          )}
+          {owner && <Directives />}
 
           <HealthOverview />
 

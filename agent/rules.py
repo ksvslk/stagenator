@@ -48,9 +48,21 @@ def realtime_snapshot(game: str) -> dict:
             MinuteRange(start_minutes_ago=config.GA_POLL_MINUTES, end_minutes_ago=0)
         ],
     )
-    # NO try/except here: a failed realtime query is BLINDNESS, not "0 users". The caller
-    # (detect_signals) catches it and alerts immediately.
-    resp = ga().run_realtime_report(req)
+    # Transient gRPC resets (503 "Stream removed", connection reset) get TWO quick
+    # retries before we declare blindness — a blip must not cost a BLIND alert and a
+    # sightless pulse. A real outage still raises: the caller (detect_signals)
+    # catches it and alerts immediately. Blindness is never read as "0 users".
+    resp = None
+    for attempt in range(3):
+        try:
+            resp = ga().run_realtime_report(req)
+            break
+        except Exception:
+            if attempt == 2:
+                raise
+            import time as _t
+
+            _t.sleep(1.5 * (attempt + 1))
     rows: dict = {}
     for r in resp.rows:
         key = f"{r.dimension_values[0].value or 'unknown'}:{r.dimension_values[1].value or 'unknown'}"
@@ -554,11 +566,33 @@ def detect_signals() -> list[dict]:
         if active > 0:
             # ONE signal per game — the breakdown rides along as data, never as a key.
             if (game, "user_active", "user_active") in seen:
+                # Suppress the WAKE-UP, not the record: without this row, activity
+                # during the ~1h suppression window left zero trace anywhere —
+                # players plainly visible in GA realtime never appeared on the
+                # dashboard or in the hourly-activity learning data.
                 log.info(
                     "signal suppressed (seen<1h, served): %s user_active count=%s",
                     game,
                     active,
                 )
+                # Change-only recording: a steady solo session writes ONE row, not
+                # one per pulse — but a new country/platform/count (e.g. a Brazil
+                # player joining mid-suppression) lands a row within one pulse.
+                last_bd = None
+                for e in state.recent_ledger(hours=1, kind="signal"):
+                    if e.get("game") == game and str(e.get("signal")) == "user_active":
+                        last_bd = (e.get("data") or {}).get("breakdown")
+                        break  # rows come newest-first
+                if snapshot != last_bd:
+                    state.ledger(
+                        "signal",
+                        game,
+                        signal="user_active",
+                        detail="user_active (ongoing — model not woken)",
+                        count=active,
+                        suppressed=True,
+                        data={"breakdown": snapshot},
+                    )
             else:
                 sig = {
                     "game": game,

@@ -112,6 +112,36 @@ def _registered_devices(game: str, need: int) -> int:
     return found
 
 
+def _rank_by_last_refresh(game: str, candidates: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Order (uid, token) candidates by Firebase Auth lastRefreshTime, freshest first.
+
+    lastRefreshTime is maintained by FIREBASE on every app open (ID-token refresh),
+    so it needs no cooperation from the app's own token-doc writing — the reliable
+    per-user activity signal (app-written timestamp fields proved stale/absent).
+    Ranking only sets PRIORITY: nobody becomes ineligible. Uids with no Auth record
+    (deleted users) or no refresh time sort last. Any lookup failure -> original
+    order (fail-safe to current behavior)."""
+    try:
+        from firebase_admin import auth as fb_auth
+        from firebase_admin.auth import UidIdentifier
+
+        from agent.tools import fcm as _fcm
+
+        app = _fcm._app(game)
+        fresh: dict[str, int] = {}
+        uids = [u for u, _ in candidates]
+        for i in range(0, len(uids), 100):
+            res = fb_auth.get_users(
+                [UidIdentifier(u) for u in uids[i : i + 100]], app=app
+            )
+            for u in res.users:
+                fresh[u.uid] = u.user_metadata.last_refresh_timestamp or 0
+        return sorted(candidates, key=lambda c: fresh.get(c[0], -1), reverse=True)
+    except Exception as e:
+        log.warning("last-refresh ranking failed — using scan order: %s", e)
+        return candidates
+
+
 def run_personal_codes(task: dict) -> dict:
     """Each registered device gets its OWN reserved, single-use code, pushed only
     to that device. Guarantees the code is ready for that user and only them."""
@@ -124,20 +154,21 @@ def run_personal_codes(task: dict) -> dict:
     )
     cap = min(payload.get("n_codes") or 10, state.effective_caps(game)["codes_per_game_per_day"])
 
-    # collect registered devices (uid -> token) across android/ios
+    # collect candidate devices (uid -> token) across android/ios, then rank by the
+    # user's REAL last activity (Firebase Auth lastRefreshTime) so the players who
+    # are around right now head every batch — not whichever doc IDs sort first.
     gdb = state.game_db(game)
-    devices: list[tuple[str, str]] = []  # (uid, token)
+    candidates: list[tuple[str, str]] = []  # (uid, token)
     seen_uids: set[str] = set()  # a user on both android+ios must get ONE code, not two
     for col in config.GAMES[game]["fcm_token_collections"]:
-        for snap in gdb.collection(col).limit(cap * 2).stream():
+        for snap in gdb.collection(col).limit(300).stream():
             if snap.id in seen_uids:
                 continue
             tok = (snap.to_dict() or {}).get("token")
             if tok:
                 seen_uids.add(snap.id)
-                devices.append((snap.id, tok))
-            if len(devices) >= cap:
-                break
+                candidates.append((snap.id, tok))
+    devices = _rank_by_last_refresh(game, candidates)
     if not devices:
         return {"sent": 0, "note": "no registered devices"}
 

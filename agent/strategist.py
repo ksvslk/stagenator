@@ -6,6 +6,8 @@ action types; guardrails.py validates every action against hard caps before
 anything is enqueued.
 """
 
+from typing import Literal
+
 from google.adk.agents import LlmAgent
 from pydantic import BaseModel, Field
 
@@ -13,10 +15,9 @@ from agent import config
 
 
 class Action(BaseModel):
-    type: str = Field(
-        description="One of: ship_level | send_code_drop | send_individual_code | "
-        "send_level_push | none"
-    )
+    type: Literal[
+        "ship_level", "send_code_drop", "send_individual_code", "send_level_push", "none"
+    ] = Field(description="The action to take ('none' = deliberate no-op)")
     game: str = Field(description=f"One of: {', '.join(config.ACTIVE_GAMES)}")
     reason: str = Field(
         description="One sentence: why this action, tied to a signal + playbook rule (internal, for the ledger)"

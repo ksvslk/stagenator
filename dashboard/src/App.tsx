@@ -401,11 +401,11 @@ function FeedRow({ e, open, onToggle }: { e: Doc; open: boolean; onToggle: (id: 
         KIND_COLORS[String(e.kind)] ?? 'text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
       }`}
     >
-      <div className="flex gap-2 items-baseline flex-wrap">
-        <span className="text-zinc-600 dark:text-zinc-400">{open ? '▾' : '▸'}</span>
-        <span className="uppercase font-bold">{String(e.kind)}</span>
-        {e.game ? <span className="text-zinc-600 dark:text-zinc-400">{String(e.game)}</span> : null}
-        <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px]">{tsMs(e.ts)}</span>
+      <div className="flex gap-2 items-baseline min-w-0">
+        <span className="text-zinc-600 dark:text-zinc-400 shrink-0">{open ? '▾' : '▸'}</span>
+        <span className="uppercase font-bold shrink-0">{String(e.kind)}</span>
+        {e.game ? <span className="text-zinc-600 dark:text-zinc-400 truncate min-w-0">{String(e.game)}</span> : null}
+        <span title={tsUtc(e.ts)} className="text-zinc-500 dark:text-zinc-400 ml-auto font-mono text-[10px] shrink-0 whitespace-nowrap">{tsMs(e.ts)}</span>
       </div>
       <div className="text-zinc-600 dark:text-zinc-400 mt-0.5 break-words font-mono text-[11px]">{ledgerLine(e)}</div>
       {open && (
@@ -883,8 +883,8 @@ function HistoryOverview() {
               return <rect key={k} x={x0(i)} y={62 - bh} width={Math.max(3, slot - 2)} height={bh} rx="1" className="fill-sky-600 dark:fill-sky-400" />;
             })}
             {keys.map((k, i) =>
-              i % 7 === 0 || i === keys.length - 1 ? (
-                <text key={k} x={x0(i)} y={74} fontSize="9" fill="currentColor" opacity="0.45">{fmtD(k)}</text>
+              (i % 7 === 0 && i < keys.length - 3) || i === keys.length - 1 ? (
+                <text key={k} x={i === keys.length - 1 ? x0(i) + slot : x0(i)} y={74} fontSize="9" fill="currentColor" opacity="0.45" textAnchor={i === keys.length - 1 ? 'end' : 'start'}>{fmtD(k)}</text>
               ) : null,
             )}
           </svg>

@@ -131,12 +131,26 @@ Manager · Runpod/ComfyUI. Framework: **ADK**. Full spin-up: [SETUP.md](SETUP.md
 
 ## Run it
 
+Runs with **zero setup** (no cloud, no credentials):
+
 ```bash
 uv sync
-agents-cli run "pulse"      # one decision cycle, locally (DRY_RUN)
-agents-cli eval run         # graded behavior
-uv run pytest tests/unit    # deterministic core
+uv run pytest tests/unit          # 51 deterministic tests: guardrails, queue, caps, layout
 ```
+
+Runs with **your own Google credentials** (`gcloud auth application-default login`
++ a GCP project with Vertex AI enabled in `.env`):
+
+```bash
+agents-cli run "pulse"            # one decision cycle, locally, DRY_RUN — no side effects
+agents-cli eval run               # graded behavior benchmark
+uv run pytest tests/integration   # resilience tests (Firestore emulator: `gcloud emulators firestore start`)
+```
+
+The **full loop** (live games, promo codes, push delivery) is bound to the
+production infrastructure — the three games' Firebase projects, Secret Manager
+keys, and the Runpod endpoint — so it is not locally reproducible by design;
+the live system is observable instead at the dashboard above.
 
 ## Repo layout
 

@@ -76,7 +76,9 @@ def detect(node_input) -> Event:
         "signals": signals,
         "playbook": state.get_playbook(),
         "health": state.health_status(),  # which dependencies are down — don't act on a broken one
-        "caps": state.effective_caps(),  # today's LIVE budgets (owner overrides applied)
+        "caps": {  # today's LIVE budgets per game (owner overrides applied, incl. game-scoped)
+            g: state.effective_caps(g) for g in config.ACTIVE_GAMES
+        },
         "audience": state.audience_profile(),  # raw analytics context — info, never a limit
         "recent_actions": [
             {

@@ -161,6 +161,18 @@ tests/           unit · resilience (emulator) · eval
 - Long AI generations self-pace across check-ins to stay inside Cloud Run's
   request deadline; games needing levels in the same moment are served a
   few minutes apart.
+- The learning loop is built but data-starved: with near-zero traffic the
+  nightly review has only a handful of claim outcomes to learn from, and the
+  push copy A/B has barely exercised one variant. The mechanism is tested;
+  its value proves itself as players arrive.
+- The content QA gates are model judgments (Gemini vision / video
+  understanding) — they can occasionally pass an imperfect level or reject a
+  good one. That is why publishing is gated and take-downs stay a human call
+  in the admin dashboard.
+- One service in one region, deployed by a script with a post-deploy health
+  gate — right-sized for this scale, not a high-availability setup. The test
+  suite covers the logic and Firestore behavior (emulator) plus a 4-scenario
+  graded eval; it is real coverage, not proof of every behavior.
 
 ---
 

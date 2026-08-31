@@ -4,7 +4,7 @@
  * Locked to the owner's Google account (rules enforce it server-side too).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth';
 import {
   addDoc,
   collection,
@@ -203,6 +203,13 @@ export function App() {
   useEffect(
     () =>
       onAuthStateChanged(auth, (u) => {
+        // No session -> sign in anonymously: the dashboard is public WATCH-ONLY
+        // (rules gate every write on the owner's email, which a guest token lacks).
+        // The Google button (in SignIn, reachable if anonymous fails) is for the owner.
+        if (!u) {
+          signInAnonymously(auth).catch(() => setAuthReady(true));
+          return;
+        }
         setUser(u);
         setAuthReady(true);
       }),
@@ -232,6 +239,27 @@ function SignIn() {
         <div ref={buttonRef} />
       </div>
     </Center>
+  );
+}
+
+// Guests are auto-signed-in anonymously; the owner elevates here with Google.
+function OwnerSignIn() {
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState('');
+  const buttonRef = (el: HTMLDivElement | null) => {
+    if (el && !el.hasChildNodes()) gisSignIn(el, setError).catch((e) => setError(String(e)));
+  };
+  if (!show)
+    return (
+      <button onClick={() => setShow(true)} className="text-left text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer w-fit">
+        owner sign-in
+      </button>
+    );
+  return (
+    <div className="flex flex-col gap-1">
+      {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
+      <div ref={buttonRef} />
+    </div>
   );
 }
 
@@ -597,8 +625,9 @@ function Dashboard({ owner }: { owner: boolean }) {
           {owner ? (
             <Directives />
           ) : (
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
-              You are watching a live production system, read-only. Only the owner can message the agent.
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2 flex flex-col gap-2">
+              <span>You are watching a live production system, read-only. Only the owner can message the agent.</span>
+              <OwnerSignIn />
             </div>
           )}
 

@@ -465,7 +465,7 @@ def merge_cap_overrides(
     defaults: dict, doc: dict | None, at: dt.datetime, game: str | None = None
 ) -> dict:
     """Pure merge of owner cap-overrides onto the hard defaults. Safety contract:
-    only KNOWN cap keys apply; each value is clamped to [0, 3x default] (a code-level
+    only KNOWN cap keys apply; each value is clamped to [0, 10x default] (a code-level
     ceiling no doc can exceed); a missing/expired doc changes nothing. Top-level keys
     apply to every game; a `games.<id>` sub-map applies only to that game (and wins).
     The overrides doc is written ONLY by the owner (console/script) — no model output
@@ -481,7 +481,7 @@ def merge_cap_overrides(
         for key, dflt in defaults.items():
             v = src.get(key)
             if isinstance(v, int) and not isinstance(v, bool):
-                out[key] = max(0, min(dflt * 3, v))
+                out[key] = max(0, min(dflt * 10, v))
 
     _apply(doc)
     scoped = (doc.get("games") or {}).get(game) if game else None

@@ -4,7 +4,7 @@
  * Locked to the owner's Google account (rules enforce it server-side too).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, signOut, type User } from 'firebase/auth';
 import {
   addDoc,
   collection,
@@ -207,9 +207,11 @@ export function App() {
         // (rules gate every write on the owner's email, which a guest token lacks).
         // The Google button (in SignIn, reachable if anonymous fails) is for the owner.
         if (!u) {
+          if (sessionStorage.getItem('sg_signed_out')) { setUser(null); setAuthReady(true); return; }
           signInAnonymously(auth).catch(() => setAuthReady(true));
           return;
         }
+        sessionStorage.removeItem('sg_signed_out');
         setUser(u);
         setAuthReady(true);
       }),
@@ -237,29 +239,14 @@ function SignIn() {
         </div>
         {error && <div className="text-red-600 dark:text-red-400 text-xs max-w-xs text-center">{error}</div>}
         <div ref={buttonRef} />
+        <button
+          onClick={() => { sessionStorage.removeItem('sg_signed_out'); signInAnonymously(auth).catch((e) => setError(String(e))); }}
+          className="text-[11px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer"
+        >
+          continue as guest — read-only
+        </button>
       </div>
     </Center>
-  );
-}
-
-// Guests are auto-signed-in anonymously; the owner elevates here with Google.
-function OwnerSignIn() {
-  const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
-  const buttonRef = (el: HTMLDivElement | null) => {
-    if (el && !el.hasChildNodes()) gisSignIn(el, setError).catch((e) => setError(String(e)));
-  };
-  if (!show)
-    return (
-      <button onClick={() => setShow(true)} className="text-left text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer w-fit">
-        owner sign-in
-      </button>
-    );
-  return (
-    <div className="flex flex-col gap-1">
-      {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
-      <div ref={buttonRef} />
-    </div>
   );
 }
 
@@ -625,9 +612,8 @@ function Dashboard({ owner }: { owner: boolean }) {
           {owner ? (
             <Directives />
           ) : (
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2 flex flex-col gap-2">
-              <span>You are watching a live production system, read-only. Only the owner can message the agent.</span>
-              <OwnerSignIn />
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 rounded-lg px-3 py-2">
+              You are watching a live production system, read-only. Only the owner can message the agent.
             </div>
           )}
 
@@ -646,6 +632,12 @@ function Dashboard({ owner }: { owner: boolean }) {
           how it works
         </a>
         <span className="ml-auto" title="dashboard build: git commit · build date">build {__BUILD_INFO__}</span>
+        <button
+          onClick={() => { sessionStorage.setItem('sg_signed_out', '1'); signOut(auth); }}
+          className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline decoration-dotted underline-offset-2 cursor-pointer"
+        >
+          sign out
+        </button>
       </footer>
     </div>
   );
